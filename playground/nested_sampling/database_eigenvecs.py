@@ -9,32 +9,40 @@ from sqlalchemy import Column, Integer, Float, PickleType, ForeignKey
 from pygmin.storage.database import Base
 from pygmin.storage import Database
 
-class EigenPair(Base):
-    """an eigenvalue and associated eigenvectors
+class NormalModes(Base):
+    """normal mode frequencies and associated eigenvectors
     
     actually frequencies are stored rather than eigenvalues.  Frequencies are
     eigenvalues with the appropriate weighting for (from the mass or from rigid bodies)
+    
+    Parameters
+    ----------
+    m : Minimum object
+    freq : array
+        the list of normal mode frequencies
+    vectors : 2-d numpy array
+        vectors[:,i] is the eigenvector associated to the normal mode frequency freq[i].
+        the eigenvectors should be orthogonal and normalized
     """
-    __tablename__ = "tbl_eigenpair"
-    _id = Column(Integer, primary_key=True)
+    __tablename__ = "tbl_normal_modes"
 
-    vector = deferred(Column(PickleType))
-    freq = Column(Float)
+    freq = deferred(Column(PickleType))
+    vectors = deferred(Column(PickleType))
 
-    _minimum_id = Column(Integer, ForeignKey('tbl_minima._id'))
+    _minimum_id = Column(Integer, ForeignKey('tbl_minima._id'), primary_key=True)
     minimum = relationship("Minimum",
-                            primaryjoin="Minimum._id==EigenPair._minimum_id",
-                            backref='eigenpair')
-    def __init__(self, m, freq, vector):
+                            primaryjoin="Minimum._id==NormalModes._minimum_id",
+                            backref='normal_modes', uselist=False)
+    def __init__(self, m, freq, vectors):
         self.minimum = m
         self.freq = freq
-        self.vector = np.copy(vector)
+        self.vectors = np.copy(vectors)
 
 if __name__ == "__main__":
     from pygmin.systems import LJCluster
     from pygmin.utils.hessian import get_sorted_eig
     system = LJCluster(20)
-    db = system.create_database("test.sqlite")
+    db = system.create_database()#"test.sqlite")
     coords, energy = system.get_random_minimized_configuration()[:2]
     print energy
     m = db.addMinimum(energy, coords)
@@ -42,22 +50,26 @@ if __name__ == "__main__":
     pot = system.get_potential()
     e, g, hess = pot.getEnergyGradientHessian(coords)
     eval, evec = get_sorted_eig(hess)
+    epair = NormalModes(m, eval, evec)
+    db.session.commit()
+    print m.normal_modes[0].vectors.shape
+    
+    
     if False:
-        epair = EigenPair(m, eval[0], evec[:,0])
-        print m.eigenpair 
-        print m.eigenpair[0].freq, eval[0]
-        epair = EigenPair(m, eval[1], evec[:,1])
-        print m.eigenpair 
-        print m.eigenpair[0].freq, eval[0]
-        print m.eigenpair[1].freq, eval[1]
-    else:
+        print m.normal_modes 
+        print m.normal_modes[0].freq, eval[0]
+        epair = NormalModes(m, eval[1], evec[:,1])
+        print m.normal_modes 
+        print m.normal_modes[0].freq, eval[0]
+        print m.normal_modes[1].freq, eval[1]
+    elif False:
         for i in range(len(eval)):
-            epair = EigenPair(m, eval[i], evec[:,i])
-#            print m.eigenpair
+            epair = NormalModes(m, eval[i], evec[:,i])
+#            print m.normal_modes
         db.session.commit()
-        print m.eigenpair[-1].freq
-        print len(m.eigenpair)
-        db.session.delete(m.eigenpair[0])
+        print m.normal_modes[-1].freq
+        print len(m.normal_modes)
+        db.session.delete(m.normal_modes[0])
         db.session.commit()
-        print len(m.eigenpair)
+        print len(m.normal_modes)
         
