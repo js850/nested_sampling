@@ -137,18 +137,13 @@ def sample_from_database(system, db, Emax):
 
     return coords, E
  
-def generate_database(natoms=31):
+def populate_database(system, db, niter=1000):
     """return a database with all important low energy minima and all information
     necessary to compute the density of states
     """
-    # define the system
-    system = LJClusterNew(natoms)
-    
     # use basinhopping to find the low energy minima and store them in a database
-    db = system.create_database("lj31.db")
     bh = system.get_basinhopping(database=db)
-    nsteps = 1
-    bh.run(nsteps)
+    bh.run(niter)
     
     # get the point group information
     print "getting the point group information"
@@ -181,10 +176,16 @@ def generate_database(natoms=31):
     
     # combine the point group information and frequencies to compute the density of states
     
-    return system, db
+    return db
     
 if __name__ == "__main__":
-    system, db = generate_database()
+    # define the system
+    natoms = 31
+    system = LJClusterNew(natoms)
+
+    db = system.create_database("lj31.db")
+    if False:
+        db = populate_database(system, db, niter=1000)
     
     Emin = db.minima()[0].energy
     Emax = Emin + 5.
