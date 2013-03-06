@@ -184,8 +184,8 @@ if __name__ == "__main__":
     system = LJClusterNew(natoms)
 
     db = system.create_database("lj31.db")
-    if False:
-        db = populate_database(system, db, niter=1000)
+    if True:
+        db = populate_database(system, db, niter=500)
     
     Emin = db.minima()[0].energy
     Emax = Emin + 5.
