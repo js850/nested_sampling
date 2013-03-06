@@ -11,8 +11,7 @@ from pygmin.systems import LJCluster
 from pygmin.utils.rotations import vec_random_ndim
 from pygmin.mindist import PointGroupOrderCluster
 from pygmin.utils.hessian import sort_eigs, get_eig
-from pygmin.thermodynamics import logproduct_freq2
-
+from pygmin.thermodynamics import logproduct_freq2, normalmodes
 
 class LJClusterNew(LJCluster):
     """same as LJCluster, but attach some additional information"""
@@ -25,7 +24,7 @@ class LJClusterNew(LJCluster):
         return None
     
     def get_pgorder(self):
-        raise 
+        return PointGroupOrderCluster(self.get_compare_exact())
 
 
 def vector_random_uniform_hypersphere(k):
@@ -34,7 +33,6 @@ def vector_random_uniform_hypersphere(k):
     # draw the magnitude of the vector from a power law distribution with power k-1
     p = np.random.power(k)
     return p * u
-    
 
 def sample_uniformly_in_basin_harmonic(m, Emax, k):
     """assuming the harmonic approximation return a configuration with energy less than Emax sampled uniformly from the basin defined by m
@@ -42,9 +40,9 @@ def sample_uniformly_in_basin_harmonic(m, Emax, k):
     this is exact in the harmonic approximation 
     """
     nm = m.hessian_eigs[0]
-    freq = nm.eigenvalues
+    evals = nm.eigenvalues
     vectors = nm.eigenvectors
-    nzero = len(freq) - k
+    nzero = len(evals) - k
 
     # get uniform random vector in k dimensional hypersphere
     f = vector_random_uniform_hypersphere(k)
@@ -55,8 +53,8 @@ def sample_uniformly_in_basin_harmonic(m, Emax, k):
     # create the random displacement vector
     dx = np.zeros(m.coords.shape)
     for i in range(k):
-        if eval > 1e-4:
-            dx += f[i] * vectors[:,i+nzero] / freq[i+nzero]
+        if evals[i+nzero] > 1e-4:
+            dx += f[i] * vectors[:,i+nzero] / np.sqrt(evals[i+nzero])
     
     return m.coords + dx
     
@@ -70,7 +68,10 @@ def sample_uniformly_in_basin(m, Emax, potential, k):
     while E > Emax:
         coords = sample_uniformly_in_basin_harmonic(m, Emax, k)
         E = potential.getEnergy(coords)
-        print "created structure with energy", E, "Emax", Emax, "Emin", m.energy, count
+        
+        # print some stuff
+        stepsize = np.linalg.norm(coords - m.coords)
+        print "created structure with energy", E, "Emax", Emax, "Emin", m.energy, count, stepsize
         count += 1
         
     
@@ -115,15 +116,18 @@ def weighted_pick(weights):
 
 def sample_from_database(system, db, Emax):
     # calculate the harmonic phase space volume of each minima and store it in list `weights`
-    weights = []
+    lweights = []
     minima = []
     for m in db.minima():
         if m.energy < Emax:
             lV = compute_log_phase_space_volume(m, Emax, system.k)
-            weights.append(np.exp(lV))
+            lweights.append(lV)
             minima.append(m)
+    lweights = np.array(lweights)
+    weights = np.exp(lweights - np.max(lweights))
     
     # select a minimum uniformly given `weights`
+    print "weights", weights[:10]
     index = weighted_pick(weights)
 #    print index, len(weights), len(minima)
     m = minima[index]
@@ -132,34 +136,6 @@ def sample_from_database(system, db, Emax):
     coords, E = sample_uniformly_in_basin(m, Emax, system.get_potential(), system.k)
 
     return coords, E
-
-def get_normalmodes(hessian, metric=None, eps=1e-4):
-    ''' calculate and return normal mode frequencies and vectors
-    
-    Parameters
-    ----------
-    hessian:
-        hessian marix
-        
-    metric: 
-        mass weighted metric tensor
-    '''
-    A = hessian
-    if metric is not None:
-        A = np.dot(np.linalg.pinv(metric), hessian)
-   
-    freq, evecs = np.linalg.eig(A)
-    
-    
-    if(np.max(np.abs(np.imag(freq))) > eps):
-        print freq
-        raise ValueError("imaginary eigenvalue in frequency calculation"
-                         ", check hessian + metric tensor\nthe largest imaginary part is %g"%np.max(np.abs(np.imag(freq))))
-    
-    freq = np.real(freq)
-    freq, evecs = sort_eigs(freq, evecs)
-    return freq, evecs
-
  
 def generate_database(natoms=31):
     """return a database with all important low energy minima and all information
@@ -176,7 +152,7 @@ def generate_database(natoms=31):
     
     # get the point group information
     print "getting the point group information"
-    determine_pgorder = PointGroupOrderCluster(system.get_compare_exact())
+    determine_pgorder = system.get_pgorder()
     for m in db.minima():
         m.pgorder = determine_pgorder(m.coords)
 #        print m.pgorder
@@ -190,7 +166,7 @@ def generate_database(natoms=31):
         e, g, hess = pot.getEnergyGradientHessian(m.coords)
         
         # calculate the normal modes from the hessian
-        freq, evec = get_normalmodes(hess, metric=system.get_metric_tensor())
+        freq, evec = normalmodes(hess, metric=system.get_metric_tensor())
         # calculate the log product of the positive normal mode frequencies
         n, lnf = logproduct_freq2(freq, system.nzero_modes)
         m.fvib = lnf
