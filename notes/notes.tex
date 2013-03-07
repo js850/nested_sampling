@@ -118,11 +118,60 @@ eigenvalues and eigenvectors from the minimum.  Or we can do a combination.  Let
 first talk about how to use the eigenvalues $\mu_i$ and orthonormal eigenvectors $\vec{v_i}$ 
 
 \begin{equation}
-  \vec{x} = \vec{x}_{\alpha} + \sum_{i=1}^k f_i (\vec{v_i} / \sqrt{\mu_i})
+  \vec{x} = \vec{x}_{\alpha} + \sum_{i=1}^k q_i (\vec{v_i} / \sqrt{\mu_i})
+  \label{eqn:step_away}
 \end{equation}
 
 We scale the vectors by $\vec{v_i} / \sqrt{\mu_i}$ so that all directions have
-the same same curvature.
+the same curvature.  The problem is now reduced to how to choose the $q_i$ such
+that we are sampling uniformly in configuration space.  Scaling the vectors
+above make all directions uniform, so the unit vector $\vec{q} / |\vec{q}|$ should be 
+uniform. (Note: sampling a unit vector uniformly is done by choosing all components from
+a normal distribution and normalizing the resulting vector)
+
+We are now left with determining the appropriate magnitude of the vector $q =
+|\vec{q}|$.  Stepping in any one direction with a stepsize of $q$ 
+
+\begin{equation}
+  x = x_{\alpha} + q (\vec{v_i} / \sqrt{\mu_i})
+\end{equation}
+results in an energy change of
+\begin{equation}
+  E = E_{\alpha} + \frac{1}{2} q^2
+  \label{eqn:echange}
+\end{equation}
+
+The total magnitude of the step defined in \ref{eqn:step_away} is $q =
+\sum{q_i^2} = |\vec{q}|$ which results in a total energy change given, in
+exactly the same way as \ref{eqn:echange}.  So $q$ can be at maximum
+
+\begin{equation}
+  q_{max} = \sqrt{2 (E_{max} - E_{\alpha})}
+\end{equation}
+
+
+But from what distribution should $q$ be drawn?  
+We know that the density of states grows like $(E-E_{\alpha})^k$.
+Thus the probability of drawing a configuration with energy
+between $E$ and $E+dE$ should be 
+\begin{equation}
+  P(E)dE = (E-E_{\alpha})^{k-1}dE
+\end{equation}
+In $q$ space this probility density function becomes $P(q)dq = P(E)dE$
+\begin{equation}
+  P(q)dq = (q)^{2k-1}dq
+\end{equation}
+
+Thus we draw $q$ from a power law distribution with power $(2k)$ and maximum
+value $\sqrt{2 (E_{max} - E_{\alpha})}$.  Note that the probability density
+function above with power $k-1$ has a cumulative distribution function with
+power $k$, so these distributions are refered to as power law distributions
+with power $k$.
+Alternatively we can draw the target change in energy $dE_{target}$ from a power law
+distribution with power $k$ and maximum value $(E_{max} - E_{\alpha})$
+and set $q = \sqrt{2 dE_{target}}$.
+
+
 
 
 \bibliography{jakes_biblio}

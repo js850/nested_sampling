@@ -52,6 +52,7 @@ class NestedSampling(object):
         
         self.setup_replicas(nreplicas)
     
+        self.iter_number = 0
     
     
     def create_replica(self):
@@ -93,7 +94,7 @@ class NestedSampling(object):
         self.adjust_step_size(mc)
         
         # print some data
-        print "step: %accept", float(mc.naccept) / mc.nsteps, "energy new old max", mc.energy, rstart.energy, Emax, "stepsize", self.takestep.stepsize
+        print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, "energy new old max", mc.energy, rstart.energy, Emax, "stepsize", self.takestep.stepsize
         
         
         return Replica(mc.x, mc.energy)         
@@ -111,6 +112,8 @@ class NestedSampling(object):
         self.replicas.append(rnew)
         self.sort_replicas()
         
+        self.iter_number += 1
+        
 if __name__ == "__main__":
     from bh_sampling import LJClusterNew
     from pygmin.takestep import RandomDisplacement
@@ -121,7 +124,9 @@ if __name__ == "__main__":
     
     
     ns = NestedSampling(system, nreplicas, RandomDisplacement(stepsize=0.5), mciter=mciter)
-    for i in range(20000):
+    for i in range(nreplicas * 300):
+        ediff = ns.replicas[-1].energy - ns.replicas[0].energy
+        if ediff < .01: break  
         ns.one_iteration()
     print ns.max_energies
     print "min replica energy", ns.replicas[0].energy

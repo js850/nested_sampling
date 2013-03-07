@@ -44,11 +44,14 @@ def sample_uniformly_in_basin_harmonic(m, Emax, k):
     vectors = nm.eigenvectors
     nzero = len(evals) - k
 
-    # get uniform random vector in k dimensional hypersphere
-    f = vector_random_uniform_hypersphere(k)
+    # get uniform random k dimensional unit vector
+    f = vec_random_ndim(k)
+
+    # the target increase in energy is sampled from a power law distribution
+    dE_target = np.random.power(k) * (Emax - m.energy)
     
-    # scale f according to Emax
-    f *= np.sqrt(2. * (Emax - m.energy)) #TODO check prefactor
+    # scale f according to dE_target
+    f *= np.sqrt(2. * dE_target) #TODO check prefactor
 
     # create the random displacement vector
     dx = np.zeros(m.coords.shape)
@@ -184,11 +187,11 @@ if __name__ == "__main__":
     system = LJClusterNew(natoms)
 
     db = system.create_database("lj31.db")
-    if True:
+    if False:
         db = populate_database(system, db, niter=500)
     
     Emin = db.minima()[0].energy
-    Emax = Emin + 5.
+    Emax = Emin + 1.
 
     k = system.k
     for i in range(10):
