@@ -1,0 +1,130 @@
+%
+% svn info 
+% $Date$
+% $Rev$
+%
+\documentclass[a4paper]{article}
+
+%\usepackage[numbers]{natbib}
+\usepackage[top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\bibliographystyle{naturemagurl}
+%\bibliographystyle{plainnat}
+
+
+\title{Notes on coupling nested sampling with basin hopping}
+\author{Jacob Stevenson}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+
+\section{Nested Sampling}
+
+The nested sampling algorithm is:
+\begin{enumerate}
+  \item Start by initializing $N_r$ replicas.  These should be completely random.  Some will have extremely high 
+    temperatures, but that is fine.
+
+  \item Remove the replica with the highest energy from your list and save the energy as $E_{max}$
+
+  \item Get a configuration, $x$, sampled uniformly in configuration space
+    with the only criterion that $E(x) \le E_{max}$.  Note that this is not trivial and will
+    be discussed further below
+  
+  \item Add $x$ to the collection of replicas
+
+  \item goto 2.
+
+  \item the density of states and all other thermodynamic parameters can be calculated easily from the list of energies $E_max$
+
+\end{enumerate}
+
+
+The second step, "sample $x$ uniformly in configuration space such that $E(x) < E_{max}$" is
+impossible to do exactly, so we explore phase space iterative for a given
+number of steps and let $x$ be the stopping configuration.
+It is generally done as follows:
+
+\begin{enumerate}
+  \item select a replica $x_r$ randomly from our collection of $N_r - 1$ replicas
+  
+  \item use $x_r$ as a starting point for a monte carlo chain.  The acceptance condition 
+    of the monte carlo chain is simply: accept if $E_{new} < E_{max}$.  
+\end{enumerate}
+
+Note that this is not thermodynamic sampling.  We want to sample in an unbiased
+way from all of configuration space with $E(x) < E_{max}$
+
+
+\section{Sampling from the harmonic superposition approximation}
+
+A weakness of the nested sampling algorithm is one of sampling.  Imagine the following situation
+of trying to describe a crystalization transition.  At high energies the liquid state
+completely dominates phase spase.  Nearly all of the replicas will be in the disordered liquid
+configurations.  As $E_{max}$ decreases the relative weight of the crystal phse becomes more 
+and more important, and you would start to expect to see some replicas in the crystal.  This is
+your standard sampling problem that plagues molecular dynamics and monte carlo.
+It can be really really difficult to find the crystal.  If you end up in a
+situation where no replicas are in the crystal phase your results will then
+completely miss the transition.  It is even worse for nested sampling because $E_{max}$ decreases
+monotonically. For $E_{max}$ very high it's unlikely to be in the crystal because the phase space 
+volume is so small.  For $E_{max}$ very low the relative phase volume is very
+favorable, but exploring the energy landscape is very restricted so it is very
+unlikely, or even impossible to find it starting from a disordered
+configutation.  There is a relatively small range of $E_{max}$ where enough stars align so that
+it is likely that the crystal is found.
+
+We will use Basinhopping to cacluate the ground state and all relevant low lying minima.
+We will then use this information to improve the step of the nested sampling
+algorithm "sample uniformly from configuration space with $E(x) < E_{max}$".
+
+In the harmonic approximation the density of states of minimum $\alpha$ is
+
+\begin{equation}
+  \Omega(E) = \frac{(E - E_\alpha)^k }{\Gamma(k) \bar{\nu}^k O_\alpha}
+\end{equation}
+
+$E_\alpha$ is the energy of the minimum.  $\Gamma(k)$ is the gamma function $(k-1)!$, $k$ is the number
+of vibrational degrees of freedom ($3*N-6$ for a cluster).  $\bar{\nu}$ is the
+geometric mean of the positive normal mode frequencies, or, put another way,
+$\bar{\nu}^k$ is the product of the positive normal mode frequencies.  $O_\alpha$ is the order
+of the symmetry point group of the structure of minimum $\alpha$.  There are additional terms (e.g.
+permutational symmetries) that the same for all structures that are not included.  They will cancel
+out in all calculations.
+
+To get the the phase space volume of the basin of a minimum we integrate the energy
+
+\begin{equation}
+  V(E_{max}) = \int_{E_{\alpha}}^{E_{max}} \Omega(E) dE = \frac{(E_{max} - E_\alpha)^{k+1} }{(k+1)\Gamma(k) \bar{\nu}^k O_\alpha}
+\end{equation}
+
+To sample uniformly from the harmonic approximation we
+
+\begin{enumerate}
+  \item select a minimum $\alpha$ uniformly with weight $V_{\alpha} / V_{tot}$
+
+  \item sample uniformly from with basin $\alpha$
+\end{enumerate}
+
+\subsection{ sample uniformly in a basin}
+
+There are several methods of doing this.  We can use $x_{\alpha}$ as a starting
+point for our monte carlo chain as described above.  We can displace using the known
+eigenvalues and eigenvectors from the minimum.  Or we can do a combination.  Lets
+first talk about how to use the eigenvalues $\mu_i$ and orthonormal eigenvectors $\vec{v_i}$ 
+
+\begin{equation}
+  \vec{x} = \vec{x}_{\alpha} + \sum_{i=1}^k f_i (\vec{v_i} / \sqrt{\mu_i})
+\end{equation}
+
+We scale the vectors by $\vec{v_i} / \sqrt{\mu_i}$ so that all directions have
+the same same curvature.
+
+
+\bibliography{jakes_biblio}
+
+\end{document}
