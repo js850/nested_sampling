@@ -141,13 +141,17 @@ def sample_from_database(system, db, Emax):
     return coords, E
  
 def populate_database(system, db, niter=1000):
-    """return a database with all important low energy minima and all information
-    necessary to compute the density of states
+    """return a database with all important low energy minima 
+    
     """
     # use basinhopping to find the low energy minima and store them in a database
     bh = system.get_basinhopping(database=db)
     bh.run(niter)
-    
+
+def get_thermodynamic_information(system, db):
+    """
+    for each minima in database, get all information necessary to compute the density of states
+    """
     # get the point group information
     print "getting the point group information"
     determine_pgorder = system.get_pgorder()
@@ -183,10 +187,10 @@ def populate_database(system, db, niter=1000):
     
 if __name__ == "__main__":
     # define the system
-    natoms = 31
+    natoms = 13
     system = LJClusterNew(natoms)
 
-    db = system.create_database("lj31.db")
+    db = system.create_database("lj%d.db" % (natoms))
     if False:
         db = populate_database(system, db, niter=500)
     
