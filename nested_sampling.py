@@ -7,12 +7,13 @@ class MonteCarloChain(object):
     
     the step will be accepted subject only to a maximum energy criterion
     """
-    def __init__(self, potential, x0, takestep, Emax):
+    def __init__(self, potential, x0, takestep, Emax, accept_tests = None):
         self.potential = potential
         self.x = x0
         self.takestep = takestep
         self.Emax = Emax
         self.energy = self.potential.getEnergy(self.x)
+        self.accept_tests = accept_tests
         
         self.nsteps = 0
         self.naccept = 0
@@ -27,7 +28,14 @@ class MonteCarloChain(object):
         e = self.potential.getEnergy(xnew)
         
         accept = e < self.Emax
-        
+
+        if accept and self.accept_tests is not None:
+            for test in self.accept_tests:
+                a = test(energy=e, coords=xnew)
+                if not a:
+                    accept = False
+                    break
+
         if accept:
             self.x = xnew
             self.energy = e
@@ -43,10 +51,11 @@ class Replica(object):
 
 class NestedSampling(object):
     """the main class for implementing nested sampling"""
-    def __init__(self, system, nreplicas, takestep, mciter=100):
+    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None):
         self.system = system
         self.takestep = takestep
         self.mciter=mciter
+        self.accept_tests = accept_tests
         
         self.max_energies = []
         
@@ -88,13 +97,13 @@ class NestedSampling(object):
         rstart = random.choice(self.replicas)
         
         # do a monte carlo iteration
-        mc = MonteCarloChain(self.system.get_potential(), rstart.x, self.takestep, Emax)
-        for i in range(self.mciter):
+        mc = MonteCarloChain(self.system.get_potential(), rstart.x, self.takestep, Emax, accept_tests=self.accept_tests)
+        for i in xrange(self.mciter):
             mc.step()
         self.adjust_step_size(mc)
         
         # print some data
-        print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, "energy new old max", mc.energy, rstart.energy, Emax, "stepsize", self.takestep.stepsize
+        print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, "energy new old max min", mc.energy, rstart.energy, Emax, self.replicas[0].energy, "stepsize", self.takestep.stepsize
         
         
         return Replica(mc.x, mc.energy)         

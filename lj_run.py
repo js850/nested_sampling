@@ -7,10 +7,13 @@ from bh_sampling import LJClusterNew, sample_uniformly_in_basin,\
 
 from bh_sampling import LJClusterNew
 from pygmin.takestep import RandomDisplacement
+from pygmin.utils.xyz import write_xyz
 
 def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test"):
     takestep = RandomDisplacement(stepsize=0.5)
-    ns = NestedSampling(system, nreplicas, takestep, mciter=mciter)
+    accept_tests = system.get_config_tests()
+    
+    ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests)
     etol = 0.01
     isave = 0
     maxiter = nreplicas * iterscale
@@ -24,6 +27,11 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
                 fout.write("\n")
                 fout.flush()
                 isave = i
+            if True and i % 1000:
+                with open(label+".x", "w") as xout:
+                    for r in ns.replicas:
+                        write_xyz(xout, r.x)
+                    
             if ediff < etol: break
             if i >= maxiter: break  
             ns.one_iteration()
@@ -40,7 +48,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
 if __name__ == "__main__":
     natoms = 31
     nreplicas = 500
-    mciter = 100
+    mciter = 100000
     system = LJClusterNew(natoms)
     label = "lj%d" % (natoms)
     dbname = label + ".db"
@@ -48,14 +56,14 @@ if __name__ == "__main__":
     
     # populate database
     if False:
-        populate_database(system, db, niter=10000)
+        populate_database(system, db, niter=10000, mciter=mciter)
     
     # get thermodynamic information from database
     get_thermodynamic_information(system, db)
 #    exit(1)
 
     # run nested sampling
-    ns = run_nested_sampling(system, nreplicas=100, iterscale=1000000, label=label)
+    ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, label=label)
 
 #    with open(label+".energies", "w") as fout:
 #        fout.write( "\n".join([ str(e) for e in ns.max_energies]) )

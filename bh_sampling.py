@@ -12,6 +12,11 @@ from pygmin.utils.rotations import vec_random_ndim
 from pygmin.mindist import PointGroupOrderCluster
 from pygmin.utils.hessian import sort_eigs, get_eig
 from pygmin.thermodynamics import logproduct_freq2, normalmodes
+from pygmin.accept_tests import SphericalContainer
+
+class SphericalContainerNew(SphericalContainer):
+    def __call__(self, energy=None, coords=None):
+        return self.accept(coords)
 
 class LJClusterNew(LJCluster):
     """same as LJCluster, but attach some additional information"""
@@ -19,18 +24,33 @@ class LJClusterNew(LJCluster):
         super(LJClusterNew, self).__init__(natoms)
         self.nzero_modes = 6
         self.k = 3 * natoms - self.nzero_modes
+        self.radius = 2.5 # for lj31
     
     def get_metric_tensor(self):
         return None
     
     def get_pgorder(self):
         return PointGroupOrderCluster(self.get_compare_exact())
+    
+    def get_config_tests(self):
+        return [SphericalContainerNew(self.radius, nocenter=True)]
+    
+    def get_random_configuration(self):
+        """make sure they're all inside the radius"""
+        from pygmin.accept_tests import SphericalContainer
+        test = self.get_config_tests()[0]
+        coords = np.zeros([self.natoms,3])
+        for i in range(self.natoms):
+            coords[i,:] = vector_random_uniform_hypersphere(3) * self.radius
+            assert(np.linalg.norm(coords[i,:]) <= self.radius)
+        assert(test.accept(coords.flatten()))
+        return coords.flatten()
 
 
 def vector_random_uniform_hypersphere(k):
     """return a vector sampled uniformly in a hypersphere of dimension k"""
     u = vec_random_ndim(k)
-    # draw the magnitude of the vector from a power law distribution with power k-1
+    # draw the magnitude of the vector from a power law density function with power k-1
     p = np.random.power(k)
     return p * u
 
