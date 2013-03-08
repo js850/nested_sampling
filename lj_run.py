@@ -1,13 +1,49 @@
 import pickle
+import numpy as np
 
 import database_eigenvecs
 from nested_sampling import NestedSampling
-from bh_sampling import LJClusterNew, sample_uniformly_in_basin,\
-    populate_database, get_thermodynamic_information
+from bh_sampling import sample_uniformly_in_basin,\
+    populate_database, get_thermodynamic_information, vector_random_uniform_hypersphere
 
-from bh_sampling import LJClusterNew
 from pygmin.takestep import RandomDisplacement
 from pygmin.utils.xyz import write_xyz
+from pygmin.accept_tests import SphericalContainer
+from pygmin.systems import LJCluster
+from pygmin.mindist import PointGroupOrderCluster
+
+class SphericalContainerNew(SphericalContainer):
+    def __call__(self, energy=None, coords=None):
+        return self.accept(coords)
+
+class LJClusterNew(LJCluster):
+    """same as LJCluster, but attach some additional information"""
+    def __init__(self, natoms):
+        super(LJClusterNew, self).__init__(natoms)
+        self.nzero_modes = 6
+        self.k = 3 * natoms - self.nzero_modes
+        self.radius = 2.5 # for lj31
+    
+    def get_metric_tensor(self):
+        return None
+    
+    def get_pgorder(self):
+        return PointGroupOrderCluster(self.get_compare_exact())
+    
+    def get_config_tests(self):
+        return [SphericalContainerNew(self.radius, nocenter=True)]
+    
+    def get_random_configuration(self):
+        """make sure they're all inside the radius"""
+        from pygmin.accept_tests import SphericalContainer
+        test = self.get_config_tests()[0]
+        coords = np.zeros([self.natoms,3])
+        for i in range(self.natoms):
+            coords[i,:] = vector_random_uniform_hypersphere(3) * self.radius
+            assert(np.linalg.norm(coords[i,:]) <= self.radius)
+        assert(test.accept(coords.flatten()))
+        return coords.flatten()
+
 
 def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test"):
     takestep = RandomDisplacement(stepsize=0.5)
