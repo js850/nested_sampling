@@ -3,9 +3,11 @@ routines for using low energy minima found using basinhopping to
 improve sampling in "nested sampling" at low energies
 """
 import numpy as np
+import random
 from scipy.special import gamma, gammaln
 
 from database_eigenvecs import HessianEigs
+from nested_sampling import NestedSampling, Replica
 
 from pygmin.utils.rotations import vec_random_ndim
 from pygmin.utils.hessian import sort_eigs, get_eig
@@ -101,7 +103,7 @@ def weighted_pick(weights):
         if r < s: return i
     return len(weights) - 1
 
-def sample_from_database(system, db, Emax):
+def sample_minimum(system, db, Emax):
     # calculate the harmonic phase space volume of each minima and store it in list `weights`
     lweights = []
     minima = []
@@ -114,10 +116,14 @@ def sample_from_database(system, db, Emax):
     weights = np.exp(lweights - np.max(lweights))
     
     # select a minimum uniformly given `weights`
-    print "weights", weights[:10]
+#    print "weights", weights[:10]
     index = weighted_pick(weights)
 #    print index, len(weights), len(minima)
     m = minima[index]
+    return m
+
+def sample_from_database(system, db, Emax):
+    m = sample_minimum(system, db, Emax)
     
     # sample configuration uniformly from the basin of minima m 
     coords, E = sample_uniformly_in_basin(m, Emax, system.get_potential(), system.k)
@@ -140,13 +146,17 @@ def get_thermodynamic_information(system, db):
     print "getting the point group information"
     determine_pgorder = system.get_pgorder()
     for m in db.minima():
-        m.pgorder = determine_pgorder(m.coords)
+        if m.pgorder is None:
+            m.pgorder = determine_pgorder(m.coords)
 #        print m.pgorder
     db.session.commit()
 
     # get the frequencies
     print "getting the normal mode frequencies"
     for m in db.minima():
+        if len(m.hessian_eigs) > 0 and m.fvib is not None: 
+            # we've already done this minimum 
+            continue 
         # calculate the Hessian
         pot = system.get_potential()
         e, g, hess = pot.getEnergyGradientHessian(m.coords)
@@ -168,7 +178,29 @@ def get_thermodynamic_information(system, db):
     # combine the point group information and frequencies to compute the density of states
     
     return db
+
+class NestedSamplingBS(NestedSampling):
+    def __init__(self, system, nreplicas, takestep, database, **kwargs):
+        super(NestedSamplingBS, self).__init__(system, nreplicas, takestep, **kwargs)
+        self.database = database
     
+    def sample_replica(self, Emax):
+        # choose a replica randomly
+        if np.random.uniform(0,1) > 0.5:
+            print "sampling from minima"
+            m = sample_minimum(self.system, self.database, Emax)
+            x, e = m.coords, m.energy
+            self.system.center_coords(x)
+        else:
+            r = random.choice(self.replicas)
+            x, e = r.x, r.energy
+            
+
+        # do a monte carlo iteration
+        mc = self.do_monte_carlo_chain(x, Emax, e)
+        
+        return Replica(mc.x, mc.energy)
+
 if __name__ == "__main__":
     # define the system
     from lj_run import LJClusterNew
@@ -176,8 +208,14 @@ if __name__ == "__main__":
     system = LJClusterNew(natoms)
 
     db = system.create_database("lj%d.db" % (natoms))
-    if False:
-        db = populate_database(system, db, niter=500)
+    if True:
+        populate_database(system, db, niter=100)
+    
+    print "pgorder", db.minima()[0].pgorder
+    print "fvib", db.minima()[0].fvib
+    get_thermodynamic_information(system, db)
+    print "pgorder", db.minima()[0].pgorder
+    print "fvib", db.minima()[0].fvib
     
     Emin = db.minima()[0].energy
     Emax = Emin + 1.

@@ -4,7 +4,9 @@ import numpy as np
 import database_eigenvecs
 from nested_sampling import NestedSampling
 from bh_sampling import sample_uniformly_in_basin,\
-    populate_database, get_thermodynamic_information, vector_random_uniform_hypersphere
+    populate_database, get_thermodynamic_information, vector_random_uniform_hypersphere,\
+    NestedSamplingBS
+
 
 from pygmin.takestep import RandomDisplacement
 from pygmin.utils.xyz import write_xyz
@@ -44,12 +46,23 @@ class LJClusterNew(LJCluster):
         assert(test.accept(coords.flatten()))
         return coords.flatten()
 
+    def center_coords(self, x):
+        x = x.reshape(-1,3)
+        natoms = x.shape[0] 
+        com = np.sum(x, 0) / natoms
+        x -= com[np.newaxis, :]
 
-def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test"):
+
+
+def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", database=None):
     takestep = RandomDisplacement(stepsize=0.5)
     accept_tests = system.get_config_tests()
     
-    ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests)
+    use_bs = True
+    if use_bs:
+        ns = NestedSamplingBS(system, nreplicas, takestep, database, mciter=mciter, accept_tests=accept_tests)
+    else:
+        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests)
     etol = 0.01
     isave = 0
     maxiter = nreplicas * iterscale
@@ -83,23 +96,24 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
 
 if __name__ == "__main__":
     natoms = 31
-    nreplicas = 500
+    nreplicas = 1000
     mciter = 100000
     system = LJClusterNew(natoms)
     label = "lj%d" % (natoms)
     dbname = label + ".db"
-    db = system.create_database()
+    db = system.create_database(dbname)
+    print dbname, "nminima", len(db.minima())
     
     # populate database
-    if False:
-        populate_database(system, db, niter=10000, mciter=mciter)
+#    if False:
+#        populate_database(system, db, niter=10000)
     
     # get thermodynamic information from database
     get_thermodynamic_information(system, db)
 #    exit(1)
 
     # run nested sampling
-    ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, label=label)
+    ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, label=label, database=db, mciter=mciter)
 
 #    with open(label+".energies", "w") as fout:
 #        fout.write( "\n".join([ str(e) for e in ns.max_energies]) )

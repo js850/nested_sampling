@@ -1,6 +1,7 @@
 """classes and routines for running nested sampling"""
 import random
 import numpy as np
+import sys
 
 class MonteCarloChain(object):
     """from an initial configuration do a monte carlo chain with niter iterations
@@ -62,6 +63,10 @@ class NestedSampling(object):
         self.setup_replicas(nreplicas)
     
         self.iter_number = 0
+        
+        print "nreplicas", len(self.replicas)
+        print "mciter", self.mciter
+        sys.stdout.flush()
     
     
     def create_replica(self):
@@ -92,19 +97,23 @@ class NestedSampling(object):
         if self.takestep.stepsize > max_stepsize:
             self.takestep.stepsize = max_stepsize
     
+    def do_monte_carlo_chain(self, x0, Emax, energy=np.nan):
+        mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests)
+        for i in xrange(self.mciter):
+            mc.step()
+        self.adjust_step_size(mc)
+
+        # print some data
+        print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, "energy new old max min", mc.energy, energy, Emax, self.replicas[0].energy, "stepsize", self.takestep.stepsize
+        
+        return mc
+    
     def sample_replica(self, Emax):
         # choose a replica randomly
         rstart = random.choice(self.replicas)
         
         # do a monte carlo iteration
-        mc = MonteCarloChain(self.system.get_potential(), rstart.x, self.takestep, Emax, accept_tests=self.accept_tests)
-        for i in xrange(self.mciter):
-            mc.step()
-        self.adjust_step_size(mc)
-        
-        # print some data
-        print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, "energy new old max min", mc.energy, rstart.energy, Emax, self.replicas[0].energy, "stepsize", self.takestep.stepsize
-        
+        mc = self.do_monte_carlo_chain(rstart.x, Emax, rstart.energy)
         
         return Replica(mc.x, mc.energy)         
     
@@ -124,7 +133,7 @@ class NestedSampling(object):
         self.iter_number += 1
         
 if __name__ == "__main__":
-    from bh_sampling import LJClusterNew
+    from lj_run import LJClusterNew
     from pygmin.takestep import RandomDisplacement
     natoms = 13
     nreplicas = 500

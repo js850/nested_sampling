@@ -41,7 +41,7 @@ if __name__ == "__main__":
     
     Tmin = .02
     Tmax = .5
-    nT = 100
+    nT = 300
     dT = (Tmax-Tmin) / nT
     
     T = np.array([Tmin + dT*i for i in range(nT)])
@@ -52,5 +52,11 @@ if __name__ == "__main__":
         fout.write("#T Cv <E> <E**2>\n")
         for vals in zip(T, Cv, U, U2):
             fout.write("%g %g %g %g\n" % vals)
+    
+    import pylab as pl
+    pl.plot(T, Cv, 'o-')
+    pl.xlabel("T")
+    pl.ylabel("Cv")
+    pl.savefig("cv.pdf")
         
     
