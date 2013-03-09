@@ -60,6 +60,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
     
     use_bs = True
     if use_bs:
+        assert(len(database.minima()) > 0)
         ns = NestedSamplingBS(system, nreplicas, takestep, database, mciter=mciter, accept_tests=accept_tests)
     else:
         ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests)
@@ -96,8 +97,8 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
 
 if __name__ == "__main__":
     natoms = 31
-    nreplicas = 1000
-    mciter = 100000
+    nreplicas = 300
+    mciter = 10000
     system = LJClusterNew(natoms)
     label = "lj%d" % (natoms)
     dbname = label + ".db"

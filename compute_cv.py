@@ -23,7 +23,7 @@ def compute_Z(energies, T, K):
     
     U /= Z
     U2 /= Z
-    Cv = (U2 - U**2) * beta**2
+    Cv = (U2 - U**2) * beta**2  # this is not exactly correct
         
     return Z, Cv, U, U2
 
