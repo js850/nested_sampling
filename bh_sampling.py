@@ -103,15 +103,25 @@ def weighted_pick(weights):
         if r < s: return i
     return len(weights) - 1
 
-def sample_minimum(system, db, Emax):
+def sample_minimum(minima, Emax, k):
+    """return a minimum sampled uniformly with weight according to phase space volume
+    
+    Parameters
+    ----------
+    minima : list of Mimumum objects
+    Emax : float
+        the maximum energy for the phase space volume calculation
+    k : int
+        the number of degrees of vibrational freedom (3*N-6 for atomic clusters)
+    """
     # calculate the harmonic phase space volume of each minima and store it in list `weights`
     lweights = []
-    minima = []
-    for m in db.minima():
+    minima2 = []
+    for m in minima:
         if m.energy < Emax:
-            lV = compute_log_phase_space_volume(m, Emax, system.k)
+            lV = compute_log_phase_space_volume(m, Emax, k)
             lweights.append(lV)
-            minima.append(m)
+            minima2.append(m)
     lweights = np.array(lweights)
     weights = np.exp(lweights - np.max(lweights))
     
@@ -119,24 +129,26 @@ def sample_minimum(system, db, Emax):
 #    print "weights", weights[:10]
     index = weighted_pick(weights)
 #    print index, len(weights), len(minima)
-    m = minima[index]
+    m = minima2[index]
     return m
 
-def sample_from_database(system, db, Emax):
-    m = sample_minimum(system, db, Emax)
+def sample_from_database(system, minima, Emax):
+    """return a configuration sampled uniformly from a database of minima according to the harmonic approximation up to energy Emax
+    """
+    m = sample_minimum(minima, Emax, system.k)
     
     # sample configuration uniformly from the basin of minima m 
     coords, E = sample_uniformly_in_basin(m, Emax, system.get_potential(), system.k)
 
     return coords, E
  
-def populate_database(system, db, niter=1000):
-    """return a database with all important low energy minima 
-    
-    """
-    # use basinhopping to find the low energy minima and store them in a database
-    bh = system.get_basinhopping(database=db)
-    bh.run(niter)
+#def populate_database(system, db, niter=1000):
+#    """return a database with all important low energy minima 
+#    
+#    """
+#    # use basinhopping to find the low energy minima and store them in a database
+#    bh = system.get_basinhopping(database=db)
+#    bh.run(niter)
 
 def get_thermodynamic_information(system, db):
     """
@@ -154,8 +166,9 @@ def get_thermodynamic_information(system, db):
     # get the frequencies
     print "getting the normal mode frequencies"
     for m in db.minima():
-        if len(m.hessian_eigs) > 0 and m.fvib is not None: 
-            # we've already done this minimum 
+        if m.fvib is not None: 
+            # assume we've already done this minimum 
+            #if len(m.hessian_eigs) > 0 and m.fvib is not None: 
             continue 
         # calculate the Hessian
         pot = system.get_potential()
@@ -173,22 +186,29 @@ def get_thermodynamic_information(system, db):
             nm = HessianEigs(m, eval, evec)
 
     db.session.commit()
-    
-    
-    # combine the point group information and frequencies to compute the density of states
-    
     return db
 
 class NestedSamplingBS(NestedSampling):
-    def __init__(self, system, nreplicas, takestep, database, **kwargs):
+    """overload sample_replica() in order to introduce sampling from known minima
+    
+    Parameters
+    ----------
+    system : pygmin system object
+    nreplicas : int
+        number of replicas
+    takestep : callable
+        object to do the step taking.  must be callable and have attribute takestep.stepsize
+    
+    """
+    def __init__(self, system, nreplicas, takestep, minima, **kwargs):
         super(NestedSamplingBS, self).__init__(system, nreplicas, takestep, **kwargs)
-        self.database = database
+        self.minima = minima
     
     def sample_replica(self, Emax):
         # choose a replica randomly
         if np.random.uniform(0,1) > 0.5:
             print "sampling from minima"
-            m = sample_minimum(self.system, self.database, Emax)
+            m = sample_minimum(self.minima, Emax, self.system.k)
             x, e = m.coords, m.energy
             self.system.center_coords(x)
         else:
@@ -208,8 +228,8 @@ if __name__ == "__main__":
     system = LJClusterNew(natoms)
 
     db = system.create_database("lj%d.db" % (natoms))
-    if True:
-        populate_database(system, db, niter=100)
+#    if True:
+#        populate_database(system, db, niter=100)
     
     print "pgorder", db.minima()[0].pgorder
     print "fvib", db.minima()[0].fvib

@@ -4,7 +4,7 @@ import numpy as np
 import database_eigenvecs
 from nested_sampling import NestedSampling
 from bh_sampling import sample_uniformly_in_basin,\
-    populate_database, get_thermodynamic_information, vector_random_uniform_hypersphere,\
+    get_thermodynamic_information, vector_random_uniform_hypersphere,\
     NestedSamplingBS
 
 
@@ -24,7 +24,7 @@ class LJClusterNew(LJCluster):
         super(LJClusterNew, self).__init__(natoms)
         self.nzero_modes = 6
         self.k = 3 * natoms - self.nzero_modes
-        self.radius = 2.5 # for lj31
+        self.radius = 2.5 # specific to lj31
     
     def get_metric_tensor(self):
         return None
@@ -54,14 +54,16 @@ class LJClusterNew(LJCluster):
 
 
 
-def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", database=None):
+def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None):
     takestep = RandomDisplacement(stepsize=0.5)
     accept_tests = system.get_config_tests()
     
     use_bs = True
     if use_bs:
-        assert(len(database.minima()) > 0)
-        ns = NestedSamplingBS(system, nreplicas, takestep, database, mciter=mciter, accept_tests=accept_tests)
+        assert minima is not None
+        assert(len(minima) > 0)
+        print "using", len(minima), "minima"
+        ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests)
     else:
         ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests)
     etol = 0.01
@@ -97,8 +99,9 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
 
 if __name__ == "__main__":
     natoms = 31
-    nreplicas = 300
+    nreplicas = 10
     mciter = 10000
+    nminima = 10000
     system = LJClusterNew(natoms)
     label = "lj%d" % (natoms)
     dbname = label + ".db"
@@ -114,7 +117,10 @@ if __name__ == "__main__":
 #    exit(1)
 
     # run nested sampling
-    ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, label=label, database=db, mciter=mciter)
+    minima = db.minima()
+    if len(minima) > nminima:
+        minima = minima[:nminima]
+    ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, label=label, minima=minima, mciter=mciter)
 
 #    with open(label+".energies", "w") as fout:
 #        fout.write( "\n".join([ str(e) for e in ns.max_energies]) )

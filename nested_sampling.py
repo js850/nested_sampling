@@ -101,11 +101,16 @@ class NestedSampling(object):
         mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests)
         for i in xrange(self.mciter):
             mc.step()
-        self.adjust_step_size(mc)
 
-        # print some data
-        print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, "energy new old max min", mc.energy, energy, Emax, self.replicas[0].energy, "stepsize", self.takestep.stepsize
+        verbose = True
+        if verbose:
+            # print some data
+            dist = np.linalg.norm(mc.x - x0)
+            print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
+                "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                "stepsize", self.takestep.stepsize, "distance", dist
         
+        self.adjust_step_size(mc)
         return mc
     
     def sample_replica(self, Emax):
@@ -136,7 +141,7 @@ if __name__ == "__main__":
     from lj_run import LJClusterNew
     from pygmin.takestep import RandomDisplacement
     natoms = 13
-    nreplicas = 500
+    nreplicas = 1000
     mciter = 100
     system = LJClusterNew(natoms)
     
