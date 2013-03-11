@@ -54,8 +54,8 @@ def compute_cv(energies, ldos, T, K=1.):
     # lZ[T, E] = log(  Omega(E) * exp(-E / T) 
     lZ =  ldos[np.newaxis,:] - beta[:,np.newaxis] * energies[np.newaxis,:]
     # subtract out the smallest value to avoid overflow issues when lZ is exponentiated
-    lZmin = np.min(lZ)
-    lZ -= lZmin
+    lZmax = np.max(lZ,axis=1) #  maximum lZ for each temperature
+    lZ -= lZmax[:,np.newaxis]
 
     # compute Z, <E> and <E**2> 
     Zpref = np.exp(lZ)
@@ -67,6 +67,7 @@ def compute_cv(energies, ldos, T, K=1.):
     U2 /= Z
     # compute Cv from the energy fluctuations
     Cv = float(K)/2 + (U2 - U**2) * beta**2 # this is not quite right
+    Z *= np.exp(lZmax)
     return Z, Cv, U, U2
 
 
@@ -74,7 +75,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load density of states and compute cv.  energies in first column, log(dos) in second column")
 #    parser.add_argument("--db", type=str, nargs=1, help="database filename",
 #                        default="otp.db")
-    parser.add_argument("K", type=int, help="number of degrees of freedom")
+    parser.add_argument("K", type=int, help="number of vibrational degrees of freedom")
     parser.add_argument("fname", type=str, help="filenames with energies and dos")
     args = parser.parse_args()
     print args.fname
