@@ -23,7 +23,7 @@ def compute_Z(energies, T, K):
     
     U /= Z
     U2 /= Z
-    Cv = (U2 - U**2) * beta**2  # this is not exactly correct
+    Cv = (U2 - U**2) * beta**2
         
     return Z, Cv, U, U2
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     
     Tmin = .02
     Tmax = .5
-    nT = 300
+    nT = 1000
     dT = (Tmax-Tmin) / nT
     
     T = np.array([Tmin + dT*i for i in range(nT)])
