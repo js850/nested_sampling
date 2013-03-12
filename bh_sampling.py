@@ -209,6 +209,34 @@ class BHSampler(object):
     def log_phase_space_volume(self, m, Emax):
         return (self.k+1) * np.log(Emax - m.energy) + self.lVol_prefactor[m]
 
+    def sample_coords_from_basin(self, m, Emax):
+        """return a configuration with energy less than Emax sampled uniformly (according to the harmonic approximation) from the basin defined by m
+        
+        this sampling is exact in the harmonic approximation 
+        """
+        nm = m.hessian_eigs[0]
+        evals = nm.eigenvalues
+        vectors = nm.eigenvectors
+        k = self.k
+        nzero = len(evals) - k
+    
+        # get uniform random k dimensional unit vector
+        f = vec_random_ndim(k)
+    
+        # the target increase in energy is sampled from a power law distribution
+        dE_target = np.random.power(k) * (Emax - m.energy)
+        
+        # scale f according to dE_target
+        f *= np.sqrt(2. * dE_target) #TODO check prefactor
+    
+        # create the random displacement vector
+        dx = np.zeros(m.coords.shape)
+        for i in range(k):
+            if evals[i+nzero] > 1e-4:
+                dx += f[i] * vectors[:,i+nzero] / np.sqrt(evals[i+nzero])
+        
+        return m.coords + dx
+
     def sample_minimum(self, Emax):
         """return a minimum sampled uniformly with weight according to phase space volume
         
@@ -257,6 +285,13 @@ class NestedSamplingBS(NestedSampling):
         super(NestedSamplingBS, self).__init__(system, nreplicas, takestep, **kwargs)
         self.minima = minima
         self.bh_sampler = BHSampler(self.minima, self.system.k)
+    
+    def get_starting_configuration_minima_HA(self, Emax):
+        m = self.bh_sampler.sample_minimum(Emax)        
+        x = self.bh_sampler.sample_coords_from_basin(m, Emax)
+        pot = self.system.get_potential()
+        e = pot.getEnergy(x)
+        return x, e
     
     def get_starting_configuration_minima(self, Emax):
 #            m = sample_minimum(self.minima, Emax, self.system.k)

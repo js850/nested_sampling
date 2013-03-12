@@ -166,6 +166,14 @@ class NestedSampling(object):
                 "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
                 "stepsize", self.takestep.stepsize, "distance", dist
         
+        if mc.naccept == 0:
+            sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
+            print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
+                "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                "stepsize", self.takestep.stepsize, "distance", dist
+
+            
+        
         self.adjust_step_size(mc)
         return mc
     

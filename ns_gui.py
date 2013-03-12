@@ -60,7 +60,6 @@ class NSGUI(QtGui.QMainWindow):
             self.Emax = float(val)
         except:
             print "Emax: can't turn", val, "into a float"
-            raise
         if self.Emax is None:
             print "Emax is not set"
             self.Emax = self.nested_sampling.replicas[-1].energy
@@ -101,14 +100,27 @@ class NSGUI(QtGui.QMainWindow):
         mciter = None
         val = self.ui.lineEdit_mciter.text()
         try:
-            mciter = float(val)
-            self.nested_sampling.takestep.mciter = mciter
+            mciter = int(val)
+            self.nested_sampling.mciter = mciter
         except:
-            print "stepsize: can't convert", val, "into a float"
+            print "stepsize: can't convert", val, "into an int"
             return None
         
         return mciter
     
+    def on_btn_db_sample_coords_clicked(self, clicked=None):
+        if clicked is None: return
+        Emax = self.get_Emax()
+        m = self.nested_sampling.bh_sampler.sample_minimum(Emax)        
+        x = self.nested_sampling.bh_sampler.sample_coords_from_basin(m, Emax)
+        pot = self.system.get_potential()
+        e = pot.getEnergy(x)
+        self.set_selected(x, e)
+        self.show3d.setCoords(m.coords, index=2)
+        print "energy of minimum        ", m.energy
+        print "energy of starting config", e
+        print "Emax                     ", Emax
+
 
     
     def on_btn_MC_chain_clicked(self, clicked=None):
@@ -126,7 +138,8 @@ class NSGUI(QtGui.QMainWindow):
         self.mc_path_energy = [energy]
         events = [self.mc_event]
         
-        stepsize = self.load_stepsize()
+        self.load_stepsize()
+        self.load_mciter()
         
         
         mc = self.nested_sampling.do_monte_carlo_chain(self.selected.x, Emax, self.selected.energy, events=events)

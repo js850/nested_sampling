@@ -98,7 +98,7 @@
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;select a starting point for the monte carlo chain randomly&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="text">
-            <string>get coords from minima</string>
+            <string>sample minimum from database</string>
            </property>
           </widget>
          </item>
@@ -134,6 +134,13 @@
          </item>
          <item row="0" column="1">
           <widget class="QLineEdit" name="lineEdit_mciter"/>
+         </item>
+         <item row="3" column="1">
+          <widget class="QPushButton" name="btn_db_sample_coords">
+           <property name="text">
+            <string>sample from database</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
