@@ -188,6 +188,59 @@ def get_thermodynamic_information(system, db):
     db.session.commit()
     return db
 
+class BHSampler(object):
+    """this class will manage the sampling of configurations from a database of minima
+    
+    in particular it will precompute values so they need not be recalculated every time
+    """
+    def __init__(self, minima, k):
+        self.minima = minima
+        self.k = k
+        self.gammalnk = gammaln(self.k)
+        self.lVol_prefactor = self.precompute_log_phase_space_volume_prefactor()
+
+
+    def log_phase_space_volume_prefactor(self, m):
+        return - np.log(self.k+1) - self.gammalnk - m.fvib - np.log(m.pgorder)
+    
+    def precompute_log_phase_space_volume_prefactor(self):
+        return dict([(m, self.log_phase_space_volume_prefactor(m)) for m in self.minima]) 
+
+    def log_phase_space_volume(self, m, Emax):
+        return (self.k+1) * np.log(Emax - m.energy) + self.lVol_prefactor[m]
+
+    def sample_minimum(self, Emax):
+        """return a minimum sampled uniformly with weight according to phase space volume
+        
+        Parameters
+        ----------
+        minima : list of Mimumum objects
+        Emax : float
+            the maximum energy for the phase space volume calculation
+        k : int
+            the number of degrees of vibrational freedom (3*N-6 for atomic clusters)
+        """
+        # calculate the harmonic phase space volume of each minima and store it in list `weights`        
+#        lweights = []
+#        minima2 = []
+#        for m in self.minima:
+#            if m.energy < Emax:
+#                lV = self.log_phase_space_volume(m, Emax)
+#                lweights.append(lV)
+#                minima2.append(m)
+        minima2 = [m for m in self.minima if m.energy < Emax]
+        lweights = [self.log_phase_space_volume(m, Emax) for m in minima2]
+        lweights = np.array(lweights)
+        weights = np.exp(lweights - np.max(lweights))
+        
+        # select a minimum uniformly given `weights`
+    #    print "weights", weights[:10]
+        index = weighted_pick(weights)
+    #    print index, len(weights), len(minima)
+        m = minima2[index]
+        return m
+
+
 class NestedSamplingBS(NestedSampling):
     """overload sample_replica() in order to introduce sampling from known minima
     
@@ -203,12 +256,14 @@ class NestedSamplingBS(NestedSampling):
     def __init__(self, system, nreplicas, takestep, minima, **kwargs):
         super(NestedSamplingBS, self).__init__(system, nreplicas, takestep, **kwargs)
         self.minima = minima
+        self.bh_sampler = BHSampler(self.minima, self.system.k)
     
     def sample_replica(self, Emax):
         # choose a replica randomly
         if np.random.uniform(0,1) > 0.5:
             print "sampling from minima"
-            m = sample_minimum(self.minima, Emax, self.system.k)
+#            m = sample_minimum(self.minima, Emax, self.system.k)
+            m = self.bh_sampler.sample_minimum(Emax)
             x, e = m.coords, m.energy
             self.system.center_coords(x)
         else:
