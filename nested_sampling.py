@@ -8,7 +8,7 @@ class MonteCarloChain(object):
     
     the step will be accepted subject only to a maximum energy criterion
     """
-    def __init__(self, potential, x0, takestep, Emax, accept_tests = None):
+    def __init__(self, potential, x0, takestep, Emax, accept_tests=None, events=None):
         self.potential = potential
         self.x = x0
         self.takestep = takestep
@@ -18,6 +18,8 @@ class MonteCarloChain(object):
         
         self.nsteps = 0
         self.naccept = 0
+        
+        self.events = events
     
     def step(self):
         xnew = self.x.copy()
@@ -42,6 +44,10 @@ class MonteCarloChain(object):
             self.energy = e
             self.naccept += 1
         
+        if self.events is not None:
+            for event in self.events:
+                event(coords=self.x, x=self.x, energy=self.energy, accept=accept)
+
         self.nsteps += 1
 
        
@@ -97,8 +103,8 @@ class NestedSampling(object):
         if self.takestep.stepsize > max_stepsize:
             self.takestep.stepsize = max_stepsize
     
-    def do_monte_carlo_chain(self, x0, Emax, energy=np.nan):
-        mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests)
+    def do_monte_carlo_chain(self, x0, Emax, energy=np.nan, **kwargs):
+        mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
         for i in xrange(self.mciter):
             mc.step()
 
@@ -113,27 +119,39 @@ class NestedSampling(object):
         self.adjust_step_size(mc)
         return mc
     
-    def sample_replica(self, Emax):
-        # choose a replica randomly
-        rstart = random.choice(self.replicas)
-        
-        # do a monte carlo iteration
-        mc = self.do_monte_carlo_chain(rstart.x, Emax, rstart.energy)
-        
-        return Replica(mc.x, mc.energy)         
-    
-    def one_iteration(self):
+    def pop_replica(self):
         # pull out the replica with the largest energy
         rmax = self.replicas.pop()
         
         # add store it for later analysis
         self.max_energies.append(rmax.energy)
-        
-        # get a new replica to replace it
-        rnew = self.sample_replica(rmax.energy)
-        
+        return rmax
+
+    def get_starting_configuration_from_replicas(self):
+        # choose a replica randomly
+        rstart = random.choice(self.replicas)
+        return rstart.x, rstart.energy
+
+    def get_starting_configuration(self, Emax):
+        return self.get_starting_configuration_from_replicas()
+    
+    def add_new_replica(self, x, energy):
+        rnew = Replica(x, energy)
         self.replicas.append(rnew)
         self.sort_replicas()
+        return rnew
+
+    
+    def one_iteration(self):
+        rmax = self.pop_replica()
+        Emax = rmax.energy
+        
+        # get a new replica to replace it
+        xstart, estart = self.get_starting_configuration(rmax.energy)
+        
+        mc = self.do_monte_carlo_chain(xstart, Emax, estart)
+
+        rnew = self.add_new_replica(mc.x, mc.energy)
         
         self.iter_number += 1
         

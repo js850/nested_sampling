@@ -1,4 +1,5 @@
 import pickle
+import argparse
 import numpy as np
 
 import database_eigenvecs
@@ -26,8 +27,8 @@ class LJClusterNew(LJCluster):
         self.k = 3 * natoms - self.nzero_modes
         self.radius = 2.5 # specific to lj31
     
-    def get_metric_tensor(self):
-        return None
+#    def get_metric_tensor(self):
+#        return None
     
     def get_pgorder(self):
         return PointGroupOrderCluster(self.get_compare_exact())
@@ -98,13 +99,29 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
     return ns
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="do nested sampling with basin sampling for lennard jones clusters")
+#    parser.add_argument("--db", type=str, nargs=1, help="database filename",
+#                        default="otp.db")
+    parser.add_argument("--db", type=str, help="database file name")
+    parser.add_argument("-K", "--nreplicas", type=int, help="number of replicas", default=300)
+    parser.add_argument("-n", "--mciter", type=int, help="number of iterations in the monte carlo chain", default=10000)
+    parser.add_argument("-m", "--nminima", type=int, help="number of minima to use from the database", default=10000)
+    args = parser.parse_args()
+
+    print args
+
     natoms = 31
-    nreplicas = 10
-    mciter = 10000
-    nminima = 10000
+    nreplicas = args.nreplicas
+    mciter = args.mciter
+    nminima = args.nminima
     system = LJClusterNew(natoms)
+    
     label = "lj%d" % (natoms)
-    dbname = label + ".db"
+    if args.db is None:
+        dbname = label + ".db"
+    else:
+        dbname = args.db
     db = system.create_database(dbname)
     print dbname, "nminima", len(db.minima())
     

@@ -258,23 +258,28 @@ class NestedSamplingBS(NestedSampling):
         self.minima = minima
         self.bh_sampler = BHSampler(self.minima, self.system.k)
     
-    def sample_replica(self, Emax):
+    def get_starting_configuration_minima(self, Emax):
+#            m = sample_minimum(self.minima, Emax, self.system.k)
+        m = self.bh_sampler.sample_minimum(Emax)
+        x, e = m.coords, m.energy
+        self.system.center_coords(x)
+        return x, e
+
+    def get_starting_configuration(self, Emax):
         # choose a replica randomly
         if np.random.uniform(0,1) > 0.5:
             print "sampling from minima"
-#            m = sample_minimum(self.minima, Emax, self.system.k)
-            m = self.bh_sampler.sample_minimum(Emax)
-            x, e = m.coords, m.energy
-            self.system.center_coords(x)
+            return self.get_starting_configuration_minima(Emax)
         else:
-            r = random.choice(self.replicas)
-            x, e = r.x, r.energy
-            
-
-        # do a monte carlo iteration
-        mc = self.do_monte_carlo_chain(x, Emax, e)
+            return self.get_starting_configuration_from_replicas()
         
-        return Replica(mc.x, mc.energy)
+#
+#        # do a monte carlo iteration
+#        mc = self.do_monte_carlo_chain(x, Emax, e)
+#        
+#        return Replica(mc.x, mc.energy)
+
+
 
 if __name__ == "__main__":
     # define the system
