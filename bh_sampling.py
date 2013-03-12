@@ -263,6 +263,10 @@ class NestedSamplingBS(NestedSampling):
         m = self.bh_sampler.sample_minimum(Emax)
         x, e = m.coords, m.energy
         self.system.center_coords(x)
+        if True:
+            accept_tests = self.system.get_config_tests()
+            for test in accept_tests:
+                assert(test(x)) 
         return x, e
 
     def get_starting_configuration(self, Emax):

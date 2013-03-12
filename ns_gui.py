@@ -43,6 +43,7 @@ class NSGUI(QtGui.QMainWindow):
         self.Emax = max([r.energy for r in self.nested_sampling.replicas])
     
     def update_list(self):
+        self.ui.list_replicas.clear()
         for r in self.nested_sampling.replicas:
             item = QReplicaInList(r)
             self.ui.list_replicas.addItem(item)
@@ -54,9 +55,15 @@ class NSGUI(QtGui.QMainWindow):
 
     
     def get_Emax(self):
+        val = self.ui.lineEdit_Emax.text()
+        try:
+            self.Emax = float(val)
+        except:
+            print "Emax: can't turn", val, "into a float"
+            raise
         if self.Emax is None:
             print "Emax is not set"
-            self.Emax = max([r.energy for r in self.nested_sampling.replicas])
+            self.Emax = self.nested_sampling.replicas[-1].energy
         return self.Emax
     
     def on_btn_db_sample_min_clicked(self, clicked=None):
@@ -73,14 +80,44 @@ class NSGUI(QtGui.QMainWindow):
     def finish_cycle(self, x, energy):
         self.nested_sampling.pop_replica()
         self.nested_sampling.add_new_replica(x, energy)
+        self.update_list()
+        
+        self.selected = None
+        self.Emax = None
 
+    def load_stepsize(self):
+        stepsize = None
+        val = self.ui.lineEdit_stepsize.text()
+        try:
+            stepsize = float(val)
+            self.nested_sampling.takestep.stepsize = stepsize
+        except:
+            print "stepsize: can't convert", val, "into a float"
+            return None
+        
+        return stepsize
+    
+    def load_mciter(self):
+        mciter = None
+        val = self.ui.lineEdit_mciter.text()
+        try:
+            mciter = float(val)
+            self.nested_sampling.takestep.mciter = mciter
+        except:
+            print "stepsize: can't convert", val, "into a float"
+            return None
+        
+        return mciter
+    
+
+    
     def on_btn_MC_chain_clicked(self, clicked=None):
         if clicked is None: return
         if self.selected is None:
             print "select a starting point first" 
             return
         Emax = self.get_Emax()
-        if self.selected.energy > self.Emax:
+        if self.selected.energy >= self.Emax:
             print "energy of selected must be less than Emax"
             return
         x, energy = self.selected.x, self.selected.energy
@@ -88,10 +125,16 @@ class NSGUI(QtGui.QMainWindow):
         self.mc_path = [x]
         self.mc_path_energy = [energy]
         events = [self.mc_event]
+        
+        stepsize = self.load_stepsize()
+        
+        
         mc = self.nested_sampling.do_monte_carlo_chain(self.selected.x, Emax, self.selected.energy, events=events)
+        
         path = np.array(self.mc_path)
-        self.show3d.setCoordsPath(path)
-        self.finish_cycle(x, energy)
+        labels = ["step %d: E=%s" % (i, str(e)) for i, e in enumerate(self.mc_path_energy)]
+        self.show3d.setCoordsPath(path, labels=labels)
+        self.finish_cycle(mc.x, mc.energy)
         
 
     def on_list_replicas_itemClicked(self, item):
