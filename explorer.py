@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'explorer.ui'
 #
-# Created: Tue Mar 12 15:21:05 2013
+# Created: Tue Mar 12 15:33:55 2013
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -80,6 +80,9 @@ class Ui_MainWindow(object):
         self.lineEdit_mciter = QtGui.QLineEdit(self.horizontalLayoutWidget)
         self.lineEdit_mciter.setObjectName(_fromUtf8("lineEdit_mciter"))
         self.formLayout_6.setWidget(0, QtGui.QFormLayout.FieldRole, self.lineEdit_mciter)
+        self.btn_db_sample_coords = QtGui.QPushButton(self.horizontalLayoutWidget)
+        self.btn_db_sample_coords.setObjectName(_fromUtf8("btn_db_sample_coords"))
+        self.formLayout_6.setWidget(3, QtGui.QFormLayout.FieldRole, self.btn_db_sample_coords)
         self.verticalLayout_4.addLayout(self.formLayout_6)
         self.horizontalLayout.addLayout(self.verticalLayout_4)
         MainWindow.setCentralWidget(self.centralwidget)
@@ -99,11 +102,12 @@ class Ui_MainWindow(object):
         self.label.setToolTip(QtGui.QApplication.translate("MainWindow", "<html><head/><body><p>set Emax manually</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("MainWindow", "Emax", None, QtGui.QApplication.UnicodeUTF8))
         self.btn_db_sample_min.setToolTip(QtGui.QApplication.translate("MainWindow", "<html><head/><body><p>select a starting point for the monte carlo chain randomly</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
-        self.btn_db_sample_min.setText(QtGui.QApplication.translate("MainWindow", "get coords from minima", None, QtGui.QApplication.UnicodeUTF8))
+        self.btn_db_sample_min.setText(QtGui.QApplication.translate("MainWindow", "sample minimum from database", None, QtGui.QApplication.UnicodeUTF8))
         self.btn_MC_chain.setText(QtGui.QApplication.translate("MainWindow", "MC chain", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setToolTip(QtGui.QApplication.translate("MainWindow", "<html><head/><body><p>step size for the Monte Carlo chain</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("MainWindow", "stepsize", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setToolTip(QtGui.QApplication.translate("MainWindow", "<html><head/><body><p>number of iterations in the Monte Carlo chain</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("MainWindow", "mciter", None, QtGui.QApplication.UnicodeUTF8))
+        self.btn_db_sample_coords.setText(QtGui.QApplication.translate("MainWindow", "sample from database", None, QtGui.QApplication.UnicodeUTF8))
 
 from pygmin.gui.show3d import Show3DWithSlider
