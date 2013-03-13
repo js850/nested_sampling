@@ -104,7 +104,7 @@ class NestedSampling(object):
     takestep : callable takestep object
         take a random montecarlo step, imported from pygmin: takestep(x) makes a move from x
     mciter : integer
-        number of steps in markov chain (sampling)
+        number of steps in Markov chain (sampling)
     accept_test : list of callables
         it's an array of pointers to functions. The dereferenced functions operate a set of tests on the energy/configuration.
     
@@ -112,6 +112,8 @@ class NestedSampling(object):
     ----------
     max_energies : list
         array of stored energies (at each step the highest energy configuration is stored and replaced by a valid configuration)
+    replicas : list
+        list of objects of type Replica
         """
     def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None):
         self.system = system
