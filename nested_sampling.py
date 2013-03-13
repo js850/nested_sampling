@@ -11,26 +11,37 @@ class MonteCarloChain(object):
     -----------
     potential : pygmin Potentials
         attribute of system with member function getEnergy (in essence a particular potential energy function)
-    x : object
+    x : array
         are the coordinates
-    takestep : pygmin LJCLuster
+    takestep : callable takestep object
         take a random montecarlo step, imported from pygmin: takestep(x) makes a move from x
-    Emax : object
+    Emax : float
         energy upperbound
     energy : pygmin LJCluster
         energy of a given configuration
-    accept_test : pygmin Acceptance Tests
+    accept_test : list of callables
         it's an array of pointers to functions. The dereferenced functions operate a set of tests on the energy/configuration.
-    event : object
+    events : list fo callables
         it's an array of pointers to functions. This is general and not compulsury e.g. can use if you want to do something with the new configuration for the guy.
-    nsteps : object
+
+    Attributes
+    ----------
+    nsteps : integer
         tot. number of steps
-    naccepts : object
+    naccepts : integer
         tot. number of accepted configurations
-    xnew : object
+    xnew : array
         new proposed configuration
-    accept : object
-        boolean, true or false if energy constraint is satisfied
+    accept : boolean
+        true or false if energy constraint is satisfied
+
+    Notes
+    -----
+    some notes here
+
+    See Also
+    --------
+    NestedSampling
     """
     def __init__(self, potential, x0, takestep, Emax, accept_tests=None, events=None):
         self.potential = potential
@@ -88,13 +99,16 @@ class NestedSampling(object):
     ----------
     system : pygmin System
         is the particular system of interest, say LJCluster
-    takestep : object
+    takestep : callable takestep object
         take a random montecarlo step, imported from pygmin: takestep(x) makes a move from x
-    mciter : object
+    mciter : integer
         number of steps in markov chain (sampling)
-    accept_test : python Acceptance Tests
+    accept_test : list of callables
         it's an array of pointers to functions. The dereferenced functions operate a set of tests on the energy/configuration.
-    max_energies : object
+    
+    Attributes
+    ----------
+    max_energies : list
         array of stored energies (at each step the highest energy configuration is stored and replaced by a valid configuration)
         """
     def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None):
@@ -122,6 +136,7 @@ class NestedSampling(object):
         pot = self.system.get_potential()
         e = pot.getEnergy(x)
         return Replica(x, e)
+    
     def sort_replicas(self):
         """
         sorts the replicas in decreasing order of energy
