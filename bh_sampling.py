@@ -213,6 +213,11 @@ class BHSampler(object):
         """return a configuration with energy less than Emax sampled uniformly (according to the harmonic approximation) from the basin defined by m
         
         this sampling is exact in the harmonic approximation 
+        
+        Notes
+        -----
+        in real system, even ones that fit quite well to the harmonic approximation this very often generates 
+        configurations with energy greater than Emax.  
         """
         nm = m.hessian_eigs[0]
         evals = nm.eigenvalues

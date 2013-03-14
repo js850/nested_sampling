@@ -109,8 +109,6 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--nminima", type=int, help="number of minima to use from the database", default=10000)
     args = parser.parse_args()
 
-    print args
-
     natoms = 31
     nreplicas = args.nreplicas
     mciter = args.mciter

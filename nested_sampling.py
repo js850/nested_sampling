@@ -145,7 +145,7 @@ class NestedSampling(object):
     
     def setup_replicas(self, nreplicas):
         """
-        creates nreplicas replicas and sorts them in decreasing order of energy
+        creates nreplicas replicas and sorts them in increasing order of energy
         """
         self.replicas = [self.create_replica() for i in range(nreplicas)]
         self.sort_replicas()
@@ -235,7 +235,6 @@ if __name__ == "__main__":
     nreplicas = 1000
     mciter = 100
     system = LJClusterNew(natoms)
-    
     
     ns = NestedSampling(system, nreplicas, RandomDisplacement(stepsize=0.5), mciter=mciter)
     for i in range(nreplicas * 300):
