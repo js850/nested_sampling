@@ -1,9 +1,9 @@
 import numpy as np
 import runmc
 
-x = np.zeros(3*4)
+x = np.zeros(3*31)
 
-mciter = 100
+mciter = 1000000
 stepsize = .01
 Emax = 0.
 radius = 2.5

@@ -85,7 +85,9 @@ class MonteCarloChain(object):
 
         self.nsteps += 1
 
-       
+class MyClass(object):
+    pass
+
 class Replica(object):
     """ Replica is simply a pair of types coordinates (x) and energy"""
     def __init__(self, x, energy):
@@ -105,17 +107,20 @@ class NestedSampling(object):
         number of steps in markov chain (sampling)
     accept_test : list of callables
         it's an array of pointers to functions. The dereferenced functions operate a set of tests on the energy/configuration.
+    mc_runner : callable
+        use this object to do the Monte Carlo chain rather than the default
     
     Attributes
     ----------
     max_energies : list
         array of stored energies (at each step the highest energy configuration is stored and replaced by a valid configuration)
         """
-    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None):
+    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None, mc_runner=None):
         self.system = system
         self.takestep = takestep
         self.mciter=mciter
         self.accept_tests = accept_tests
+        self.mc_runner = mc_runner
         
         self.max_energies = []
         
@@ -169,9 +174,12 @@ class NestedSampling(object):
             self.takestep.stepsize = max_stepsize
     
     def do_monte_carlo_chain(self, x0, Emax, energy=np.nan, **kwargs):
-        mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
-        for i in xrange(self.mciter):
-            mc.step()
+        if self.mc_runner is None:
+            mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
+            for i in xrange(self.mciter):
+                mc.step()
+        else:
+            mc = self.mc_runner(x0, self.mciter, self.takestep.stepsize, Emax)
 
         verbose = True
         if verbose:
@@ -223,6 +231,7 @@ class NestedSampling(object):
         xstart, estart = self.get_starting_configuration(rmax.energy)
         
         mc = self.do_monte_carlo_chain(xstart, Emax, estart)
+#        mc = self.do_monte_carlo_chain_ljfast(xstart, Emax, estart)
 
         rnew = self.add_new_replica(mc.x, mc.energy)
         

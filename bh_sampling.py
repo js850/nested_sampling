@@ -175,7 +175,7 @@ def get_thermodynamic_information(system, db):
         e, g, hess = pot.getEnergyGradientHessian(m.coords)
         
         # calculate the normal modes from the hessian
-        freq, evec = normalmodes(hess, metric=system.get_metric_tensor())
+        freq, evec = normalmodes(hess, metric=system.get_metric_tensor(m.coords))
         # calculate the log product of the positive normal mode frequencies
         n, lnf = logproduct_freq2(freq, system.nzero_modes)
         m.fvib = lnf

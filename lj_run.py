@@ -1,4 +1,5 @@
 import pickle
+import sys
 import argparse
 import numpy as np
 
@@ -54,19 +55,43 @@ class LJClusterNew(LJCluster):
         x -= com[np.newaxis, :]
 
 
+class MonteCarloCompiled(object):
+    def __init__(self, system, radius):
+        self.radius = radius
+        self.system = system
+    
+    def __call__(self, x0, mciter, stepsize, Emax):
+        from src.runmc import mc_cython
+        x, naccept = mc_cython(x0, mciter, stepsize, Emax, self.radius)
+#        print ret
+        self.x0 = x0
+        self.x = x
+        self.nsteps = mciter
+        self.naccept = naccept
+        pot = self.system.get_potential()
+        self.energy = pot.getEnergy(x)
+        return self
+
+
 
 def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None):
     takestep = RandomDisplacement(stepsize=0.5)
     accept_tests = system.get_config_tests()
+    
+    use_compiled = False
+    if use_compiled:
+        mc_runner = MonteCarloCompiled(system, system.radius)
+    else:
+        mc_runner = None
     
     use_bs = True
     if use_bs:
         assert minima is not None
         assert(len(minima) > 0)
         print "using", len(minima), "minima"
-        ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests)
+        ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner)
     else:
-        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests)
+        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner)
     etol = 0.01
     isave = 0
     maxiter = nreplicas * iterscale
@@ -106,7 +131,7 @@ if __name__ == "__main__":
     parser.add_argument("--db", type=str, help="database file name")
     parser.add_argument("-K", "--nreplicas", type=int, help="number of replicas", default=300)
     parser.add_argument("-n", "--mciter", type=int, help="number of iterations in the monte carlo chain", default=10000)
-    parser.add_argument("-m", "--nminima", type=int, help="number of minima to use from the database", default=10000)
+    parser.add_argument("-m", "--nminima", type=int, help="number of minima to use from the database", default=100)
     args = parser.parse_args()
 
     natoms = 31
@@ -118,6 +143,8 @@ if __name__ == "__main__":
     label = "lj%d" % (natoms)
     if args.db is None:
         dbname = label + ".db"
+        dbname = "lj31_small.db"
+        print >> sys.stderr, "warning, using debug databse"
     else:
         dbname = args.db
     db = system.create_database(dbname)
