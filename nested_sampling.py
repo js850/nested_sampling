@@ -4,8 +4,7 @@ import numpy as np
 import sys
 
 class MonteCarloChain(object):
-    """from an initial configuration do a monte carlo chain with niter iterations
-        the step will be accepted subject only to a maximum energy criterion
+    """defines parameters for a monte carlo chain from an initial configuration x with niter iterations. The step will be accepted subject only to a maximum energy criterion and geometric constraints on the configuration.  
 
     Parameters
     -----------
@@ -85,9 +84,7 @@ class MonteCarloChain(object):
 
         self.nsteps += 1
 
-class MyClass(object):
-    pass
-
+       
 class Replica(object):
     """ Replica is simply a pair of types coordinates (x) and energy"""
     def __init__(self, x, energy):
@@ -107,20 +104,17 @@ class NestedSampling(object):
         number of steps in markov chain (sampling)
     accept_test : list of callables
         it's an array of pointers to functions. The dereferenced functions operate a set of tests on the energy/configuration.
-    mc_runner : callable
-        use this object to do the Monte Carlo chain rather than the default
     
     Attributes
     ----------
     max_energies : list
         array of stored energies (at each step the highest energy configuration is stored and replaced by a valid configuration)
         """
-    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None, mc_runner=None):
+    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None):
         self.system = system
         self.takestep = takestep
         self.mciter=mciter
         self.accept_tests = accept_tests
-        self.mc_runner = mc_runner
         
         self.max_energies = []
         
@@ -150,7 +144,7 @@ class NestedSampling(object):
     
     def setup_replicas(self, nreplicas):
         """
-        creates nreplicas replicas and sorts them in increasing order of energy
+        creates nreplicas replicas and sorts them in decreasing order of energy
         """
         self.replicas = [self.create_replica() for i in range(nreplicas)]
         self.sort_replicas()
@@ -174,12 +168,9 @@ class NestedSampling(object):
             self.takestep.stepsize = max_stepsize
     
     def do_monte_carlo_chain(self, x0, Emax, energy=np.nan, **kwargs):
-        if self.mc_runner is None:
-            mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
-            for i in xrange(self.mciter):
-                mc.step()
-        else:
-            mc = self.mc_runner(x0, self.mciter, self.takestep.stepsize, Emax)
+        mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
+        for i in xrange(self.mciter):
+            mc.step()
 
         verbose = True
         if verbose:
@@ -231,7 +222,6 @@ class NestedSampling(object):
         xstart, estart = self.get_starting_configuration(rmax.energy)
         
         mc = self.do_monte_carlo_chain(xstart, Emax, estart)
-#        mc = self.do_monte_carlo_chain_ljfast(xstart, Emax, estart)
 
         rnew = self.add_new_replica(mc.x, mc.energy)
         
@@ -244,6 +234,7 @@ if __name__ == "__main__":
     nreplicas = 1000
     mciter = 100
     system = LJClusterNew(natoms)
+    
     
     ns = NestedSampling(system, nreplicas, RandomDisplacement(stepsize=0.5), mciter=mciter)
     for i in range(nreplicas * 300):
