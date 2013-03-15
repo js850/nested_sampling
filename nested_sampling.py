@@ -4,8 +4,7 @@ import numpy as np
 import sys
 
 class MonteCarloChain(object):
-    """from an initial configuration do a monte carlo chain with niter iterations
-        the step will be accepted subject only to a maximum energy criterion
+    """defines parameters for a monte carlo chain from an initial configuration x with niter iterations. The step will be accepted subject only to a maximum energy criterion and geometric constraints on the configuration.  
 
     Parameters
     -----------
@@ -57,6 +56,9 @@ class MonteCarloChain(object):
         self.events = events
     
     def step(self):
+        """
+        copy current configuration x to xnew and then perform a trial move on xnew. Accept if the configuration of the new energy is less than Emax and if accept_tests are satisfied. If true update x to xnew. Finally, optionally applies all events functions to x.  
+        """
         xnew = self.x.copy()
         
         # displace configuration
@@ -104,7 +106,7 @@ class NestedSampling(object):
     takestep : callable takestep object
         take a random montecarlo step, imported from pygmin: takestep(x) makes a move from x
     mciter : integer
-        number of steps in markov chain (sampling)
+        number of steps in Markov chain (sampling)
     accept_test : list of callables
         it's an array of pointers to functions. The dereferenced functions operate a set of tests on the energy/configuration.
     mc_runner : callable
@@ -114,6 +116,8 @@ class NestedSampling(object):
     ----------
     max_energies : list
         array of stored energies (at each step the highest energy configuration is stored and replaced by a valid configuration)
+    replicas : list
+        list of objects of type Replica
         """
     def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None, mc_runner=None):
         self.system = system
@@ -174,6 +178,9 @@ class NestedSampling(object):
             self.takestep.stepsize = max_stepsize
     
     def do_monte_carlo_chain(self, x0, Emax, energy=np.nan, **kwargs):
+        """
+        from an initial configuration do a monte carlo chain with niter iterations, the step will be accepted subject only to a maximum energy criterion. Re-iterates for mciter steps. After each step update stepize to meet target_ratio. 
+        """
         if self.mc_runner is None:
             mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
             for i in xrange(self.mciter):
@@ -201,22 +208,31 @@ class NestedSampling(object):
         return mc
     
     def pop_replica(self):
-        # pull out the replica with the largest energy
+        """
+        remove the replica with the largest energy (last item in the list) and store it in the max_energies array. This is then used for integration.
+        """
         rmax = self.replicas.pop()
         
-        # add store it for later analysis
         self.max_energies.append(rmax.energy)
         return rmax
 
     def get_starting_configuration_from_replicas(self):
-        # choose a replica randomly
+        """
+        returns a random replica configuration and its energy
+        """
         rstart = random.choice(self.replicas)
         return rstart.x, rstart.energy
 
     def get_starting_configuration(self, Emax):
+        """
+        redefine get_starting_configuration_from_replicas() to allow for function overloading
+        """
         return self.get_starting_configuration_from_replicas()
     
     def add_new_replica(self, x, energy):
+        """
+        add newly generated replica to replicas list, then sort replicas list    
+        """
         rnew = Replica(x, energy)
         self.replicas.append(rnew)
         self.sort_replicas()
@@ -224,6 +240,9 @@ class NestedSampling(object):
 
     
     def one_iteration(self):
+        """
+        remove replica with highest energy, set new Emax and substitute it with a lower energy configuration  
+        """
         rmax = self.pop_replica()
         Emax = rmax.energy
         
