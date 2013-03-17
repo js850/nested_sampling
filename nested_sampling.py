@@ -145,11 +145,12 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None):
+    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None, mc_runner=None):
         self.system = system
         self.takestep = takestep
         self.mciter=mciter
         self.accept_tests = accept_tests
+        self.mc_runner = mc_runner
         
         self.max_energies = []
         
