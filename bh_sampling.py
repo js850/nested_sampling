@@ -16,14 +16,23 @@ from pygmin.thermodynamics import logproduct_freq2, normalmodes
 def vector_random_uniform_hypersphere(k):
     """return a vector sampled uniformly in a hypersphere of dimension k"""
     u = vec_random_ndim(k)
-    # draw the magnitude of the vector from a power law density function with power k-1
+    #draw the magnitude of the vector from a power law density:
+    #draws samples in [0, 1] from a power distribution with positive exponent k - 1.
     p = np.random.power(k)
     return p * u
 
 def sample_uniformly_in_basin_harmonic(m, Emax, k):
-    """assuming the harmonic approximation return a configuration with energy less than Emax sampled uniformly from the basin defined by m
-    
-    this is exact in the harmonic approximation 
+    """ assuming the harmonic approximation returns a configuration with energy less than Emax sampled uniformly from the basin defined by m    
+        this is exact in the harmonic approximation
+        
+        Parameters
+        ----------
+        
+        m : Minimum object
+        Emax : float
+            energy upper bound
+        k : integer
+            number of dimensions
     """
     nm = m.hessian_eigs[0]
     evals = nm.eigenvalues
