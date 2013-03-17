@@ -273,9 +273,11 @@ class BHSampler(object):
         m = minima2[index]
         return m
 
+class ConfigTestError(StandardError):
+    pass
 
 class NestedSamplingBS(NestedSampling):
-    """overload sample_replica() in order to introduce sampling from known minima
+    """overload get_starting_configuration() in order to introduce sampling from known minima
     
     Parameters
     ----------
@@ -298,15 +300,37 @@ class NestedSamplingBS(NestedSampling):
         e = pot.getEnergy(x)
         return x, e
     
-    def get_starting_configuration_minima(self, Emax):
+    def get_starting_configuration_minima_single(self, Emax):
+        """return a minimum sampled uniformly according to phase space volume"""
         m = self.bh_sampler.sample_minimum(Emax)
         x, e = m.coords, m.energy
         self.system.center_coords(x)
         if True:
             accept_tests = self.system.get_config_tests()
             for test in accept_tests:
-                assert(test(x)) 
+                t = test(coords=x)
+                if not t:
+                    print "warning: minimum from database failed configuration test", m._id, m.energy
+                    raise ConfigTestError()
         return x, e
+
+    def get_starting_configuration_minima(self, Emax):
+        """return a minimum sampled uniformly according to phase space volume
+
+        Notes
+        -----
+        some of the minima in the database don't satisfy the configuration
+        checks.  So we sample over and over again until we get one that
+        passes
+
+        """
+        while True:
+            try:
+                return self.get_starting_configuration_minima_single(Emax)
+            except ConfigTestError:
+                pass
+
+
 
     def get_starting_configuration(self, Emax):
         """this function overloads the function in NestedSampling"""
