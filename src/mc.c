@@ -45,18 +45,18 @@ int check_spherical_container(double * x, int N, double radius)
 {
   double radius2 = radius * radius;
   double r2;
-  int natoms = N/3;
   int i, j;
 
-  for (i=0; i<natoms; ++i){
+  for (i=0; i<N; i+=3){
     r2 = 0;
     for (j=0; j<3; ++j){
-      r2 += x[3*i+j] * x[3*i+j];
+      r2 += x[i+j] * x[i+j];
     }
     if (r2 >= radius2){
       return 0;
     }
   }
+  //printf("check spherical OK "); 
   return 1;
 }
 
@@ -122,7 +122,8 @@ int mc(double *x0, double *xreturn, int natoms, long int niter, double stepsize,
         //xnew = xtemp;
         E = Enew;
         naccept += 1;
-      }
+        //printf(": still ok\n"); 
+      } 
     }
 
   }
@@ -134,6 +135,6 @@ int mc(double *x0, double *xreturn, int natoms, long int niter, double stepsize,
   free(x);
   free(xnew);
   gsl_rng_free (gslrng); //free the rng working space
-  printf("%d %d %f\n", naccept, istep, E);
+  //printf("%d %d %f stepsize %f\n", naccept, istep, E, stepsize);
   return naccept;
 }

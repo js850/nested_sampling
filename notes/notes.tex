@@ -9,13 +9,13 @@
 \usepackage[top=2.5cm,bottom=2.5cm]{geometry}
 \usepackage{graphicx}
 \usepackage{hyperref}
-
+%\usepackage{amsmath}
 \bibliographystyle{naturemagurl}
 %\bibliographystyle{plainnat}
 
 
 \title{Notes on coupling nested sampling with basin hopping}
-\author{Jacob Stevenson}
+\author{Jacob Stevenson and Stefano Martiniani}
 \date{\today}
 
 \begin{document}
@@ -39,12 +39,12 @@ The nested sampling algorithm is:
 
   \item goto 2.
 
-  \item the density of states and all other thermodynamic parameters can be calculated easily from the list of energies $E_max$
+  \item the density of states and all other thermodynamic parameters can be calculated easily from the list of energies $E_{max}$
 
 \end{enumerate}
 
 
-The second step, "sample $x$ uniformly in configuration space such that $E(x) < E_{max}$" is
+The second step, ``sample $x$ uniformly in configuration space such that $E(x) < E_{max}$'' is
 impossible to do exactly, so we explore phase space iterative for a given
 number of steps and let $x$ be the stopping configuration.
 It is generally done as follows:
@@ -80,26 +80,20 @@ it is likely that the crystal is found.
 
 We will use Basinhopping to cacluate the ground state and all relevant low lying minima.
 We will then use this information to improve the step of the nested sampling
-algorithm "sample uniformly from configuration space with $E(x) < E_{max}$".
+algorithm ``sample uniformly from configuration space with $E(x) < E_{max}$''.
 
 In the harmonic approximation the density of states of minimum $\alpha$ is
 
 \begin{equation}
-  \Omega(E) = \frac{(E - E_\alpha)^k }{\Gamma(k) \bar{\nu}^k O_\alpha}
+  \Omega(E) = \frac{2N!(E - E_\alpha)^{k-1} }{\Gamma(k) \bar{\nu}^k O_\alpha}
 \end{equation}
 
 $E_\alpha$ is the energy of the minimum.  $\Gamma(k)$ is the gamma function $(k-1)!$, $k$ is the number
-of vibrational degrees of freedom ($3*N-6$ for a cluster).  $\bar{\nu}$ is the
-geometric mean of the positive normal mode frequencies, or, put another way,
-$\bar{\nu}^k$ is the product of the positive normal mode frequencies.  $O_\alpha$ is the order
-of the symmetry point group of the structure of minimum $\alpha$.  There are additional terms (e.g.
-permutational symmetries) that the same for all structures that are not included.  They will cancel
-out in all calculations.
-
-To get the the phase space volume of the basin of a minimum we integrate the energy
+of vibrational degrees of freedom ($3*N-3$ for a cluster).  $\bar{\nu}$ is the geometric mean of the positive normal mode frequencies, or, put another way, $\bar{\nu}^k$ is the product of the positive normal mode frequencies $\nu_{\alpha}$.  $2N!$ accounts for all the nonsuperimposible permutation-inversion isomers of each structure. $O_\alpha$ is the order of the symmetry point group of the structure of minimum $\alpha$.  The $2N!$ permutations and the gamma function are the same for all structures and will cancel out when renormalising.
+To get the phase space volume of the basin of a minimum we integrate the energy
 
 \begin{equation}
-  V(E_{max}) = \int_{E_{\alpha}}^{E_{max}} \Omega(E) dE = \frac{(E_{max} - E_\alpha)^{k+1} }{(k+1)\Gamma(k) \bar{\nu}^k O_\alpha}
+  V_{\alpha}(E_{max}) = \int_{E_{\alpha}}^{E_{max}} \Omega(E) dE = \frac{2N!(E_{max} - E_\alpha)^{k} }{\Gamma(k+1) \bar{\nu}^k O_\alpha}
 \end{equation}
 
 To sample uniformly from the harmonic approximation we
@@ -110,7 +104,7 @@ To sample uniformly from the harmonic approximation we
   \item sample uniformly from with basin $\alpha$
 \end{enumerate}
 
-\subsection{ sample uniformly in a basin}
+\subsection{Sample uniformly in a basin}
 
 There are several methods of doing this.  We can use $x_{\alpha}$ as a starting
 point for our monte carlo chain as described above.  We can displace using the known
@@ -125,12 +119,11 @@ first talk about how to use the eigenvalues $\mu_i$ and orthonormal eigenvectors
 We scale the vectors by $\vec{v_i} / \sqrt{\mu_i}$ so that all directions have
 the same curvature.  The problem is now reduced to how to choose the $q_i$ such
 that we are sampling uniformly in configuration space.  Scaling the vectors
-above make all directions uniform, so the unit vector $\vec{q} / |\vec{q}|$ should be 
+above make all directions uniform, so the unit vector $\vec{q} / ||\vec{q}||$ should be 
 uniform. (Note: sampling a unit vector uniformly is done by choosing all components from
 a normal distribution and normalizing the resulting vector)
 
-We are now left with determining the appropriate magnitude of the vector $q =
-|\vec{q}|$.  Stepping in any one direction with a stepsize of $q$ 
+We are now left with determining the appropriate magnitude of the vector $||\vec{q}|| = q$.  Stepping in any one direction with a stepsize of $q$ 
 
 \begin{equation}
   x = x_{\alpha} + q (\vec{v_i} / \sqrt{\mu_i})
@@ -142,7 +135,7 @@ results in an energy change of
 \end{equation}
 
 The total magnitude of the step defined in \ref{eqn:step_away} is $q =
-\sum{q_i^2} = |\vec{q}|$ which results in a total energy change given, in
+\left( \sum{q_i^2} \right)^{\frac{1}{2}} = \left|\left|\vec{q}\right|\right|$ which results in a total energy change given, in
 exactly the same way as \ref{eqn:echange}.  So $q$ can be at maximum
 
 \begin{equation}
@@ -151,24 +144,24 @@ exactly the same way as \ref{eqn:echange}.  So $q$ can be at maximum
 
 
 But from what distribution should $q$ be drawn?  
-We know that the density of states grows like $(E-E_{\alpha})^k$.
+We know that the density of states grows like $(E-E_{\alpha})^{k-1}$.
 Thus the probability of drawing a configuration with energy
 between $E$ and $E+dE$ should be 
 \begin{equation}
-  P(E)dE = (E-E_{\alpha})^{k-1}dE
+  P(E)dE \propto (E-E_{\alpha})^{k-2}dE
 \end{equation}
 In $q$ space this probility density function becomes $P(q)dq = P(E)dE$
 \begin{equation}
-  P(q)dq = (q)^{2k-1}dq
+  P(q)dq \propto q^{2k-3}dq
 \end{equation}
 
-Thus we draw $q$ from a power law distribution with power $(2k)$ and maximum
+Thus we draw $q$ from a power law distribution with power $(2k-2)$ and maximum
 value $\sqrt{2 (E_{max} - E_{\alpha})}$.  Note that the probability density
 function above with power $k-1$ has a cumulative distribution function with
 power $k$, so these distributions are refered to as power law distributions
 with power $k$.
 Alternatively we can draw the target change in energy $dE_{target}$ from a power law
-distribution with power $k$ and maximum value $(E_{max} - E_{\alpha})$
+distribution with power $k-1$ and maximum value $(E_{max} - E_{\alpha})$
 and set $q = \sqrt{2 dE_{target}}$.
 
 
