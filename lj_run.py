@@ -75,7 +75,7 @@ class MonteCarloCompiled(object):
 
 
 def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None):
-    takestep = RandomDisplacement(stepsize=0.5)
+    takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
     
     use_compiled = False
@@ -83,6 +83,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
         mc_runner = MonteCarloCompiled(system, system.radius)
     else:
         mc_runner = None
+    print "using the compiled MC = ", use_compiled
     
     use_bs = True
     if use_bs:

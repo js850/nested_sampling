@@ -37,7 +37,7 @@ def sample_uniformly_in_basin_harmonic(m, Emax, k):
     dE_target = np.random.power(k) * (Emax - m.energy)
     
     # scale f according to dE_target
-    f *= np.sqrt(2. * dE_target) #TODO check prefactor
+    f *= np.sqrt(2. * dE_target)
 
     # create the random displacement vector
     dx = np.zeros(m.coords.shape)
@@ -201,13 +201,16 @@ class BHSampler(object):
 
 
     def log_phase_space_volume_prefactor(self, m):
-        return - np.log(self.k+1) - self.gammalnk - m.fvib - np.log(m.pgorder)
+        """return the log of the part of the volume that is independent of Emax"""
+        #return - np.log(self.k) - self.gammalnk - m.fvib - np.log(m.pgorder)
+        return - m.fvib - np.log(m.pgorder)
     
     def precompute_log_phase_space_volume_prefactor(self):
         return dict([(m, self.log_phase_space_volume_prefactor(m)) for m in self.minima]) 
 
     def log_phase_space_volume(self, m, Emax):
-        return (self.k+1) * np.log(Emax - m.energy) + self.lVol_prefactor[m]
+        """return the log phase space volume of minimum m up to energy Emax"""
+        return self.k * np.log(Emax - m.energy) + self.lVol_prefactor[m]
 
     def sample_coords_from_basin(self, m, Emax):
         """return a configuration with energy less than Emax sampled uniformly (according to the harmonic approximation) from the basin defined by m
@@ -247,29 +250,17 @@ class BHSampler(object):
         
         Parameters
         ----------
-        minima : list of Mimumum objects
         Emax : float
             the maximum energy for the phase space volume calculation
-        k : int
-            the number of degrees of vibrational freedom (3*N-6 for atomic clusters)
         """
         # calculate the harmonic phase space volume of each minima and store it in list `weights`        
-#        lweights = []
-#        minima2 = []
-#        for m in self.minima:
-#            if m.energy < Emax:
-#                lV = self.log_phase_space_volume(m, Emax)
-#                lweights.append(lV)
-#                minima2.append(m)
         minima2 = [m for m in self.minima if m.energy < Emax]
         lweights = [self.log_phase_space_volume(m, Emax) for m in minima2]
         lweights = np.array(lweights)
         weights = np.exp(lweights - np.max(lweights))
         
         # select a minimum uniformly given `weights`
-    #    print "weights", weights[:10]
         index = weighted_pick(weights)
-    #    print index, len(weights), len(minima)
         m = minima2[index]
         return m
 
@@ -284,7 +275,7 @@ class NestedSamplingBS(NestedSampling):
         number of replicas
     takestep : callable
         object to do the step taking.  must be callable and have attribute takestep.stepsize
-    
+    minima : list of Minimum objects
     """
     def __init__(self, system, nreplicas, takestep, minima, **kwargs):
         super(NestedSamplingBS, self).__init__(system, nreplicas, takestep, **kwargs)
@@ -299,7 +290,6 @@ class NestedSamplingBS(NestedSampling):
         return x, e
     
     def get_starting_configuration_minima(self, Emax):
-#            m = sample_minimum(self.minima, Emax, self.system.k)
         m = self.bh_sampler.sample_minimum(Emax)
         x, e = m.coords, m.energy
         self.system.center_coords(x)
@@ -310,18 +300,13 @@ class NestedSamplingBS(NestedSampling):
         return x, e
 
     def get_starting_configuration(self, Emax):
+        """this function overloads the function in NestedSampling"""
         # choose a replica randomly
         if np.random.uniform(0,1) > 0.5:
             print "sampling from minima"
             return self.get_starting_configuration_minima(Emax)
         else:
             return self.get_starting_configuration_from_replicas()
-        
-#
-#        # do a monte carlo iteration
-#        mc = self.do_monte_carlo_chain(x, Emax, e)
-#        
-#        return Replica(mc.x, mc.energy)
 
 
 
