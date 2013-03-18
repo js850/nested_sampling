@@ -167,7 +167,7 @@ def sample_minimum(minima, Emax, k):
     
     # select a minimum uniformly given `weights`
     # print "weights", weights[:10]
-        index = weighted_pick(weights)
+    index = weighted_pick(weights)
     # print index, len(weights), len(minima)
     m = minima2[index]
     return m
