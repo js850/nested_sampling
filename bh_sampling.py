@@ -262,6 +262,9 @@ class BHSampler(object):
         self.gammalnk = gammaln(self.k)
         self.lVol_prefactor = self.precompute_log_phase_space_volume_prefactor()
         
+        self.energyvec = np.array([m.energy for m in self.minima])
+        self.lVol_prefactor_vec = np.array([self.lVol_prefactor[m] for m in self.minima])
+        
     def log_phase_space_volume_prefactor(self, m):
         """return the log of the part of the volume excluding Emax
         
@@ -277,6 +280,10 @@ class BHSampler(object):
         return - m.fvib - np.log(m.pgorder)
     
     def precompute_log_phase_space_volume_prefactor(self):
+        """return a dictionary of the log phase space volume prefactors
+        
+        precompute the parts of the log phase space volume that don't depend on Emax
+        """ 
         return dict([(m, self.log_phase_space_volume_prefactor(m)) for m in self.minima]) 
 
     def log_phase_space_volume(self, m, Emax):
@@ -284,6 +291,8 @@ class BHSampler(object):
         
         Notes
         -----
+        Only the terms that depend on which minimum is chosen are included.  The
+        other terms would be canceled out upon normalization
         
         V = Integral from m.energy to Emax of the harmonic density of states DoS(E)
         
@@ -301,12 +310,12 @@ class BHSampler(object):
         return self.k * np.log(Emax - m.energy) + self.lVol_prefactor[m]
 
     def sample_coords_from_basin(self, m, Emax):
-        """Returns a configuration with energy less than Emax sampled uniformly from m-th basin    
+        """Returns a configuration with energy less than Emax sampled uniformly from the basin of a minimum
+        
         this assumes the harmonic approximation and is exact in the harmonic approximation
         
         Parameters
         ----------
-        
         m : Minimum object
             normal mode frequencies and associated eigenvectors
         Emax : float
@@ -341,6 +350,47 @@ class BHSampler(object):
                 dx += f[i] * vectors[:,i+nzero] / np.sqrt(evals[i+nzero])
         
         return m.coords + dx
+    
+    def compute_weights(self, Emax):
+        """compute weights of minima from phase space volumes up to energy Emax  
+        
+        Notes
+        -----
+        Only the terms that depend on which minimum is chosen are included.  The
+        other terms would be canceled out upon normalization
+
+        This version does all calculations with numpy vectors to improve speed
+        
+        V = Integral from m.energy to Emax of the harmonic density of states DoS(E)
+        
+            DoS(E) = 2*N!*(E - m.energy)^(k-1) / (Gamma(k) * prod_freq * O_k)
+        
+        After integration between m.energy to Emax one finds the volume:  
+            
+        V = 2*N!*(Emax - m.energy)^k / (np.gamma(k+1) * prod_freq * O_k)
+        
+        note: all constant multiplicative factors are not necessary as they cancel out when renormalising the weights,
+            thus reducing the V to:
+        V = (Emax - m.energy)^k / (prod_freq * O_k)
+        
+        """
+        indices = np.where(self.energyvec < Emax)[0]
+        minima2 = [self.minima[i] for i in indices]
+        lweights = self.k * np.log(Emax - self.energyvec[indices]) + self.lVol_prefactor_vec[indices]
+        weights = np.exp(lweights - np.max(lweights))
+        return minima2, weights
+    
+    def compute_weights_slow(self, Emax):
+        """compute weights from phase space volumes
+        
+        This version is slow because it uses attribute and dictionary lookups
+        """
+        minima2 = [m for m in self.minima if m.energy < Emax]
+        lweights = [self.log_phase_space_volume(m, Emax) for m in minima2]
+        lweights = np.array(lweights)
+        weights = np.exp(lweights - np.max(lweights))
+        return minima2, weights
+
 
     def sample_minimum(self, Emax):
         """return a minimum sampled uniformly with weight according to phase space volume
@@ -350,11 +400,8 @@ class BHSampler(object):
         Emax : float
             the maximum energy for the phase space volume calculation
         """
-        # calculate the harmonic phase space volume of each minima and store it in list `weights`        
-        minima2 = [m for m in self.minima if m.energy < Emax]
-        lweights = [self.log_phase_space_volume(m, Emax) for m in minima2]
-        lweights = np.array(lweights)
-        weights = np.exp(lweights - np.max(lweights))
+        # calculate the harmonic phase space volume of each minima and store it in list `weights`
+        minima2, weights = self.compute_weights(Emax)
         
         # select a minimum uniformly given `weights`
         index = weighted_pick(weights)
@@ -386,7 +433,6 @@ class NestedSamplingBS(NestedSampling):
         
         Notes
         -----
-        
         displace minimum configuration along its eigenvectors
         
         """

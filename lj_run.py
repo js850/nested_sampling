@@ -6,8 +6,8 @@ import numpy as np
 import database_eigenvecs
 from nested_sampling import NestedSampling
 from bh_sampling import sample_uniformly_in_basin,\
-get_thermodynamic_information, vector_random_uniform_hypersphere,\
-NestedSamplingBS
+    get_thermodynamic_information, vector_random_uniform_hypersphere,\
+    NestedSamplingBS
 
 
 from pygmin.takestep import RandomDisplacement
