@@ -19,7 +19,7 @@ def vector_random_uniform_hypersphere(k):
     u = vec_random_ndim(k)
     #draw the magnitude of the vector from a power law density:
     #draws samples in [0, 1] from a power distribution with positive exponent k - 1.
-    p = np.random.power(k) ####SHOULD BE K-1 ??
+    p = np.random.power(k)
     return p * u
 
 def sample_uniformly_in_basin_harmonic(m, Emax, k):
@@ -94,6 +94,9 @@ def sample_uniformly_in_basin(m, Emax, potential, k):
 def compute_log_phase_space_volume(m, Emax, k):
     """return the log (base e) of the phase space volume of minima m up to energy Emax
     
+    Notes
+    -----
+    
     V = Integral from m.energy to Emax of the harmonic density of states DoS(E)
     
         DoS(E) = 2*N!*(E - m.energy)^(k-1) / (Gamma(k) * prod_freq * O_k)
@@ -103,6 +106,7 @@ def compute_log_phase_space_volume(m, Emax, k):
     V = 2*N!*(Emax - m.energy)^k / (np.gamma(k+1) * prod_freq * O_k)
     
     note: gammaln(N+1) approximates the ln(N!)
+    
     Parameters
     ----------
     
@@ -116,7 +120,7 @@ def compute_log_phase_space_volume(m, Emax, k):
         the order of the symmetry point group
     """
     from numpy import log
-    N = 31 ####TO DO: GET NUMBER OF PARTICLES FROM SYSTEMS
+    N = system.natoms()
     if m.energy > Emax:
         raise ValueError("Emax (%g) must be greater than the energy of the minimum (%g)" % (Emax, m.energy))
     logV = log(2) + gammaln(N+1) + k * log(Emax - m.energy) - gammaln(k+1) - m.fvib - log(m.pgorder)
@@ -137,7 +141,7 @@ def weighted_pick(weights):
         raise ValueError("weights must not have zero length")
     r = np.random.uniform(0., sum(weights))
     s = 0.0
-#    print r, len(weights)
+#    print r, len(weights)    
     for i in range(len(weights)):
         s += weights[i]
         if r < s: return i
@@ -163,11 +167,11 @@ def sample_minimum(minima, Emax, k):
             lweights.append(lV)
             minima2.append(m)
     lweights = np.array(lweights)
-    weights = np.exp(lweights - np.max(lweights))  ####WHY THE EXPONENTIAL RELATIONSHIP AND NOT JUST lweights/np.max(lweights)?
+    weights = np.exp(lweights - np.max(lweights))
     
     # select a minimum uniformly given `weights`
     # print "weights", weights[:10]
-        index = weighted_pick(weights)
+    index = weighted_pick(weights)
     # print index, len(weights), len(minima)
     m = minima2[index]
     return m
@@ -257,10 +261,18 @@ class BHSampler(object):
         self.k = k
         self.gammalnk = gammaln(self.k)
         self.lVol_prefactor = self.precompute_log_phase_space_volume_prefactor()
-
-
+        
     def log_phase_space_volume_prefactor(self, m):
-        """return the log of the part of the volume that is independent of Emax"""
+        """return the log of the part of the volume excluding Emax
+        
+        Notes
+        -----
+        
+        fvib: log product of squared frequencies
+        
+        pgorder: point group order
+            
+        """
         #return - np.log(self.k) - self.gammalnk - m.fvib - np.log(m.pgorder)
         return - m.fvib - np.log(m.pgorder)
     
@@ -268,13 +280,39 @@ class BHSampler(object):
         return dict([(m, self.log_phase_space_volume_prefactor(m)) for m in self.minima]) 
 
     def log_phase_space_volume(self, m, Emax):
-        """return the log phase space volume of minimum m up to energy Emax"""
+        """return the log phase space volume of minimum m up to energy Emax
+        
+        Notes
+        -----
+        
+        V = Integral from m.energy to Emax of the harmonic density of states DoS(E)
+        
+            DoS(E) = 2*N!*(E - m.energy)^(k-1) / (Gamma(k) * prod_freq * O_k)
+        
+        After integration between m.energy to Emax one finds the volume:  
+            
+        V = 2*N!*(Emax - m.energy)^k / (np.gamma(k+1) * prod_freq * O_k)
+        
+        note: all constant multiplicative factors are not necessary as they cancel out when renormalising the weights,
+            thus reducing the V to:
+        V = (Emax - m.energy)^k / (prod_freq * O_k)
+               
+        """
         return self.k * np.log(Emax - m.energy) + self.lVol_prefactor[m]
 
     def sample_coords_from_basin(self, m, Emax):
-        """return a configuration with energy less than Emax sampled uniformly (according to the harmonic approximation) from the basin defined by m
+        """Returns a configuration with energy less than Emax sampled uniformly from m-th basin    
+        this assumes the harmonic approximation and is exact in the harmonic approximation
         
-        this sampling is exact in the harmonic approximation 
+        Parameters
+        ----------
+        
+        m : Minimum object
+            normal mode frequencies and associated eigenvectors
+        Emax : float
+            energy upper bound
+        k : integer
+            number of degrees of freedom
         
         Notes
         -----
@@ -291,7 +329,7 @@ class BHSampler(object):
         f = vec_random_ndim(k)
     
         # the target increase in energy is sampled from a power law distribution
-        dE_target = np.random.power(k) * (Emax - m.energy)
+        dE_target = np.random.power(k-1) * (Emax - m.energy)
         
         # scale f according to dE_target
         f *= np.sqrt(2. * dE_target) #TODO check prefactor
@@ -344,6 +382,14 @@ class NestedSamplingBS(NestedSampling):
         self.bh_sampler = BHSampler(self.minima, self.system.k)
     
     def get_starting_configuration_minima_HA(self, Emax):
+        """using the Harmonic Approximation sample a new configuration starting from a minimum sampled uniformly according to phase space volume
+        
+        Notes
+        -----
+        
+        displace minimum configuration along its eigenvectors
+        
+        """
         m = self.bh_sampler.sample_minimum(Emax)        
         x = self.bh_sampler.sample_coords_from_basin(m, Emax)
         pot = self.system.get_potential()
@@ -379,8 +425,6 @@ class NestedSamplingBS(NestedSampling):
                 return self.get_starting_configuration_minima_single(Emax)
             except ConfigTestError:
                 pass
-
-
 
     def get_starting_configuration(self, Emax):
         """this function overloads the function in NestedSampling"""

@@ -6,8 +6,8 @@ import numpy as np
 import database_eigenvecs
 from nested_sampling import NestedSampling
 from bh_sampling import sample_uniformly_in_basin,\
-    get_thermodynamic_information, vector_random_uniform_hypersphere,\
-    NestedSamplingBS
+get_thermodynamic_information, vector_random_uniform_hypersphere,\
+NestedSamplingBS
 
 
 from pygmin.takestep import RandomDisplacement
@@ -78,7 +78,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
     
-    use_compiled = False
+    use_compiled = args.compileflag
     if use_compiled:
         mc_runner = MonteCarloCompiled(system, system.radius)
     else:
@@ -86,6 +86,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
     print "using the compiled MC = ", use_compiled
     
     use_bs = True
+    
     if use_bs:
         assert minima is not None
         assert(len(minima) > 0)
@@ -129,13 +130,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="do nested sampling with basin sampling for lennard jones clusters")
 #    parser.add_argument("--db", type=str, nargs=1, help="database filename",
 #                        default="otp.db")
-    parser.add_argument("--db", type=str, help="database file name")
+    parser.add_argument("-d", "--db", type=str, help="database file name")
     parser.add_argument("-K", "--nreplicas", type=int, help="number of replicas", default=300)
     parser.add_argument("-n", "--mciter", type=int, help="number of iterations in the monte carlo chain", default=10000)
     parser.add_argument("-m", "--nminima", type=int, help="number of minima to use from the database", default=100)
+    parser.add_argument("-A", "--nAtoms", type=int, help="number of atoms", default=31)
+    parser.add_argument("-C", "--compileflag", type=bool, help="option to compile Markov chain routine from C source (unique to LJ systems)", default=False)
     args = parser.parse_args()
 
-    natoms = 31
+    natoms = args.nAtoms
     nreplicas = args.nreplicas
     mciter = args.mciter
     nminima = args.nminima
@@ -145,19 +148,19 @@ if __name__ == "__main__":
     if args.db is None:
         dbname = label + ".db"
         dbname = "lj31_small.db"
-        print >> sys.stderr, "warning, using debug databse"
+        print >> sys.stderr, "warning, using debug database"
     else:
         dbname = args.db
     db = system.create_database(dbname)
     print dbname, "nminima", len(db.minima())
     
     # populate database
-#    if False:
-#        populate_database(system, db, niter=10000)
+    # if False:
+    # populate_database(system, db, niter=10000)
     
     # get thermodynamic information from database
     get_thermodynamic_information(system, db)
-#    exit(1)
+    # exit(1)
 
     # run nested sampling
     minima = db.minima()
