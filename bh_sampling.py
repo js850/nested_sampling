@@ -120,7 +120,7 @@ def compute_log_phase_space_volume(m, Emax, k):
         the order of the symmetry point group
     """
     from numpy import log
-    N = system.natoms()
+    
     if m.energy > Emax:
         raise ValueError("Emax (%g) must be greater than the energy of the minimum (%g)" % (Emax, m.energy))
     logV = log(2) + gammaln(N+1) + k * log(Emax - m.energy) - gammaln(k+1) - m.fvib - log(m.pgorder)
