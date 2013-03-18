@@ -49,10 +49,12 @@ int check_spherical_container(double * x, int N, double radius)
 
   for (i=0; i<N; i+=3){
     r2 = 0;
-    for (j=0; j<3; ++j){
-      r2 += x[i+j] * x[i+j];
+    for (j=i; j<i+3; ++j){
+      r2 += x[j] * x[j];
     }
-    if (r2 >= radius2){
+    if (r2 > radius2){
+      //printf("fail spherical container %d %f %f %f %f\n", i, sqrt(r2), x[i], x[i+1], x[i+2]);
+      //an atom is outside the spherical container
       return 0;
     }
   }
@@ -78,6 +80,7 @@ int mc(double *x0, double *xreturn, int natoms, long int niter, double stepsize,
   long int istep;
   int accept = 1;
   int naccept = 0;
+  int energy_ok_count = 0;
 
   double *x = (double *) malloc(sizeof(double) * N);
   double *xnew = (double *) malloc(sizeof(double) * N);
@@ -110,10 +113,13 @@ int mc(double *x0, double *xreturn, int natoms, long int niter, double stepsize,
 
     accept = ( Enew < Emax );
     if ( accept ){
+      energy_ok_count += 1;
       //test spherical container
-      accept = check_spherical_container(x, N, radius);
+      //printf("step %d\n", istep);
+      accept = check_spherical_container(xnew, N, radius);
       
       if (accept){
+        //printf("accepting step\n");
         for (i=0; i<N; ++i){
           x[i] = xnew[i];
         }
@@ -135,6 +141,6 @@ int mc(double *x0, double *xreturn, int natoms, long int niter, double stepsize,
   free(x);
   free(xnew);
   gsl_rng_free (gslrng); //free the rng working space
-  //printf("%d %d %f stepsize %f\n", naccept, istep, E, stepsize);
+  //printf("done compiled mc: %d %d %f stepsize %f n_energy_ok %d natoms %d\n", naccept, istep, E, stepsize, energy_ok_count, natoms);
   return naccept;
 }
