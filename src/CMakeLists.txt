@@ -9,6 +9,6 @@ include_directories(${PYTHON_INCLUDE_PATH})
 enable_language(CXX)
 enable_language(Fortran)
 
-add_library(runmc SHARED runmc.c mc.c ${PYTHON_LIBS})
+add_library(runmc SHARED runmc.c mc.c lj.c ${PYTHON_LIBS})
 target_link_libraries(runmc  -lm -lgsl -lgslcblas)
 set_target_properties(runmc PROPERTIES PREFIX "")
