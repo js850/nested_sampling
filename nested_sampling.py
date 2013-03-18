@@ -4,24 +4,30 @@ import numpy as np
 import sys
 
 class MonteCarloChain(object):
-    """defines parameters for a monte carlo chain from an initial configuration x with niter iterations. The step will be accepted subject only to a maximum energy criterion and geometric constraints on the configuration.  
+    """Class for doing a Monte Carlo chain
+    
 
     Parameters
     -----------
     potential : pygmin Potentials
-        attribute of system with member function getEnergy (in essence a particular potential energy function)
+        attribute of system with member function getEnergy (in essence a
+        particular potential energy function)
     x : array
         are the coordinates
     takestep : callable takestep object
-        take a random montecarlo step, imported from pygmin: takestep(x) makes a move from x
+        take a random montecarlo step, imported from pygmin: takestep(x) makes
+        a move from x
     Emax : float
         energy upperbound
     energy : pygmin LJCluster
         energy of a given configuration
     accept_test : list of callables
-        it's an array of pointers to functions. The dereferenced functions operate a set of tests on the energy/configuration.
+        it's an array of pointers to functions. The dereferenced functions
+        operate a set of tests on the energy/configuration.
     events : list fo callables
-        it's an array of pointers to functions. This is general and not compulsury e.g. can use if you want to do something with the new configuration for the guy.
+        it's an array of pointers to functions. This is general and not
+        compulsury e.g. can use if you want to do something with the new
+        configuration for the guy.
 
     Attributes
     ----------
@@ -36,7 +42,9 @@ class MonteCarloChain(object):
 
     Notes
     -----
-    some notes here
+    defines parameters for a monte carlo chain from an initial configuration x
+    with niter iterations. The step will be accepted subject only to a maximum
+    energy criterion and geometric constraints on the configuration.  
 
     See Also
     --------
@@ -54,10 +62,31 @@ class MonteCarloChain(object):
         self.naccept = 0
         
         self.events = events
-    
+        
+        if not self.test_configuration(self.x, 0.):
+            print "ERROR: initial configuration for monte carlo chain failed configuration test"
+            from pygmin.utils.xyz import write_xyz
+            with open("error.xyz", "w") as fout:
+                write_xyz(fout, self.x)
+
+        
+    def test_configuration(self, x, e):
+        if self.accept_tests is not None:
+            for test in self.accept_tests:
+                if not test(energy=e, coords=x):
+                    return False
+        return True
+
     def step(self):
         """
-        copy current configuration x to xnew and then perform a trial move on xnew. Accept if the configuration of the new energy is less than Emax and if accept_tests are satisfied. If true update x to xnew. Finally, optionally applies all events functions to x.  
+        Do one iteration in the Monte Carlo chain
+
+        Notes
+        -----
+        copy current configuration x to xnew and then perform a trial move on
+        xnew. Accept if the configuration of the new energy is less than Emax
+        and if accept_tests are satisfied. If true update x to xnew. Finally,
+        optionally applies all events functions to x.  
         """
         xnew = self.x.copy()
         
@@ -69,12 +98,8 @@ class MonteCarloChain(object):
         
         accept = e < self.Emax
 
-        if accept and self.accept_tests is not None:
-            for test in self.accept_tests:
-                a = test(energy=e, coords=xnew)
-                if not a:
-                    accept = False
-                    break
+        if accept:
+            accept = self.test_configuration(xnew, e) 
 
         if accept:
             self.x = xnew
@@ -87,7 +112,7 @@ class MonteCarloChain(object):
 
         self.nsteps += 1
 
-       
+
 class Replica(object):
     """ Replica is simply a pair of types coordinates (x) and energy"""
     def __init__(self, x, energy):
@@ -102,24 +127,30 @@ class NestedSampling(object):
     system : pygmin System
         is the particular system of interest, say LJCluster
     takestep : callable takestep object
-        take a random montecarlo step, imported from pygmin: takestep(x) makes a move from x
+        take a random montecarlo step, imported from pygmin: takestep(x) makes
+        a move from x
     mciter : integer
-        number of steps in Markov chain (sampling)
+        number of steps in markov chain (sampling)
     accept_test : list of callables
-        it's an array of pointers to functions. The dereferenced functions operate a set of tests on the energy/configuration.
+        it's an array of pointers to functions. The dereferenced functions
+        operate a set of tests on the energy/configuration.
+    mc_runner : callable
+        use this object to do the Monte Carlo chain rather than the default
     
     Attributes
     ----------
     max_energies : list
-        array of stored energies (at each step the highest energy configuration is stored and replaced by a valid configuration)
+        array of stored energies (at each step the highest energy configuration
+        is stored and replaced by a valid configuration)
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None):
+    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None, mc_runner=None):
         self.system = system
         self.takestep = takestep
         self.mciter=mciter
         self.accept_tests = accept_tests
+        self.mc_runner = mc_runner
         
         self.max_energies = []
         
@@ -158,7 +189,15 @@ class NestedSampling(object):
     
     def adjust_step_size(self, mc):
         """
-        when ratio naccept/nsteps < target_ratio then decrease step size by a correction factor f (new-step-size = old-step-size*f, where 0<f<1), else if naccept/nsteps > target_ratio, then increases the step size (new-step-size = old-step-size/f, where 0<f<1), although this is increased with an upper bound: max_stepsize.
+        Adjust the stepsize to keep the acceptance ratio at a good value
+
+        Notes
+        -----
+        when ratio naccept/nsteps < target_ratio then decrease step size by a
+        correction factor f (new-step-size = old-step-size*f, where 0<f<1),
+        else if naccept/nsteps > target_ratio, then increases the step size
+        (new-step-size = old-step-size/f, where 0<f<1), although this is
+        increased with an upper bound: max_stepsize.
         """
         f = 0.8
         target_ratio = 0.7
@@ -174,11 +213,18 @@ class NestedSampling(object):
     
     def do_monte_carlo_chain(self, x0, Emax, energy=np.nan, **kwargs):
         """
-        from an initial configuration do a monte carlo chain with niter iterations, the step will be accepted subject only to a maximum energy criterion. Re-iterates for mciter steps. After each step update stepize to meet target_ratio. 
+        from an initial configuration do a monte carlo chain with niter iterations, 
+        
+        the step will be accepted subject only to a maximum energy criterion.
+        Re-iterates for mciter steps.  After each step update stepize to meet
+        target_ratio. 
         """
-        mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
-        for i in xrange(self.mciter):
-            mc.step()
+        if self.mc_runner is None:
+            mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
+            for i in xrange(self.mciter):
+                mc.step()
+        else:
+            mc = self.mc_runner(x0, self.mciter, self.takestep.stepsize, Emax)
 
         verbose = True
         if verbose:
@@ -201,30 +247,26 @@ class NestedSampling(object):
     
     def pop_replica(self):
         """
-        remove the replica with the largest energy (last item in the list) and store it in the max_energies array. This is then used for integration.
+        remove the replica with the largest energy (last item in the list) and store it in the max_energies array. 
+        
+        This is then used for integration.
         """
+        # pull out the replica with the largest energy
         rmax = self.replicas.pop()
         
+        # add store it for later analysis
         self.max_energies.append(rmax.energy)
         return rmax
 
     def get_starting_configuration_from_replicas(self):
-        """
-        returns a random replica configuration and its energy
-        """
+        # choose a replica randomly
         rstart = random.choice(self.replicas)
         return rstart.x, rstart.energy
 
     def get_starting_configuration(self, Emax):
-        """
-        redefine get_starting_configuration_from_replicas() to allow for function overloading
-        """
         return self.get_starting_configuration_from_replicas()
     
     def add_new_replica(self, x, energy):
-        """
-        add newly generated replica to replicas list, then sort replicas list    
-        """
         rnew = Replica(x, energy)
         self.replicas.append(rnew)
         self.sort_replicas()
@@ -232,9 +274,6 @@ class NestedSampling(object):
 
     
     def one_iteration(self):
-        """
-        remove replica with highest energy, set new Emax and substitute it with a lower energy configuration  
-        """
         rmax = self.pop_replica()
         Emax = rmax.energy
         
