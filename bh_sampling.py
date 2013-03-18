@@ -5,6 +5,7 @@ improve sampling in "nested sampling" at low energies
 import numpy as np
 import random
 from scipy.special import gamma, gammaln
+from scipy.misc import factorial
 
 from database_eigenvecs import HessianEigs
 from nested_sampling import NestedSampling, Replica
@@ -18,21 +19,22 @@ def vector_random_uniform_hypersphere(k):
     u = vec_random_ndim(k)
     #draw the magnitude of the vector from a power law density:
     #draws samples in [0, 1] from a power distribution with positive exponent k - 1.
-    p = np.random.power(k)
+    p = np.random.power(k) ####SHOULD BE K-1 ??
     return p * u
 
 def sample_uniformly_in_basin_harmonic(m, Emax, k):
-    """ assuming the harmonic approximation returns a configuration with energy less than Emax sampled uniformly from the basin defined by m    
-        this is exact in the harmonic approximation
+    """ Returns a configuration with energy less than Emax sampled uniformly from m-th basin    
+        this assumes the harmonic approximation and is exact in the harmonic approximation
         
         Parameters
         ----------
         
         m : Minimum object
+            normal mode frequencies and associated eigenvectors
         Emax : float
             energy upper bound
         k : integer
-            number of dimensions
+            number of degrees of freedom
     """
     nm = m.hessian_eigs[0]
     evals = nm.eigenvalues
@@ -43,7 +45,7 @@ def sample_uniformly_in_basin_harmonic(m, Emax, k):
     f = vec_random_ndim(k)
 
     # the target increase in energy is sampled from a power law distribution
-    dE_target = np.random.power(k) * (Emax - m.energy)
+    dE_target = np.random.power(k-1) * (Emax - m.energy) ####CHANGED TO K-1 
     
     # scale f according to dE_target
     f *= np.sqrt(2. * dE_target) #TODO check prefactor
@@ -59,6 +61,18 @@ def sample_uniformly_in_basin_harmonic(m, Emax, k):
 
 def sample_uniformly_in_basin(m, Emax, potential, k):
     """return a configuration with energy less than Emax sampled uniformly from the basin defined by m
+    
+        Parameters
+        ----------
+        
+        m : Minimum object
+            normal mode frequencies and associated eigenvectors
+        Emax : float
+            energy upper bound
+        Potential: type Potential
+            potential energy function, takes coordinates and returns energy configuration
+        k : integer
+            number of degrees of freedom
     """
     # displace randomly from the minimum according to the eigenvalues and eigenvectors
     E = Emax + 1.
@@ -82,25 +96,42 @@ def compute_log_phase_space_volume(m, Emax, k):
     
     V = Integral from m.energy to Emax of the harmonic density of states DoS(E)
     
-        DoS(E) = (E - m.energy)^k / (Gamma(k) * prod_freq * O_k)
+        DoS(E) = 2*N!*(E - m.energy)^(k-1) / (Gamma(k) * prod_freq * O_k)
+    
+    After integration between m.energy to Emax one finds the volume:  
         
-    k = number of vibrational degrees of freedom
-    Gamma = gamma function
-    prod_freq = the product of the frequencies (from the eigenvalues of the Hessian)
-    O_k the order of the symmety point group
-
-        V = (Emax - m.energy)**(k+1) / ((k+1) * np.gamma(k) * prod_freq * O_k)
+    V = 2*N!*(Emax - m.energy)^k / (np.gamma(k+1) * prod_freq * O_k)
+    
+    note: gammaln(N+1) approximates the ln(N!)
+    Parameters
+    ----------
+    
+    k : integer
+        number of vibrational degrees of freedom
+    Gamma : scipy.special function 
+        gamma function
+    prod_freq : float
+        the product of the frequencies (from the eigenvalues of the Hessian)
+    O_k : integer
+        the order of the symmetry point group
     """
     from numpy import log
+    N = 31 ####TO DO: GET NUMBER OF PARTICLES FROM SYSTEMS
     if m.energy > Emax:
         raise ValueError("Emax (%g) must be greater than the energy of the minimum (%g)" % (Emax, m.energy))
-    logV = (k+1) * log(Emax - m.energy) - log(k+1) - gammaln(k) - m.fvib - log(m.pgorder)
+    logV = log(2) + gammaln(N+1) + k * log(Emax - m.energy) - gammaln(k+1) - m.fvib - log(m.pgorder)
     return logV
 
 def weighted_pick(weights):
     """sample uniformly from the objects with given weights
     
-    return the selected index
+    returns the selected index
+    
+    Parameters
+    ----------
+    
+    weights : array of floats
+        weight associated to each minimum, proportional to the volume of the basin
     """
     if len(weights) == 0:
         raise ValueError("weights must not have zero length")
@@ -132,17 +163,27 @@ def sample_minimum(minima, Emax, k):
             lweights.append(lV)
             minima2.append(m)
     lweights = np.array(lweights)
-    weights = np.exp(lweights - np.max(lweights))
+    weights = np.exp(lweights - np.max(lweights))  ####WHY THE EXPONENTIAL RELATIONSHIP AND NOT JUST lweights/np.max(lweights)?
     
     # select a minimum uniformly given `weights`
-#    print "weights", weights[:10]
-    index = weighted_pick(weights)
-#    print index, len(weights), len(minima)
+    # print "weights", weights[:10]
+        index = weighted_pick(weights)
+    # print index, len(weights), len(minima)
     m = minima2[index]
     return m
 
 def sample_from_database(system, minima, Emax):
     """return a configuration sampled uniformly from a database of minima according to the harmonic approximation up to energy Emax
+    
+    Parameters
+    ----------
+    
+    system : pygmin System
+        is the particular system of interest, say LJCluster
+    minima: array of Minimum objects
+    Emax : float
+        energy upper bound
+    
     """
     m = sample_minimum(minima, Emax, system.k)
     
@@ -162,6 +203,14 @@ def sample_from_database(system, minima, Emax):
 def get_thermodynamic_information(system, db):
     """
     for each minima in database, get all information necessary to compute the density of states
+    
+    Parameters
+    ----------
+    
+    system : pygmin System
+        is the particular system of interest, say LJCluster
+    db : database of minima
+    
     """
     # get the point group information
     print "getting the point group information"
@@ -175,7 +224,8 @@ def get_thermodynamic_information(system, db):
     # get the frequencies
     print "getting the normal mode frequencies"
     for m in db.minima():
-        if m.fvib is not None: 
+         # fvibs calculates the eigenvalues and eigenvectors of the hessian and attach them to the database
+        if m.fvib is not None:
             # assume we've already done this minimum 
             #if len(m.hessian_eigs) > 0 and m.fvib is not None: 
             continue 
