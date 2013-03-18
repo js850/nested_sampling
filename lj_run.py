@@ -78,7 +78,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
     
-    use_compiled = False
+    use_compiled = True
     if use_compiled:
         mc_runner = MonteCarloCompiled(system, system.radius)
     else:
@@ -106,7 +106,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
                 fout.write("\n")
                 fout.flush()
                 isave = i
-            if True and i % 1000:
+            if False and i % 10000:
                 with open(label+".x", "w") as xout:
                     for r in ns.replicas:
                         write_xyz(xout, r.x)
