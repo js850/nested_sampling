@@ -107,7 +107,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
                 fout.write("\n")
                 fout.flush()
                 isave = i
-            if True and i % 1000:
+            if False and i % 10000:
                 with open(label+".x", "w") as xout:
                     for r in ns.replicas:
                         write_xyz(xout, r.x)
