@@ -135,7 +135,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--mciter", type=int, help="number of iterations in the monte carlo chain", default=10000)
     parser.add_argument("-m", "--nminima", type=int, help="number of minima to use from the database", default=100)
     parser.add_argument("-A", "--nAtoms", type=int, help="number of atoms", default=31)
-    parser.add_argument("-C", "--compileflag", type=bool, help="option to compile Markov chain routine from C source (unique to LJ systems)", default=False)
+    parser.add_argument("-C", "--compileflag", type=bool, help="option to compile Markov chain routine from C source (unique to LJ systems)", default=True)
     args = parser.parse_args()
 
     natoms = args.nAtoms
