@@ -168,11 +168,10 @@ if __name__ == "__main__":
         minima = minima[:nminima]
     ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, label=label, minima=minima, mciter=mciter)
 
-#    with open(label+".energies", "w") as fout:
-#        fout.write( "\n".join([ str(e) for e in ns.max_energies]) )
-#        fout.write("\n")
-        
-    
+    with open(label + ".energies", "w") as fout:
+        fout.write( "\n".join([ str(e) for e in ns.max_energies]) )
+        fout.write("\n")
+            
 #    if True:
 #        import pylab as pl
 #        e = np.array(ns.max_energies)
