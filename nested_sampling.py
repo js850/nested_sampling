@@ -286,7 +286,7 @@ class NestedSampling(object):
         
         self.iter_number += 1
         
-if __name__ == "__main__":
+def test_main():
     from lj_run import LJClusterNew
     from pygmin.takestep import RandomDisplacement
     natoms = 13
@@ -316,3 +316,5 @@ if __name__ == "__main__":
         pl.show()
 
     
+if __name__ == "__main__":
+    test_main()
