@@ -2,6 +2,7 @@
 import random
 import numpy as np
 import sys
+import multiprocessing as mp
 
 class MonteCarloChain(object):
     """Class for doing a Monte Carlo chain
@@ -145,12 +146,13 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None, mc_runner=None):
+    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None, mc_runner=None, nproc=1):
         self.system = system
         self.takestep = takestep
         self.mciter=mciter
         self.accept_tests = accept_tests
         self.mc_runner = mc_runner
+        self.nproc = nproc
         
         self.max_energies = []
         
@@ -254,14 +256,28 @@ class NestedSampling(object):
         # pull out the replica with the largest energy
         rmax = self.replicas.pop()
         
+        #remove other nproc-1 replica
+        length = self.nproc-1
+        for i in range(length):
+            self.replicas.pop()
+        
         # add store it for later analysis
         self.max_energies.append(rmax.energy)
         return rmax
 
     def get_starting_configuration_from_replicas(self):
         # choose a replica randomly
-        rstart = random.choice(self.replicas)
-        return rstart.x, rstart.energy
+        if self.nproc > 1:
+            rstart = random.sample(self.replicas, self.nproc)
+            lxstart = []
+            lestart = []
+            for i in range(len(rstart)):
+                lxstart.append(rstart[i].x)
+                lestart.append(rstart[i].energy)    
+            return lxstart, lestart
+        else:
+            rstart = random.choice(self.replicas)
+            return rstart.x, rstart.energy
 
     def get_starting_configuration(self, Emax):
         return self.get_starting_configuration_from_replicas()
@@ -269,23 +285,38 @@ class NestedSampling(object):
     def add_new_replica(self, x, energy):
         rnew = Replica(x, energy)
         self.replicas.append(rnew)
-        self.sort_replicas()
         return rnew
-
     
+    def one_iteration_ser(self, xstart, estart, Emax):
+        # get a new replica to replace it
+        mc = self.do_monte_carlo_chain(xstart, Emax, estart)
+        rnew = self.add_new_replica(mc.x, mc.energy)
+        self.iter_number += 1
+        return 1 ###must return something for parallelisation
+                
+    def one_iteration_par(self, xstart, estart, Emax):
+        #get nproc new replicas and replace them, use Emax as upper bound
+        lEmax = [Emax for i in range(len(xstart))]
+        x_tuple = (xstart, estart, lEmax)
+        pool = mp.Pool(processes=self.nproc)
+        new_func = lambda x:unwrap_one_iteration_ser(self, x)
+        result = pool.map(new_func, x_tuple)
+               
     def one_iteration(self):
         rmax = self.pop_replica()
         Emax = rmax.energy
+        xstart, estart = self.get_starting_configuration(Emax)
         
-        # get a new replica to replace it
-        xstart, estart = self.get_starting_configuration(rmax.energy)
+        if self.nproc > 1:
+            self.one_iteration_par(xstart, estart, Emax) 
+        else: 
+            tmp = self.one_iteration_ser(xstart, estart, Emax)
         
-        mc = self.do_monte_carlo_chain(xstart, Emax, estart)
+        self.sort_replicas()
 
-        rnew = self.add_new_replica(mc.x, mc.energy)
-        
-        self.iter_number += 1
-        
+def unwrap_one_iteration_ser(NestedSampling, x_tuple):
+    return NestedSampling.one_iteration_ser(x_tuple[0], x_tuple[1], x_tuple[2])
+       
 if __name__ == "__main__":
     from lj_run import LJClusterNew
     from pygmin.takestep import RandomDisplacement

@@ -423,9 +423,10 @@ class NestedSamplingBS(NestedSampling):
         object to do the step taking.  must be callable and have attribute takestep.stepsize
     minima : list of Minimum objects
     """
-    def __init__(self, system, nreplicas, takestep, minima, **kwargs):
+    def __init__(self, system, nreplicas, takestep, minima, nproc, **kwargs):
         super(NestedSamplingBS, self).__init__(system, nreplicas, takestep, **kwargs)
         self.minima = minima
+        self.nproc = nproc
         self.bh_sampler = BHSampler(self.minima, self.system.k)
     
     def get_starting_configuration_minima_HA(self, Emax):
@@ -475,9 +476,16 @@ class NestedSamplingBS(NestedSampling):
     def get_starting_configuration(self, Emax):
         """this function overloads the function in NestedSampling"""
         # choose a replica randomly
-        if np.random.uniform(0,1) > 0.5:
+        if np.random.uniform(0,1) < 1/(float(self.nproc)+1):
             print "sampling from minima"
-            return self.get_starting_configuration_minima(Emax)
+            
+            if self.nproc > 1:
+                sampled_minima = []
+                for i in range(self.nproc):
+                    sampled_minima.append(self.get_starting_configuration_minima(Emax))
+                return sampled_minima
+            else:
+                return self.get_starting_configuration_minima(Emax)
         else:
             return self.get_starting_configuration_from_replicas()
 

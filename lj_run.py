@@ -74,7 +74,7 @@ class MonteCarloCompiled(object):
 
 
 
-def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None):
+def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, nproc = 1):
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
     
@@ -91,9 +91,9 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
         assert minima is not None
         assert(len(minima) > 0)
         print "using", len(minima), "minima"
-        ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner)
+        ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc)
     else:
-        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner)
+        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc)
     etol = 0.01
     isave = 0
     maxiter = nreplicas * iterscale
@@ -136,6 +136,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--nminima", type=int, help="number of minima to use from the database", default=100)
     parser.add_argument("-A", "--nAtoms", type=int, help="number of atoms", default=31)
     parser.add_argument("-C", "--compileflag", type=bool, help="option to compile Markov chain routine from C source (unique to LJ systems)", default=True)
+    parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=1)
     args = parser.parse_args()
 
     natoms = args.nAtoms
@@ -143,6 +144,7 @@ if __name__ == "__main__":
     mciter = args.mciter
     nminima = args.nminima
     system = LJClusterNew(natoms)
+    nproc = args.nproc
     
     label = "lj%d" % (natoms)
     if args.db is None:
@@ -166,7 +168,7 @@ if __name__ == "__main__":
     minima = db.minima()
     if len(minima) > nminima:
         minima = minima[:nminima]
-    ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, label=label, minima=minima, mciter=mciter)
+    ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, label=label, minima=minima, mciter=mciter, nproc = nproc)
 
 #    with open(label+".energies", "w") as fout:
 #        fout.write( "\n".join([ str(e) for e in ns.max_energies]) )
