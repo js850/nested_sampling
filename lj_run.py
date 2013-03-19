@@ -150,7 +150,7 @@ def main():
         print >> sys.stderr, "warning, using debug database"
     else:
         dbname = args.db
-    db = system.create_database(dbname)
+    db = system.create_database(dbname, createdb=False)
     print dbname, "nminima", len(db.minima())
     
     # populate database
