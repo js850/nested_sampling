@@ -133,6 +133,11 @@ class Replica(object):
         self.x = x.copy()
         self.energy = float(energy)
 
+def mc_runner_wrapper(x_tuple):
+    mc_runner = x_tuple[0]
+    newtuple = x_tuple[1:]
+    return mc_runner(newtuple)
+
 class NestedSampling(object):
     """the main class for implementing nested sampling
 
@@ -194,11 +199,12 @@ class NestedSampling(object):
         if self.nproc > 1:
             x_tuple = []
             for i in xrange(len(x0)):
-                y_tuple = (x0[i], self.mciter, self.takestep.stepsize, Emax)
+                y_tuple = (self.mc_runner, x0[i], self.mciter, self.takestep.stepsize, Emax)
+                assert len(x0[i]) > 0
                 x_tuple.append(y_tuple)
                 
             pool = mp.Pool(processes=self.nproc)
-            result = pool.map(self.mc_runner, x_tuple)
+            result = pool.map(mc_runner_wrapper, x_tuple)
             pool.close()
             pool.join()
             mc = result.get() #list of montecarlo chain objects

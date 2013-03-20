@@ -55,10 +55,11 @@ class LJClusterNew(LJCluster):
         x -= com[np.newaxis, :]
 
 
+from src.runmc import mc_cython
 class MonteCarloCompiled(object):
-    def __init__(self, system, radius):
+    def __init__(self, pot, radius):
         self.radius = radius
-        self.system = system
+        self.pot = pot
     
     def __call__(self, x_tuple):
         
@@ -67,15 +68,13 @@ class MonteCarloCompiled(object):
         stepsize = x_tuple[2]
         Emax = x_tuple[3]
         
-        from src.runmc import mc_cython
         x, naccept = mc_cython(x0, mciter, stepsize, Emax, self.radius)
 #        print ret
         self.x0 = x0
         self.x = x
         self.nsteps = mciter
         self.naccept = naccept
-        pot = self.system.get_potential()
-        self.energy = pot.getEnergy(x)
+        self.energy = self.pot.getEnergy(x)
         return self
 
 def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, nproc = 1):
@@ -83,7 +82,10 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
     accept_tests = system.get_config_tests()
 
     if use_compiled:
-        mc_runner = MonteCarloCompiled(system, system.radius)
+        mc_runner = MonteCarloCompiled(system.get_potential(), system.radius)
+        import pickle
+        with open("testpickle", "w") as pout:
+            pickle.dump(mc_runner, pout)
     else:
         mc_runner = None
     print "using the compiled MC = ", use_compiled
@@ -139,7 +141,7 @@ def main():
     parser.add_argument("-A", "--nAtoms", type=int, help="number of atoms", default=31)
     parser.add_argument("-C", "--compiled-mc", type=bool, help="option to use the Markov chain routine from C source (unique to LJ systems)", 
                         default=True)
-    parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=1)
+    parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=2)
     args = parser.parse_args()
 
     natoms = args.nAtoms
