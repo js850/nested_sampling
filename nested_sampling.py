@@ -290,10 +290,11 @@ class NestedSampling(object):
         """
         # pull out the replica with the largest energy
         rmax = self.replicas.pop()
+        print "Epop:", rmax.energy, "n_replicas", len(self.replicas)
         
         #remove other nproc-1 replica
         length = self.nproc-1
-        for i in range(length):
+        for i in xrange(length):
             self.replicas.pop()
         
         # add store it for later analysis
