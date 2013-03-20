@@ -2,6 +2,7 @@
 import random
 import numpy as np
 import sys
+import multiprocessing as mp
 
 class MonteCarloChain(object):
     """Class for doing a Monte Carlo chain
@@ -50,18 +51,20 @@ class MonteCarloChain(object):
     --------
     NestedSampling
     """
-    def __init__(self, potential, x0, takestep, Emax, accept_tests=None, events=None):
+    def __init__(self, potential, takestep, accept_tests=None, events=None):
         self.potential = potential
-        self.x = x0
         self.takestep = takestep
+        self.accept_tests = accept_tests
+        self.events = events
+    
+    def run(self, x0, Emax):
+        self.x = x0
         self.Emax = Emax
         self.energy = self.potential.getEnergy(self.x)
-        self.accept_tests = accept_tests
         
         self.nsteps = 0
         self.naccept = 0
         
-        self.events = events
         
         if not self.test_configuration(self.x, 0.):
             print "ERROR: initial configuration for monte carlo chain failed configuration test"
@@ -112,6 +115,43 @@ class MonteCarloChain(object):
 
         self.nsteps += 1
 
+def do_monte_carlo_chain(mc_runner, x0, Emax, energy=np.nan, stepsize, iter_number, replicas, **kwargs):
+        """
+        from an initial configuration do a monte carlo chain with niter iterations, 
+        
+        the step will be accepted subject only to a maximum energy criterion.
+        Re-iterates for mciter steps.  After each step update stepize to meet
+        target_ratio. 
+        """
+        mc = mc_runner(x0, iter_number, stepsize, Emax)
+        
+        if self.nproc > 1:
+            ####ADD MORE HERE
+            x_tuple = 
+            pool = mp.Pool(processes=self.nproc)
+            result = pool.map(mc.parallel_step, x_tuple)
+        else: 
+            for i in xrange(self.mciter):
+                mc.step()
+        
+        verbose = True
+        if verbose:
+            # print some data 
+            dist = np.linalg.norm(mc.x - x0)
+            print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
+                "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                "stepsize", stepsize, "distance", dist
+        
+        if mc.naccept == 0:
+            sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
+            print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
+                "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                "stepsize", stepsize, "distance", dist
+
+            
+        
+        self.adjust_step_size(mc)
+        return mc
 
 class Replica(object):
     """ Replica is simply a pair of types coordinates (x) and energy"""
@@ -145,12 +185,18 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None, mc_runner=None):
+    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None, mc_runner=None, nproc=1):
         self.system = system
         self.takestep = takestep
         self.mciter=mciter
         self.accept_tests = accept_tests
-        self.mc_runner = mc_runner
+        self.nproc = nproc
+        
+        #choose between compiled and raw version of the mc_runner
+        if self.mc_runner is None:
+            self.mc_runner = MonteCarloChain(self.system.get_potential(), self.takestep)
+        else:
+            self.mc_runner = mc_runner
         
         self.max_energies = []
         
@@ -162,6 +208,10 @@ class NestedSampling(object):
         print "mciter", self.mciter
         sys.stdout.flush()
     
+    def MonteCarloRaw(self, x0, mciter, stepsize, Emax):
+    """non compiled version of MonteCarloRunner"""
+        self.takestep.stepsize = stepsize
+        return MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
     
     def create_replica(self):
         """
@@ -210,41 +260,7 @@ class NestedSampling(object):
             self.takestep.stepsize /= f
         if self.takestep.stepsize > max_stepsize:
             self.takestep.stepsize = max_stepsize
-    
-    def do_monte_carlo_chain(self, x0, Emax, energy=np.nan, **kwargs):
-        """
-        from an initial configuration do a monte carlo chain with niter iterations, 
         
-        the step will be accepted subject only to a maximum energy criterion.
-        Re-iterates for mciter steps.  After each step update stepize to meet
-        target_ratio. 
-        """
-        if self.mc_runner is None:
-            mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
-            for i in xrange(self.mciter):
-                mc.step()
-        else:
-            mc = self.mc_runner(x0, self.mciter, self.takestep.stepsize, Emax)
-
-        verbose = True
-        if verbose:
-            # print some data
-            dist = np.linalg.norm(mc.x - x0)
-            print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
-                "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                "stepsize", self.takestep.stepsize, "distance", dist
-        
-        if mc.naccept == 0:
-            sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
-            print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
-                "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                "stepsize", self.takestep.stepsize, "distance", dist
-
-            
-        
-        self.adjust_step_size(mc)
-        return mc
-    
     def pop_replica(self):
         """
         remove the replica with the largest energy (last item in the list) and store it in the max_energies array. 
@@ -254,14 +270,28 @@ class NestedSampling(object):
         # pull out the replica with the largest energy
         rmax = self.replicas.pop()
         
+        #remove other nproc-1 replica
+        length = self.nproc-1
+        for i in range(length):
+            self.replicas.pop()
+        
         # add store it for later analysis
         self.max_energies.append(rmax.energy)
         return rmax
 
     def get_starting_configuration_from_replicas(self):
         # choose a replica randomly
-        rstart = random.choice(self.replicas)
-        return rstart.x, rstart.energy
+        if self.nproc > 1:
+            rstart = random.sample(self.replicas, self.nproc)
+            lxstart = []
+            lestart = []
+            for i in range(len(rstart)):
+                lxstart.append(rstart[i].x)
+                lestart.append(rstart[i].energy)    
+            return lxstart, lestart
+        else:
+            rstart = random.choice(self.replicas)
+            return rstart.x, rstart.energy
 
     def get_starting_configuration(self, Emax):
         return self.get_starting_configuration_from_replicas()
@@ -269,23 +299,38 @@ class NestedSampling(object):
     def add_new_replica(self, x, energy):
         rnew = Replica(x, energy)
         self.replicas.append(rnew)
-        self.sort_replicas()
         return rnew
-
     
+    def one_iteration_ser(self, xstart, estart, Emax):
+        # get a new replica to replace it
+        mc = self.do_monte_carlo_chain(xstart, Emax, estart)
+        rnew = self.add_new_replica(mc.x, mc.energy)
+        self.iter_number += 1
+        return 1 ###must return something for parallelisation
+                
+    def one_iteration_par(self, xstart, estart, Emax):
+        #get nproc new replicas and replace them, use Emax as upper bound
+        lEmax = [Emax for i in range(len(xstart))]
+        x_tuple = (xstart, estart, lEmax)
+        pool = mp.Pool(processes=self.nproc)
+        new_func = lambda x:unwrap_one_iteration_ser(self, x)
+        result = pool.map(new_func, x_tuple)
+               
     def one_iteration(self):
         rmax = self.pop_replica()
         Emax = rmax.energy
+        xstart, estart = self.get_starting_configuration(Emax)
         
-        # get a new replica to replace it
-        xstart, estart = self.get_starting_configuration(rmax.energy)
+        if self.nproc > 1:
+            self.one_iteration_par(xstart, estart, Emax) 
+        else: 
+            tmp = self.one_iteration_ser(xstart, estart, Emax)
         
-        mc = self.do_monte_carlo_chain(xstart, Emax, estart)
+        self.sort_replicas()
 
-        rnew = self.add_new_replica(mc.x, mc.energy)
-        
-        self.iter_number += 1
-        
+def unwrap_one_iteration_ser(NestedSampling, x_tuple):
+    return NestedSampling.one_iteration_ser(x_tuple[0], x_tuple[1], x_tuple[2])
+       
 def test_main():
     from lj_run import LJClusterNew
     from pygmin.takestep import RandomDisplacement
