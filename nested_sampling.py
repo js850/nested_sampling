@@ -113,6 +113,43 @@ class MonteCarloChain(object):
 
         self.nsteps += 1
 
+def do_monte_carlo_chain(mc_runner, x0, Emax, energy=np.nan, stepsize, iter_number, replicas, **kwargs):
+        """
+        from an initial configuration do a monte carlo chain with niter iterations, 
+        
+        the step will be accepted subject only to a maximum energy criterion.
+        Re-iterates for mciter steps.  After each step update stepize to meet
+        target_ratio. 
+        """
+        mc = mc_runner(x0, iter_number, stepsize, Emax)
+        
+        if self.nproc > 1:
+            ####ADD MORE HERE
+            x_tuple = 
+            pool = mp.Pool(processes=self.nproc)
+            result = pool.map(mc.parallel_step, x_tuple)
+        else: 
+            for i in xrange(self.mciter):
+                mc.step()
+        
+        verbose = True
+        if verbose:
+            # print some data 
+            dist = np.linalg.norm(mc.x - x0)
+            print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
+                "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                "stepsize", stepsize, "distance", dist
+        
+        if mc.naccept == 0:
+            sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
+            print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
+                "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                "stepsize", stepsize, "distance", dist
+
+            
+        
+        self.adjust_step_size(mc)
+        return mc
 
 class Replica(object):
     """ Replica is simply a pair of types coordinates (x) and energy"""
@@ -151,8 +188,13 @@ class NestedSampling(object):
         self.takestep = takestep
         self.mciter=mciter
         self.accept_tests = accept_tests
-        self.mc_runner = mc_runner
         self.nproc = nproc
+        
+        #choose between compiled and raw version of the mc_runner
+        if self.mc_runner is None:
+            self.mc_runner = MonteCarloRaw
+        else:
+            self.mc_runner = mc_runner
         
         self.max_energies = []
         
@@ -164,6 +206,10 @@ class NestedSampling(object):
         print "mciter", self.mciter
         sys.stdout.flush()
     
+    def MonteCarloRaw(self, x0, mciter, stepsize, Emax):
+    """non compiled version of MonteCarloRunner"""
+        self.takestep.stepsize = stepsize
+        return MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
     
     def create_replica(self):
         """
@@ -212,41 +258,7 @@ class NestedSampling(object):
             self.takestep.stepsize /= f
         if self.takestep.stepsize > max_stepsize:
             self.takestep.stepsize = max_stepsize
-    
-    def do_monte_carlo_chain(self, x0, Emax, energy=np.nan, **kwargs):
-        """
-        from an initial configuration do a monte carlo chain with niter iterations, 
         
-        the step will be accepted subject only to a maximum energy criterion.
-        Re-iterates for mciter steps.  After each step update stepize to meet
-        target_ratio. 
-        """
-        if self.mc_runner is None:
-            mc = MonteCarloChain(self.system.get_potential(), x0, self.takestep, Emax, accept_tests=self.accept_tests, **kwargs)
-            for i in xrange(self.mciter):
-                mc.step()
-        else:
-            mc = self.mc_runner(x0, self.mciter, self.takestep.stepsize, Emax)
-
-        verbose = True
-        if verbose:
-            # print some data
-            dist = np.linalg.norm(mc.x - x0)
-            print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
-                "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                "stepsize", self.takestep.stepsize, "distance", dist
-        
-        if mc.naccept == 0:
-            sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
-            print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
-                "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                "stepsize", self.takestep.stepsize, "distance", dist
-
-            
-        
-        self.adjust_step_size(mc)
-        return mc
-    
     def pop_replica(self):
         """
         remove the replica with the largest energy (last item in the list) and store it in the max_energies array. 
