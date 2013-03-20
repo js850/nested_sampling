@@ -3,6 +3,8 @@ import random
 import numpy as np
 import sys
 import multiprocessing as mp
+#this import fixes some bugs in how multiprocessing deals with exceptions
+import pygmin.utils.fix_multiprocessing
 
 class MonteCarloChain(object):
     """Class for doing a Monte Carlo chain
@@ -204,10 +206,9 @@ class NestedSampling(object):
                 x_tuple.append(y_tuple)
                 
             pool = mp.Pool(processes=self.nproc)
-            result = pool.map(mc_runner_wrapper, x_tuple)
+            mc = pool.map(mc_runner_wrapper, x_tuple)
             pool.close()
             pool.join()
-            mc = result.get() #list of montecarlo chain objects
         else:
             x_tuple = (x0, self.mciter, self.takestep.stepsize, Emax)
             mc = self.mc_runner(x_tuple)
@@ -303,9 +304,11 @@ class NestedSampling(object):
         # choose a replica randomly
         if self.nproc > 1:
             rstart = random.sample(self.replicas, self.nproc)
+            lrstart = []
+            lestart = []
             for i in xrange(len(rstart)):
-                lrstart = rstart[i].x
-                lestart = rstart[i].energy
+                lrstart.append(rstart[i].x)
+                lestart.append(rstart[i].energy)
             return lrstart, lestart
         else:
             rstart = random.choice(self.replicas)
@@ -325,7 +328,13 @@ class NestedSampling(object):
         xstart, estart = self.get_starting_configuration(Emax)
         
         mc = self.do_monte_carlo_chain(xstart, Emax, estart)
-        rnew = self.add_new_replica(mc.x, mc.energy)
+        
+        if self.nproc > 1:
+            for i in xrange(len(mc)):
+                rnew = self.add_new_replica(mc[i].x, mc[i].energy)
+        else:
+            rnew = self.add_new_replica(mc.x, mc.energy)
+            
         self.iter_number += 1
         
         self.sort_replicas()
