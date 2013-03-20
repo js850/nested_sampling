@@ -63,8 +63,8 @@ class MonteCarloChain(object):
     def run(self, x_tuple):
         x0 = x_tuple[0]
         mciter = x_tuple[1]
-        stepsize = x_tuple[3]
-        Emax = x_tuple[4]
+        stepsize = x_tuple[2]
+        Emax = x_tuple[3]
         
         self.x = x0
         self.Emax = Emax
@@ -167,8 +167,8 @@ class NestedSampling(object):
         self.nproc = nproc
         
         #choose between compiled and raw version of the mc_runner
-        if self.mc_runner is None:
-            self.mc_runner = MonteCarloChain(self.system.get_potential(), self.takestep, accept_tests=self.accept_tests, **kwargs)
+        if mc_runner is None:
+            self.mc_runner = MonteCarloChain(self.system.get_potential(), self.takestep, accept_tests=self.accept_tests)
         else:
             self.mc_runner = mc_runner
         
