@@ -64,8 +64,8 @@ class MonteCarloCompiled(object):
         
         x0 = x_tuple[0]
         mciter = x_tuple[1]
-        stepsize = x_tuple[3]
-        Emax = x_tuple[4]
+        stepsize = x_tuple[2]
+        Emax = x_tuple[3]
         
         from src.runmc import mc_cython
         x, naccept = mc_cython(x0, mciter, stepsize, Emax, self.radius)
@@ -77,8 +77,6 @@ class MonteCarloCompiled(object):
         pot = self.system.get_potential()
         self.energy = pot.getEnergy(x)
         return self
-
-
 
 def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, nproc = 1):
     takestep = RandomDisplacement(stepsize=0.07)

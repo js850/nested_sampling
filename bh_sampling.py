@@ -480,10 +480,13 @@ class NestedSamplingBS(NestedSampling):
             print "sampling from minima"
             
             if self.nproc > 1:
-                sampled_minima = []
+                xminima = []
+                eminima = []
                 for i in range(self.nproc):
-                    sampled_minima.append(self.get_starting_configuration_minima(Emax))
-                return sampled_minima
+                    xm, em = self.get_starting_configuration_minima(Emax)
+                    xminima.append(xm)
+                    eminima.append(em)
+                return xminima, eminima
             else:
                 return self.get_starting_configuration_minima(Emax)
         else:

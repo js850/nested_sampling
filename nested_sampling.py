@@ -193,7 +193,7 @@ class NestedSampling(object):
         
         if self.nproc > 1:
             x_tuple = []
-            for i in xrange(x0):
+            for i in xrange(len(x0)):
                 y_tuple = (x0[i], self.mciter, self.takestep.stepsize, Emax)
                 x_tuple.append(y_tuple)
                 
