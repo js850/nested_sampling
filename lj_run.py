@@ -60,7 +60,13 @@ class MonteCarloCompiled(object):
         self.radius = radius
         self.system = system
     
-    def __call__(self, x0, mciter, stepsize, Emax):
+    def __call__(self, x_tuple):
+        
+        x0 = x_tuple[0]
+        mciter = x_tuple[1]
+        stepsize = x_tuple[3]
+        Emax = x_tuple[4]
+        
         from src.runmc import mc_cython
         x, naccept = mc_cython(x0, mciter, stepsize, Emax, self.radius)
 #        print ret
