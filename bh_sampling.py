@@ -491,7 +491,7 @@ class NestedSamplingBS(NestedSampling):
 
 
 
-def test_main():
+if __name__ == "__main__":
     # define the system
     from lj_run import LJClusterNew
     natoms = 13
@@ -513,8 +513,4 @@ def test_main():
     k = system.k
     for i in range(10):
         coords, E = sample_from_database(system, db, Emax)
-
-if __name__ == "__main__":
-    test_main()
-
     
