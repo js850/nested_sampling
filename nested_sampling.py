@@ -205,6 +205,11 @@ class NestedSampling(object):
         print "nreplicas", len(self.replicas)
         print "mciter", self.mciter
         sys.stdout.flush()
+
+        #initialize the pool
+        if self.nproc > 1:
+            self.pool = mp.Pool(processes=self.nproc)
+
         
     def do_monte_carlo_chain(self, configs, Emax, **kwargs):
         """
@@ -219,14 +224,12 @@ class NestedSampling(object):
             for t in x_tuple: #  debug check
                 assert isinstance(t[1], np.ndarray), "%s" % str(t[1])
 
-            pool = mp.Pool(processes=self.nproc)
             try:
-                mclist = pool.map(mc_runner_wrapper, x_tuple)
-                pool.close()
-                pool.join()
+                mclist = self.pool.map(mc_runner_wrapper, x_tuple)
             except:
-                pool.terminate()
-                pool.join()
+                #this is bad, it shouldn't be done here
+                self.pool.terminate()
+                self.pool.join()
                 raise
             
             for r, mc in izip(configs, mclist):
@@ -361,7 +364,10 @@ class NestedSampling(object):
         self.iter_number += 1        
         self.sort_replicas()
 
-
+    def finish(self):
+        if self.nproc > 1:
+            self.pool.close()
+            self.pool.join()
 
 if __name__ == "__main__":
     from lj_run import LJClusterNew

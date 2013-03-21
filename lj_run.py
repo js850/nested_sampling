@@ -84,6 +84,8 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
         mc_runner = None
     print "using the compiled MC = ", use_compiled
     
+    print "using", nproc, "processors"
+    
     use_bs = True
     
     if use_bs:
@@ -106,11 +108,21 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
                 fout.write("\n")
                 fout.flush()
                 isave = i
-            if False and i % 10000:
+
+            if False and i % 10000 == 0:
                 with open(label+".x", "w") as xout:
                     for r in ns.replicas:
                         write_xyz(xout, r.x)
                     
+            if i % 1000 == 0:
+                if i == 0: openas = "w"
+                else: openas = "a"
+                with open(label+".replicas", openas) as xout:
+                    xout.write("#energy niter from_random\n")
+                    for r in ns.replicas:
+                        xout.write("%g %d %d\n" % (r.energy, r.niter, int(r.from_random))) 
+                    xout.write("\n\n")
+
             if ediff < etol: break
             if i >= maxiter: break  
             ns.one_iteration()
@@ -121,7 +133,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
 #    print ns.max_energies
     print "min replica energy", ns.replicas[0].energy
     print "max replica energy", ns.replicas[-1].energy
-
+    ns.finish()
     return ns
 
 def main():
@@ -135,7 +147,7 @@ def main():
     parser.add_argument("-A", "--nAtoms", type=int, help="number of atoms", default=31)
     parser.add_argument("-C", "--compiled-mc", type=bool, help="option to use the Markov chain routine from C source (unique to LJ systems)", 
                         default=True)
-    parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=2)
+    parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=1)
     args = parser.parse_args()
 
     natoms = args.nAtoms
