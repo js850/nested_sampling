@@ -59,15 +59,10 @@ class MonteCarloChain(object):
         self.accept_tests = accept_tests
         self.events = events
     
-    def __call__(self, x_tuple):
-        return self.run(x_tuple)
+    def __call__(self, x0, mciter, stepsize, Emax):
+        return self.run(x0, mciter, stepsize, Emax)
     
-    def run(self, x_tuple):
-        x0 = x_tuple[0]
-        mciter = x_tuple[1]
-        stepsize = x_tuple[2]
-        Emax = x_tuple[3]
-        
+    def run(self, x0, mciter, stepsize, Emax):        
         self.x = x0
         self.Emax = Emax
         self.energy = self.potential.getEnergy(self.x)
@@ -85,6 +80,9 @@ class MonteCarloChain(object):
         
         for i in xrange(self.mciter):
             self.step()
+        
+        return self
+
 
         
     def test_configuration(self, x, e):
@@ -137,8 +135,8 @@ class Replica(object):
 
 def mc_runner_wrapper(x_tuple):
     mc_runner = x_tuple[0]
-    newtuple = x_tuple[1:]
-    return mc_runner(newtuple)
+    x0, mciter, stepsize, Emax = x_tuple[1:]
+    return mc_runner(x0, mciter, stepsize, Emax) 
 
 class NestedSampling(object):
     """the main class for implementing nested sampling
@@ -189,7 +187,7 @@ class NestedSampling(object):
         print "mciter", self.mciter
         sys.stdout.flush()
         
-    def do_monte_carlo_chain(self, x0, Emax, energy=np.nan, **kwargs):
+    def do_monte_carlo_chain(self, configs, Emax, **kwargs):
         """
         from an initial configuration do a monte carlo chain with niter iterations, 
         
@@ -197,21 +195,25 @@ class NestedSampling(object):
         Re-iterates for mciter steps.  After each step update stepize to meet
         target_ratio. 
         """
-        
         if self.nproc > 1:
-            x_tuple = []
-            for i in xrange(len(x0)):
-                y_tuple = (self.mc_runner, x0[i], self.mciter, self.takestep.stepsize, Emax)
-                assert len(x0[i]) > 0
-                x_tuple.append(y_tuple)
-                
+            x_tuple = [(self.mc_runner, x, self.mciter, self.takestep.stepsize, Emax) for x, energy in configs]
+            for t in x_tuple: #  debug check
+                assert isinstance(t[1], np.ndarray), "%s" % str(t[1])
+
             pool = mp.Pool(processes=self.nproc)
-            mc = pool.map(mc_runner_wrapper, x_tuple)
-            pool.close()
-            pool.join()
+            try:
+                mclist = pool.map(mc_runner_wrapper, x_tuple)
+                pool.close()
+                pool.join()
+            except:
+                pool.terminate()
+                pool.join()
+                raise
+
         else:
-            x_tuple = (x0, self.mciter, self.takestep.stepsize, Emax)
-            mc = self.mc_runner(x_tuple)
+            x0, energy = configs[0]
+            mc = self.mc_runner(x0, self.mciter, self.takestep.stepsize, Emax)
+            mclist = [mc]
         
             verbose = True
             if verbose:
@@ -228,7 +230,7 @@ class NestedSampling(object):
                     "stepsize", self.takestep.stepsize, "distance", dist
 
         self.adjust_step_size(mc)
-        return mc
+        return mclist
     
     def create_replica(self):
         """
@@ -304,16 +306,12 @@ class NestedSampling(object):
     def get_starting_configuration_from_replicas(self):
         # choose a replica randomly
         if self.nproc > 1:
-            rstart = random.sample(self.replicas, self.nproc)
-            lrstart = []
-            lestart = []
-            for i in xrange(len(rstart)):
-                lrstart.append(rstart[i].x)
-                lestart.append(rstart[i].energy)
-            return lrstart, lestart
+            rlist = random.sample(self.replicas, self.nproc)
+            configlist = [(r.x, r.energy) for r in rlist]
+            return configlist
         else:
             rstart = random.choice(self.replicas)
-            return rstart.x, rstart.energy
+            return [(rstart.x, rstart.energy)]
 
     def get_starting_configuration(self, Emax):
         return self.get_starting_configuration_from_replicas()
@@ -326,19 +324,19 @@ class NestedSampling(object):
     def one_iteration(self):
         rmax = self.pop_replica()
         Emax = rmax.energy
-        xstart, estart = self.get_starting_configuration(Emax)
+        configs = self.get_starting_configuration(Emax)
+        # note configs is a list of starting configurations.
+        # but a list of length 1 if self.nproc == 1
         
-        mc = self.do_monte_carlo_chain(xstart, Emax, estart)
-        
-        if self.nproc > 1:
-            for i in xrange(len(mc)):
-                rnew = self.add_new_replica(mc[i].x, mc[i].energy)
-        else:
+        mclist = self.do_monte_carlo_chain(configs, Emax)
+
+        for mc in mclist:
             rnew = self.add_new_replica(mc.x, mc.energy)
             
-        self.iter_number += 1
-        
+        self.iter_number += 1        
         self.sort_replicas()
+
+
 
 if __name__ == "__main__":
     from lj_run import LJClusterNew

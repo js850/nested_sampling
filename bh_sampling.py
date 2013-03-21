@@ -476,21 +476,19 @@ class NestedSamplingBS(NestedSampling):
     def get_starting_configuration(self, Emax):
         """this function overloads the function in NestedSampling"""
         # choose a replica randomly
-        if np.random.uniform(0,1) < 1/(float(self.nproc)+1):
-            print "sampling from minima"
-            
-            if self.nproc > 1:
-                xminima = []
-                eminima = []
-                for i in range(self.nproc):
-                    xm, em = self.get_starting_configuration_minima(Emax)
-                    xminima.append(xm)
-                    eminima.append(em)
-                return xminima, eminima
-            else:
-                return self.get_starting_configuration_minima(Emax)
+        if self.nproc > 1:
+            configs = self.get_starting_configuration_from_replicas()
+            # replace each starting configuration with a one chosen
+            # from the minima with probability prob
+            prob = 1. / (float(self.nproc)+1)
+            for i in range(len(configs)):
+                if np.random.uniform(0,1) < prob:
+                    print "sampling from minima"
+                    configs[i] = self.get_starting_configuration_minima(Emax)
+            return configs
         else:
-            return self.get_starting_configuration_from_replicas()
+            config = self.get_starting_configuration_from_replicas()
+            return [config]
 
 
 
