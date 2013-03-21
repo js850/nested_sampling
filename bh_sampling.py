@@ -483,7 +483,8 @@ class NestedSamplingBS(NestedSampling):
         for i in range(len(configs)):
             if np.random.uniform(0,1) < prob:
                 print "sampling from minima"
-                configs[i] = self.get_starting_configuration_minima(Emax)
+                x, energy = self.get_starting_configuration_minima(Emax)
+                configs[i] = Replica(x, energy, from_random=False) 
         return configs
 
 
