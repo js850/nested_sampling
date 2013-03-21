@@ -229,13 +229,20 @@ class NestedSampling(object):
                 pool.join()
                 raise
             
-            rnewlist = [Replica(mc.x, mc.energy, rold.niter + mc.nsteps) for rold, mc in izip(configs, mclist)]
+            for r, mc in izip(configs, mclist):
+                r.x = mc.x
+                r.energy = mc.energy
+                r.niter += mc.nsteps
+            rnewlist = configs
 
         else:
             rold = configs[0]
             x0, energy = rold.x, rold.energy
             mc = self.mc_runner(x0, self.mciter, self.takestep.stepsize, Emax)
-            rnew = Replica(mc.x, mc.energy, rold.niter + mc.nsteps)
+            rnew = rold
+            rnew.x = mc.x
+            rnew.energy = mc.energy
+            rnew.niter += mc.nsteps
             rnewlist = [rnew]
             mclist = [mc]
             
