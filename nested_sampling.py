@@ -229,7 +229,7 @@ class NestedSampling(object):
                     "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
                     "stepsize", self.takestep.stepsize, "distance", dist
 
-        self.adjust_step_size(mc)
+        self.adjust_step_size(mclist)
         return mclist
     
     def create_replica(self):
@@ -271,10 +271,7 @@ class NestedSampling(object):
         f = 0.8
         target_ratio = 0.7
         max_stepsize = 0.5
-        if self.nproc > 1:
-            ratio = float(sum(m.naccept for m in mc))/ sum(m.nsteps for m in mc)  
-        else:
-            ratio = float(mc.naccept) / mc.nsteps
+        ratio = float(sum(m.naccept for m in mc))/ sum(m.nsteps for m in mc)  
         
         if ratio < target_ratio:
             # reduce step size
