@@ -36,7 +36,7 @@ int check_spherical_container(double * x, int N, double radius)
   return 1;
 }
 
-int mc(double *x0, double *xreturn, int natoms, long int niter, double stepsize, double Emax, double radius, long int seed)
+int mc(double *x0, double *xreturn, double *Ereturn, int natoms, long int niter, double stepsize, double Emax, double radius, long int seed)
 {
   //set up the random number generator
   gsl_rng * gslrng; //declare the random number generator
@@ -112,6 +112,7 @@ int mc(double *x0, double *xreturn, int natoms, long int niter, double stepsize,
     xreturn[i] = x[i];
   }
 
+  *Ereturn = E;
   free(x);
   free(xnew);
   gsl_rng_free (gslrng); //free the rng working space

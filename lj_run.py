@@ -62,13 +62,15 @@ class MonteCarloCompiled(object):
         self.pot = pot
     
     def __call__(self, x0, mciter, stepsize, Emax):
-        x, naccept = mc_cython(x0, mciter, stepsize, Emax, self.radius)
+        x, energy, naccept = mc_cython(x0, mciter, stepsize, Emax, self.radius)
 #        print ret
         self.x0 = x0
         self.x = x
         self.nsteps = mciter
         self.naccept = naccept
-        self.energy = self.pot.getEnergy(x)
+        self.energy = energy
+        etest = self.pot.getEnergy(x)
+        assert np.abs(energy - etest)/np.abs(energy) < 1e-7, "energies not the same %g %g" % (energy, etest)
         return self
 
 def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, nproc = 1):
