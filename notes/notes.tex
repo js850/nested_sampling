@@ -63,7 +63,7 @@ way from all of configuration space with $E(x) < E_{max}$
 \section{Sampling from the harmonic superposition approximation}
 
 A weakness of the nested sampling algorithm is one of sampling.  Imagine the following situation
-of trying to describe a crystalization transition.  At high energies the liquid state
+of trying to describe a crystallization transition.  At high energies the liquid state
 completely dominates phase spase.  Nearly all of the replicas will be in the disordered liquid
 configurations.  As $E_{max}$ decreases the relative weight of the crystal phse becomes more 
 and more important, and you would start to expect to see some replicas in the crystal.  This is
@@ -75,10 +75,10 @@ monotonically. For $E_{max}$ very high it's unlikely to be in the crystal becaus
 volume is so small.  For $E_{max}$ very low the relative phase volume is very
 favorable, but exploring the energy landscape is very restricted so it is very
 unlikely, or even impossible to find it starting from a disordered
-configutation.  There is a relatively small range of $E_{max}$ where enough stars align so that
+configuration.  There is a relatively small range of $E_{max}$ where enough stars align so that
 it is likely that the crystal is found.
 
-We will use Basinhopping to cacluate the ground state and all relevant low lying minima.
+We will use Basinhopping to calculate the ground state and all relevant low lying minima.
 We will then use this information to improve the step of the nested sampling
 algorithm ``sample uniformly from configuration space with $E(x) < E_{max}$''.
 
@@ -89,7 +89,14 @@ In the harmonic approximation the density of states of minimum $\alpha$ is
 \end{equation}
 
 $E_\alpha$ is the energy of the minimum.  $\Gamma(k)$ is the gamma function $(k-1)!$, $k$ is the number
-of vibrational degrees of freedom ($3*N-6$ for a cluster).  $\bar{\nu}$ is the geometric mean of the positive normal mode frequencies, or, put another way, $\bar{\nu}^k$ is the product of the positive normal mode frequencies $\nu_{\alpha}$.  $2N!$ accounts for all the nonsuperimposible permutation-inversion isomers of each structure. $O_\alpha$ is the order of the symmetry point group of the structure of minimum $\alpha$.  The $2N!$ permutations and the gamma function are the same for all structures and will cancel out when renormalising.
+of vibrational degrees of freedom ($3*N-6$ for a cluster).  $\bar{\nu}$ is the
+geometric mean of the positive normal mode frequencies, or, put another way,
+$\bar{\nu}^k$ is the product of the positive normal mode frequencies
+$\nu_{\alpha}$.  $2N!$ accounts for all the non-superimposible
+permutation-inversion isomers of each structure. $O_\alpha$ is the order of the
+symmetry point group of the structure of minimum $\alpha$.  The $2N!$
+permutations and the gamma function are the same for all structures and will
+cancel out when renormalising.
 To get the phase space volume of the basin of a minimum we integrate the energy
 
 \begin{equation}
@@ -150,7 +157,7 @@ between $E$ and $E+dE$ should be
 \begin{equation}
   P(E)dE \propto (E-E_{\alpha})^{k-2}dE
 \end{equation}
-In $q$ space this probility density function becomes $P(q)dq = P(E)dE$
+In $q$ space this probability density function becomes $P(q)dq = P(E)dE$
 \begin{equation}
   P(q)dq \propto q^{2k-3}dq
 \end{equation}
@@ -158,14 +165,103 @@ In $q$ space this probility density function becomes $P(q)dq = P(E)dE$
 Thus we draw $q$ from a power law distribution with power $(2k-2)$ and maximum
 value $\sqrt{2 (E_{max} - E_{\alpha})}$.  Note that the probability density
 function above with power $k-1$ has a cumulative distribution function with
-power $k$, so these distributions are refered to as power law distributions
+power $k$, so these distributions are reffered to as power law distributions
 with power $k$.
 Alternatively we can draw the target change in energy $dE_{target}$ from a power law
 distribution with power $k-1$ and maximum value $(E_{max} - E_{\alpha})$
 and set $q = \sqrt{2 dE_{target}}$.
 
 
+\section{parallel nested sampling}
 
+Nested sampling can be parallelized to run on P cores very easily.
+At every step we 
+
+\begin{enumerate}
+  \item remove the replica with the highest energy, and save that energy for post-analysis
+
+  \item remove also the next P-1 highest energy replicas.
+
+  \item Select P replicas at random from those remaining and use those as a starting
+    configuration for a Monte Carlo run
+
+  \item Insert the P new configurations into the list of replicas
+\end{enumerate}
+
+The improvement of this over the serial version is that each replica spends more time 
+evolving via the monte carlo chain, and so the phase space is explored more completely.
+
+It would be nice to know how many monte carlo iterations each replica on
+average takes.  Or, phrased another way, at iteration $i$, what is the average
+number of MC steps a given replica has taken. If $\bar{n}_i$ is the average number
+of monte carlo steps at iteration $i$, we can work out what the average number is
+at iteration $i+1$.  
+
+\begin{itemize}
+  \item $P$ replicas are thrown away, but they are selected in a way independent of the
+    number of MC steps.  So the average number of MC steps remains $\bar{n}_i$
+    
+  \item from the remaining replicas $P$ are chosen at random.  The average of these
+    replicas is again $\bar{n}_i$.
+
+  \item the chosen replicas are duplicated and run for an additional $n_{mc}$ MC steps
+\end{itemize}
+
+Thus we can write down the new average value of the number of MC steps
+\begin{equation}
+  \bar{n}_{i+1} K = \bar{n}_i  (K - P) + (\bar{n}_i + n_{mc}) P
+\end{equation}
+\begin{equation}
+  \bar{n}_{i+1} = \bar{n}_i  +  n_{mc} P / K
+  \label{eqn:par_iter}
+\end{equation}
+From this iterative relationship we can work out the average number of
+MC steps at step $i$
+\begin{equation}
+  \bar{n}_{i} = i n_{mc} P / K
+\end{equation}
+This is linear in P and grows linearly with the number of MC steps.
+
+Note that each one of these iterations is at a different, $E_{max}$, so this
+not equivalent to simply doing longer MC runs. Also note that if $P$ is 1 then
+we still get a total number of MC steps increasing linearly with the number of
+iterations
+
+\subsection{sampling from the minima}
+
+If we include sampling from the minima we change the above calculation of the
+average number of MC steps.  Each time we sample from the minima we reset
+one of the replicas to have 0 MC steps.  Lets go through the above
+arguments again. $P_{m}$ is the average number of the $P$ new replicas starting
+from zero
+
+\begin{itemize}
+  \item $P$ replicas are thrown away, but they are selected in a way independent of the
+    number of MC steps.  So the average number of MC steps remains $\bar{n}_i$
+
+  \item $P_m$ replicas are started from one of the minima
+    
+  \item from the remaining replicas $P - P_m$ are chosen at random.  The average of these
+    replicas is again $\bar{n}_i$.  
+
+  \item the chosen replicas are duplicated and run for an additional $n_{mc}$ MC steps
+\end{itemize}
+The equations are altered as
+\begin{equation}
+  \bar{n}_{i+1} K = \bar{n}_i  (K - P) + (\bar{n}_i + n_{mc}) (P - P_m) + n_{mc} P_m
+\end{equation}
+\begin{equation}
+  \bar{n}_{i+1} = \bar{n}_i (1-P_m/K)  +  n_{mc} P / K
+\end{equation}
+
+In contrast to equation \label{eqn:par_iter}, the multiplicative factor $(1-P_m/K)$
+means that large values of  $\bar{n}_i$ will decay down to a steady state.  That 
+steady state can be worked out by setting $\bar{n}_{i+1} = \bar{n}_i$
+\begin{equation}
+  \bar{n}_{i}^{ss} = n_{mc} P / P_m
+\end{equation}
+Thus, when we sample from the minima, the average number of monte carlo steps saturates
+after many iterations.
 
 \bibliography{jakes_biblio}
 
