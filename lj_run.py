@@ -15,6 +15,7 @@ from pygmin.utils.xyz import write_xyz
 from pygmin.accept_tests import SphericalContainer
 from pygmin.systems import LJCluster
 from pygmin.mindist import PointGroupOrderCluster
+from pygmin.optimize import Result
 
 class SphericalContainerNew(SphericalContainer):
     def __call__(self, energy=None, coords=None):
@@ -57,31 +58,29 @@ class LJClusterNew(LJCluster):
 
 from src.runmc import mc_cython
 class MonteCarloCompiled(object):
-    def __init__(self, pot, radius):
+    def __init__(self, radius):
         self.radius = radius
-        self.pot = pot
     
     def __call__(self, x0, mciter, stepsize, Emax):
         x, energy, naccept = mc_cython(x0, mciter, stepsize, Emax, self.radius)
 #        print ret
-        self.x0 = x0
-        self.x = x
-        self.nsteps = mciter
-        self.naccept = naccept
-        self.energy = energy
-        etest = self.pot.getEnergy(x)
-        assert np.abs(energy - etest)/np.abs(energy) < 1e-7, "energies not the same %g %g" % (energy, etest)
-        return self
+        res = Result()
+        res.x0 = x0
+        res.x = x
+        res.nsteps = mciter
+        res.naccept = naccept
+        res.energy = energy
+        return res
 
 def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, nproc = 1):
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
 
     if use_compiled:
-        mc_runner = MonteCarloCompiled(system.get_potential(), system.radius)
-        import pickle
-        with open("testpickle", "w") as pout:
-            pickle.dump(mc_runner, pout)
+        mc_runner = MonteCarloCompiled(system.radius)
+ #       import pickle
+ #       with open("testpickle", "w") as pout:
+ #           pickle.dump(mc_runner, pout)
     else:
         mc_runner = None
     print "using the compiled MC = ", use_compiled
