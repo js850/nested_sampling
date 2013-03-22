@@ -62,10 +62,10 @@ class MonteCarloChain(object):
         self.accept_tests = accept_tests
         self.events = events
     
-    def __call__(self, x0, mciter, stepsize, Emax):
-        return self.run(x0, mciter, stepsize, Emax)
+    def __call__(self, x0, mciter, stepsize, Emax, seed=None):
+        return self.run(x0, mciter, stepsize, Emax, seed=seed)
     
-    def run(self, x0, mciter, stepsize, Emax):        
+    def run(self, x0, mciter, stepsize, Emax, seed=None):        
         self.x = x0
         self.Emax = Emax
         self.energy = self.potential.getEnergy(self.x)
@@ -154,8 +154,8 @@ class Replica(object):
 
 def mc_runner_wrapper(x_tuple):
     mc_runner = x_tuple[0]
-    x0, mciter, stepsize, Emax = x_tuple[1:]
-    return mc_runner(x0, mciter, stepsize, Emax) 
+    x0, mciter, stepsize, Emax, seed = x_tuple[1:]
+    return mc_runner(x0, mciter, stepsize, Emax, seed) 
 
 class NestedSampling(object):
     """the main class for implementing nested sampling
@@ -220,7 +220,9 @@ class NestedSampling(object):
         target_ratio. 
         """
         if self.nproc > 1:
-            x_tuple = [(self.mc_runner, r.x, self.mciter, self.takestep.stepsize, Emax) for r in configs]
+            stepsize = self.takestep.stepsize
+            x_tuple = [(self.mc_runner, r.x, self.mciter, stepsize, Emax, 
+                        np.random.randint(0, sys.maxint)) for r in configs]
             for t in x_tuple: #  debug check
                 assert isinstance(t[1], np.ndarray), "%s" % str(t[1])
 
@@ -241,7 +243,8 @@ class NestedSampling(object):
         else:
             rold = configs[0]
             x0, energy = rold.x, rold.energy
-            mc = self.mc_runner(x0, self.mciter, self.takestep.stepsize, Emax)
+            seed = np.random.randint(0, sys.maxint)
+            mc = self.mc_runner(x0, self.mciter, self.takestep.stepsize, Emax, seed)
             rnew = rold
             rnew.x = mc.x
             rnew.energy = mc.energy

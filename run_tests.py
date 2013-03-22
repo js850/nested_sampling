@@ -16,16 +16,16 @@ class TestLJNS(unittest.TestCase):
         self.mciter = 10
         self.iterscale = 1
 
-    def test1(self):    
+    def test_comp(self):    
         run_nested_sampling(self.system, nreplicas=self.nreplicas, mciter=self.mciter, 
                             iterscale=1, label="test", minima=self.minima, use_compiled=True, nproc=1)
-    def test2(self):    
+    def test_ser(self):    
         run_nested_sampling(self.system, nreplicas=self.nreplicas, mciter=self.mciter, 
                             iterscale=1, label="test", minima=self.minima, use_compiled=False, nproc=1)
-    def test3(self):    
+    def test_comp_par(self):    
         run_nested_sampling(self.system, nreplicas=self.nreplicas, mciter=self.mciter, 
                             iterscale=1, label="test", minima=self.minima, use_compiled=True, nproc=2)
-    def test4(self):    
+    def test4_par(self):    
         run_nested_sampling(self.system, nreplicas=self.nreplicas, mciter=self.mciter, 
                             iterscale=1, label="test", minima=self.minima, use_compiled=False, nproc=2)
 

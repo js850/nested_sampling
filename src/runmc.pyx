@@ -8,10 +8,9 @@ cdef extern:
            long int seed)
 
 def mc_cython(np.ndarray[double, ndim=1, mode="c"] x0,
-               int mciter, double stepsize, double Emax, double radius):
+               int mciter, double stepsize, double Emax, double radius, long int seed):
     cdef np.ndarray[double, ndim=1, mode="c"] x
     x = np.zeros(x0.size);
-    seed = np.random.randint(0, sys.maxint)
     cdef np.ndarray[double, ndim=1, mode="c"] Eretarray 
     Eretarray = np.zeros(1)
 
