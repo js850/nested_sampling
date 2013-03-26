@@ -183,12 +183,14 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, system, nreplicas, takestep, mciter=100, accept_tests=None, mc_runner=None, nproc=1):
+    def __init__(self, system, nreplicas, takestep, mciter=100, 
+                  accept_tests=None, mc_runner=None, nproc=1, verbose=True):
         self.system = system
         self.takestep = takestep
         self.mciter=mciter
         self.accept_tests = accept_tests
         self.nproc = nproc
+        self.verbose = verbose
         
         #choose between compiled and raw version of the mc_runner
         if mc_runner is None:
@@ -240,6 +242,13 @@ class NestedSampling(object):
                 r.niter += mc.nsteps
             rnewlist = configs
 
+            if self.verbose:
+                # print some data
+                accrat = float(sum(mc.naccept for mc in mclist))/ sum(mc.nsteps for mc in mclist)
+                print "step:", self.iter_number, "%accept", accrat, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                    "stepsize", self.takestep.stepsize
+
+
         else:
             rold = configs[0]
             x0, energy = rold.x, rold.energy
@@ -253,18 +262,18 @@ class NestedSampling(object):
             mclist = [mc]
             
         
-            verbose = True
-            if verbose:
+            if self.verbose:
                 # print some data
                 dist = np.linalg.norm(mc.x - x0)
                 print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
                     "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
                     "stepsize", self.takestep.stepsize, "distance", dist
-            
+        
+        for mc, r in izip(mclist, configs):
             if mc.naccept == 0:
                 sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
                 print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
-                    "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                    "Enew", mc.energy, "Eold", r.energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
                     "stepsize", self.takestep.stepsize, "distance", dist
 
         self.adjust_step_size(mclist)
@@ -327,7 +336,7 @@ class NestedSampling(object):
         """
         # pull out the replica with the largest energy
         rmax = self.replicas.pop()
-        print "Epop:", rmax.energy, "n_replicas", len(self.replicas)
+#        print "Epop:", rmax.energy, "n_replicas", len(self.replicas)
         
         #remove other nproc-1 replica
         length = self.nproc-1
