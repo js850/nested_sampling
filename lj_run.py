@@ -151,6 +151,7 @@ def main():
     parser.add_argument("-C", "--compiled-mc", type=bool, help="option to use the Markov chain routine from C source (unique to LJ systems)", 
                         default=True)
     parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=1)
+    parser.add_argument("-T", "--get-thermodynamic-properties", type=bool, help="recalculates the eigenvectors of the hessian and writes them to the database",default=False)
     args = parser.parse_args()
 
     natoms = args.nAtoms
@@ -175,7 +176,8 @@ def main():
     # populate_database(system, db, niter=10000)
     
     # get thermodynamic information from database
-    get_thermodynamic_information(system, db)
+    if args.get_thermodynamic_properties is True:
+        get_thermodynamic_information(system, db)
     # exit(1)
 
     # run nested sampling
