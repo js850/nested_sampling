@@ -159,7 +159,7 @@ def main():
     system = LJClusterNew(natoms)
     nproc = args.nproc
     label = "lj%d" % (natoms)
-    
+        
     #if args.db is None:
     #    dbname = label + ".db"
         #dbname = "lj31_small.db"
@@ -182,6 +182,9 @@ def main():
         minima = db.minima()
         if len(minima) > nminima:
             minima = minima[:nminima]
+    else:
+        use_bs = False #can avoid writing this and do it more concisely?
+        minima = None
 
     # get thermodynamic information from database
     if (use_bs is True) and (args.get_thermodynamic_properties is True):
