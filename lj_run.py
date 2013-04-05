@@ -74,7 +74,7 @@ class MonteCarloCompiled(object):
         res.energy = energy
         return res
 
-def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, nproc = 1):
+def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, use_bs=False, nproc = 1):
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
 
@@ -88,8 +88,6 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
     print "using the compiled MC = ", use_compiled
     
     print "using", nproc, "processors"
-    
-    use_bs = True
     
     if use_bs:
         assert minima is not None
@@ -160,33 +158,43 @@ def main():
     nminima = args.nminima
     system = LJClusterNew(natoms)
     nproc = args.nproc
-    
     label = "lj%d" % (natoms)
-    if args.db is None:
-        dbname = label + ".db"
-        dbname = "lj31_small.db"
-        print >> sys.stderr, "warning, using debug database"
-    else:
-        dbname = args.db
-    db = system.create_database(dbname, createdb=False)
-    print dbname, "nminima", len(db.minima())
+        
+    #if args.db is None:
+    #    dbname = label + ".db"
+        #dbname = "lj31_small.db"
+    #    print >> sys.stderr, "warning, using debug database"
+    #else:
+    #    dbname = args.db
+    #db = system.create_database(dbname, createdb=False)
+    #print dbname, "nminima", len(db.minima())
     
     # populate database
     # if False:
     # populate_database(system, db, niter=10000)
     
+    #create minima database if needed
+    if args.db is not None:
+        dbname = args.db
+        db = system.create_database(dbname, createdb=False)
+        use_bs = True
+        print dbname, "nminima", len(db.minima())
+        minima = db.minima()
+        if len(minima) > nminima:
+            minima = minima[:nminima]
+    else:
+        use_bs = False #can avoid writing this and do it more concisely?
+        minima = None
+
     # get thermodynamic information from database
-    if args.get_thermodynamic_properties is True:
+    if (use_bs is True) and (args.get_thermodynamic_properties is True):
         get_thermodynamic_information(system, db)
     # exit(1)
 
     # run nested sampling
-    minima = db.minima()
-    if len(minima) > nminima:
-        minima = minima[:nminima]
     ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, 
                              label=label, minima=minima, mciter=mciter, 
-                             use_compiled=args.compiled_mc, nproc=nproc)
+                             use_compiled=args.compiled_mc, use_bs=use_bs, nproc=nproc)
 
     with open(label + ".energies", "w") as fout:
         fout.write( "\n".join([ str(e) for e in ns.max_energies]) )
