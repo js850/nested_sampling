@@ -29,7 +29,7 @@ def compute_cv(minima, T, k):
     U2 = 0.
     for m in minima:
         E = m.energy
-        lZpref = -beta * (E - Emin) - m.fvib - np.log(m.pgorder)
+        lZpref = -beta * (E - Emin) - m.fvib/2. - np.log(m.pgorder)
         Zpref = np.exp(lZpref)
         
         Z += Zpref
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     dbfname = args.fname
     db = Database(dbfname)
 
-    Tmin = .02
+    Tmin = .001
     Tmax = .5
     nT = 300
     dT = (Tmax-Tmin) / nT

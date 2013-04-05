@@ -123,7 +123,7 @@ def compute_log_phase_space_volume(m, Emax, k):
     
     if m.energy > Emax:
         raise ValueError("Emax (%g) must be greater than the energy of the minimum (%g)" % (Emax, m.energy))
-    logV = log(2) + gammaln(N+1) + k * log(Emax - m.energy) - gammaln(k+1) - m.fvib - log(m.pgorder)
+    logV = log(2) + gammaln(N+1) + k * log(Emax - m.energy) - gammaln(k+1) - m.fvib/2. - log(m.pgorder)
     return logV
 
 def weighted_pick(weights):
@@ -276,8 +276,8 @@ class BHSampler(object):
         pgorder: point group order
             
         """
-        #return - np.log(self.k) - self.gammalnk - m.fvib - np.log(m.pgorder)
-        return - m.fvib - np.log(m.pgorder)
+        #return - np.log(self.k) - self.gammalnk - m.fvib/2. - np.log(m.pgorder)
+        return - m.fvib/2. - np.log(m.pgorder)
     
     def precompute_log_phase_space_volume_prefactor(self):
         """return a dictionary of the log phase space volume prefactors
