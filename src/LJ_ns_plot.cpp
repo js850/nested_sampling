@@ -306,7 +306,7 @@ int main(int argc, char ** argv)
         }
       U = internal_U.at(i);
       sum_Z = partition_foo.at(i);
-      Cv = ((sum_E/sum_Z) - U*U)*c*c;
+      Cv = ((sum_E/sum_Z) - U*U + 1.5*L)*c*c;
       capacity.push_back(Cv);
 
       output<<(1/c)<<"\t"<<(Cv/normal)<<std::endl;
