@@ -360,8 +360,7 @@ class NestedSampling(object):
 
     def get_starting_configuration_from_replicas(self):
         # choose a replica randomly
-        rlist_int = random.sample(xrange(self.nreplicas), self.nproc)
-        print "rlist length", len(rlist_int)
+        rlist_int = random.sample(xrange(self.nreplicas-1), self.nproc)
         configlist = [self.replicas[i] for i in rlist_int]
         return configlist,rlist_int
 
