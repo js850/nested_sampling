@@ -350,7 +350,7 @@ class NestedSampling(object):
         """
         #remove other nproc-1 replica
         if self.triv_paral is True:
-            for i in rtuple[1][1:]
+            for i in rtuple[1][1:]:
                 self.replicas.pop(i)  
         else:
             length = self.nproc-1
