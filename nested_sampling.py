@@ -61,7 +61,7 @@ class MonteCarloChain(object):
         self.takestep = takestep
         self.accept_tests = accept_tests
         self.events = events
-    
+            
     def __call__(self, x0, mciter, stepsize, Emax, seed=None):
         return self.run(x0, mciter, stepsize, Emax, seed=seed)
     
@@ -192,6 +192,7 @@ class NestedSampling(object):
         self.nproc = nproc
         self.verbose = verbose
         self.triv_paral = triv_paral
+        self.nreplicas = nreplicas
         
         #choose between compiled and raw version of the mc_runner
         if mc_runner is None:
@@ -343,7 +344,7 @@ class NestedSampling(object):
         self.max_energies.append(rmax.energy)
         return rmax
     
-    def pop_replica(self, rtuple):
+    def pop_replica_par(self, rtuple):
         """
         removes the other processes for parellel implementation
         
@@ -359,7 +360,7 @@ class NestedSampling(object):
 
     def get_starting_configuration_from_replicas(self):
         # choose a replica randomly
-        rlist_int = random.sample(xrange(nreplicas), self.nproc)
+        rlist_int = random.sample(xrange(self.nreplicas), self.nproc)
         configlist = [self.replicas[i] for i in rlist_int]
         return configlist,rlist_int
 
@@ -378,7 +379,8 @@ class NestedSampling(object):
         rtuple = self.get_starting_configuration(Emax)
         
         configs = rtuple[0]
-        self.pop_replica(rtuple)
+        if self.nproc > 1:
+            self.pop_replica_par(rtuple)
         
         # note configs is a list of starting configurations.
         # but a list of length 1 if self.nproc == 1

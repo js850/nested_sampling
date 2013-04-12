@@ -74,7 +74,7 @@ class MonteCarloCompiled(object):
         res.energy = energy
         return res
 
-def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, use_bs=False, nproc = 1):
+def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, use_bs=False, nproc = 1, triv_paral = True):
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
 
@@ -149,7 +149,7 @@ def main():
     parser.add_argument("-C", "--compiled-mc", type=bool, help="option to use the Markov chain routine from C source (unique to LJ systems)", 
                         default=True)
     parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=1)
-    parser.add_argument("-p", "--trivial-parallelisation", type=bool, help="set whether to do trivial parallelisation, by default True",default=True)
+    parser.add_argument("-p", "--trivparal", type=bool, help="set whether to do trivial parallelisation, by default True",default=True)
     parser.add_argument("-T", "--get-thermodynamic-properties", type=bool, help="recalculates the eigenvectors of the hessian and writes them to the database",default=False)
     args = parser.parse_args()
 
@@ -160,7 +160,7 @@ def main():
     system = LJClusterNew(natoms)
     nproc = args.nproc
     label = "lj%d" % (natoms)
-    triv_paral = args.trivial-parallelisation
+    triv_paral = args.trivparal
         
     #if args.db is None:
     #    dbname = label + ".db"
@@ -196,7 +196,7 @@ def main():
     # run nested sampling
     ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, 
                              label=label, minima=minima, mciter=mciter, 
-                             use_compiled=args.compiled_mc, use_bs=use_bs, nproc=nproc)
+                             use_compiled=args.compiled_mc, use_bs=use_bs, nproc=nproc, triv_paral = triv_paral)
 
     with open(label + ".energies", "w") as fout:
         fout.write( "\n".join([ str(e) for e in ns.max_energies]) )
