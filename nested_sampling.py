@@ -184,13 +184,14 @@ class NestedSampling(object):
         list of objects of type Replica
         """
     def __init__(self, system, nreplicas, takestep, mciter=100, 
-                  accept_tests=None, mc_runner=None, nproc=1, verbose=True):
+                  accept_tests=None, mc_runner=None, nproc=1, triv_paral = True, verbose=True):
         self.system = system
         self.takestep = takestep
         self.mciter=mciter
         self.accept_tests = accept_tests
         self.nproc = nproc
         self.verbose = verbose
+        self.triv_paral = triv_paral
         
         #choose between compiled and raw version of the mc_runner
         if mc_runner is None:
@@ -336,22 +337,31 @@ class NestedSampling(object):
         """
         # pull out the replica with the largest energy
         rmax = self.replicas.pop()
-#        print "Epop:", rmax.energy, "n_replicas", len(self.replicas)
-        
-        #remove other nproc-1 replica
-        length = self.nproc-1
-        for i in xrange(length):
-            self.replicas.pop()
+        # print "Epop:", rmax.energy, "n_replicas", len(self.replicas)
         
         # add store it for later analysis
         self.max_energies.append(rmax.energy)
         return rmax
+    
+    def pop_replica(self, rtuple):
+        """
+        removes the other processes for parellel implementation
+        
+        """
+        #remove other nproc-1 replica
+        if self.triv_paral is True:
+            for i in rtuple[1][1:]
+                self.replicas.pop(i)  
+        else:
+            length = self.nproc-1
+            for i in xrange(length):
+                self.replicas.pop()
 
     def get_starting_configuration_from_replicas(self):
         # choose a replica randomly
-        rlist = random.sample(self.replicas, self.nproc)
-        configlist = [r.copy() for r in rlist]
-        return configlist
+        rlist_int = random.sample(xrange(nreplicas), self.nproc)
+        configlist = [self.replicas[i] for i in rlist_int]
+        return configlist,rlist_int
 
     def get_starting_configuration(self, Emax):
         return self.get_starting_configuration_from_replicas()
@@ -364,7 +374,12 @@ class NestedSampling(object):
     def one_iteration(self):
         rmax = self.pop_replica()
         Emax = rmax.energy
-        configs = self.get_starting_configuration(Emax)
+        
+        rtuple = self.get_starting_configuration(Emax)
+        
+        configs = rtuple[0]
+        self.pop_replica(rtuple)
+        
         # note configs is a list of starting configurations.
         # but a list of length 1 if self.nproc == 1
         

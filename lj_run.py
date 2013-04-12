@@ -93,9 +93,9 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
         assert minima is not None
         assert(len(minima) > 0)
         print "using", len(minima), "minima"
-        ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc)
+        ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral)
     else:
-        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc)
+        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral)
     etol = 0.01
     isave = 0
     maxiter = nreplicas * iterscale
@@ -149,6 +149,7 @@ def main():
     parser.add_argument("-C", "--compiled-mc", type=bool, help="option to use the Markov chain routine from C source (unique to LJ systems)", 
                         default=True)
     parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=1)
+    parser.add_argument("-p", "--trivial-parallelisation", type=bool, help="set whether to do trivial parallelisation, by default True",default=True)
     parser.add_argument("-T", "--get-thermodynamic-properties", type=bool, help="recalculates the eigenvectors of the hessian and writes them to the database",default=False)
     args = parser.parse_args()
 
@@ -159,6 +160,7 @@ def main():
     system = LJClusterNew(natoms)
     nproc = args.nproc
     label = "lj%d" % (natoms)
+    triv_paral = args.trivial-parallelisation
         
     #if args.db is None:
     #    dbname = label + ".db"
