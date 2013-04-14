@@ -276,7 +276,7 @@ class NestedSampling(object):
                 sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
                 print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
                     "Enew", mc.energy, "Eold", r.energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                    "stepsize", self.takestep.stepsize, "distance", dist
+                    "stepsize", self.takestep.stepsize #, "distance", dist removed because dist is undefined for multiple processors
 
         self.adjust_step_size(mclist)
         return rnewlist
