@@ -353,7 +353,8 @@ class NestedSampling(object):
         if self.triv_paral is True:
             # sort the indices so the correct indices are removed
             # even though the list is being modified
-            indices = sorted(rtuple[1][1:], reverse=True)
+            rtuple_copy = rtuple
+            indices = sorted(rtuple_copy[1][1:], reverse=True)
             for i in indices:
                 self.replicas.pop(i)  
         else:
