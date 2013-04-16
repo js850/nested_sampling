@@ -307,7 +307,7 @@ class BHSampler(object):
         V = (Emax - m.energy)^k / (prod_freq * O_k)
                
         """
-        return self.k * np.log(Emax - m.energy) + self.lVol_prefactor[m]
+        return (self.k / 2)  * np.log(Emax - m.energy) + self.lVol_prefactor[m]
 
     def sample_coords_from_basin(self, m, Emax):
         """Returns a configuration with energy less than Emax sampled uniformly from the basin of a minimum
@@ -376,7 +376,7 @@ class BHSampler(object):
         """
         indices = np.where(self.energyvec < Emax)[0]
         minima2 = [self.minima[i] for i in indices]
-        lweights = self.k * np.log(Emax - self.energyvec[indices]) + self.lVol_prefactor_vec[indices]
+        lweights = (self.k / 2) * np.log(Emax - self.energyvec[indices]) + self.lVol_prefactor_vec[indices]
         weights = np.exp(lweights - np.max(lweights))
         return minima2, weights
     
