@@ -307,7 +307,7 @@ class BHSampler(object):
         V = (Emax - m.energy)^k / (prod_freq * O_k)
                
         """
-        return self.k * np.log(Emax - m.energy) + self.lVol_prefactor[m]
+        return (self.k / 2)  * np.log(Emax - m.energy) + self.lVol_prefactor[m]
 
     def sample_coords_from_basin(self, m, Emax):
         """Returns a configuration with energy less than Emax sampled uniformly from the basin of a minimum
@@ -376,7 +376,7 @@ class BHSampler(object):
         """
         indices = np.where(self.energyvec < Emax)[0]
         minima2 = [self.minima[i] for i in indices]
-        lweights = self.k * np.log(Emax - self.energyvec[indices]) + self.lVol_prefactor_vec[indices]
+        lweights = (float(self.k)/2.) * np.log(Emax - self.energyvec[indices]) + self.lVol_prefactor_vec[indices]
         weights = np.exp(lweights - np.max(lweights))
         return minima2, weights
     
@@ -475,17 +475,17 @@ class NestedSamplingBS(NestedSampling):
     def get_starting_configuration(self, Emax):
         """this function overloads the function in NestedSampling"""
         # choose a replica randomly
-        configs = self.get_starting_configuration_from_replicas()
+        rtuple = self.get_starting_configuration_from_replicas()
+        configs = rtuple[0]
         # replace each starting configuration with a one chosen
         # from the minima with probability prob
         prob = 1. / (float(self.nproc)+1)
         for i in range(len(configs)):
             if np.random.uniform(0,1) < prob:
-                print "sampling from minima"
                 x, energy = self.get_starting_configuration_minima(Emax)
                 configs[i] = Replica(x, energy, from_random=False) 
-        return configs
-
+                print "sampling from minima, E minimum:", energy
+        return configs, rtuple[1]
 
 if __name__ == "__main__":
     # define the system

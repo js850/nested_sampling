@@ -8,6 +8,7 @@ from itertools import izip
 
 #this import fixes some bugs in how multiprocessing deals with exceptions
 import pygmin.utils.fix_multiprocessing
+from parallel_ns import MCRunner
 
 class MonteCarloChain(object):
     """Class for doing a Monte Carlo chain
@@ -61,7 +62,7 @@ class MonteCarloChain(object):
         self.takestep = takestep
         self.accept_tests = accept_tests
         self.events = events
-    
+            
     def __call__(self, x0, mciter, stepsize, Emax, seed=None):
         return self.run(x0, mciter, stepsize, Emax, seed=seed)
     
@@ -184,13 +185,15 @@ class NestedSampling(object):
         list of objects of type Replica
         """
     def __init__(self, system, nreplicas, takestep, mciter=100, 
-                  accept_tests=None, mc_runner=None, nproc=1, verbose=True):
+                  accept_tests=None, mc_runner=None, nproc=1, triv_paral = True, verbose=True):
         self.system = system
         self.takestep = takestep
         self.mciter=mciter
         self.accept_tests = accept_tests
         self.nproc = nproc
         self.verbose = verbose
+        self.triv_paral = triv_paral
+        self.nreplicas = nreplicas
         
         #choose between compiled and raw version of the mc_runner
         if mc_runner is None:
@@ -210,9 +213,18 @@ class NestedSampling(object):
 
         #initialize the pool
         if self.nproc > 1:
-            self.pool = mp.Pool(processes=self.nproc)
+#            self.pool = mp.Pool(processes=self.nproc)
+            self.connlist = []
+            self.workerlist = []
+            for i in range(self.nproc):
+                parent_conn, child_conn = mp.Pipe()
+                worker = MCRunner(child_conn, self.mc_runner)
+                self.connlist.append(parent_conn)
+                self.workerlist.append(worker)
+                worker.start()
 
-        
+    
+    
     def do_monte_carlo_chain(self, configs, Emax, **kwargs):
         """
         from an initial configuration do a monte carlo chain with niter iterations, 
@@ -229,11 +241,26 @@ class NestedSampling(object):
                 assert isinstance(t[1], np.ndarray), "%s" % str(t[1])
 
             try:
-                mclist = self.pool.map(mc_runner_wrapper, x_tuple)
+#                mclist = self.pool.map(mc_runner_wrapper, x_tuple)
+                # pass the workers the starting configurations for the MC walk
+                for conn, r in izip(self.connlist, configs):
+                    seed = np.random.randint(0, sys.maxint)
+                    message = ("do mc", r.x, self.mciter, stepsize, Emax, seed)
+                    conn.send(message)
+                # recieve the results back from the workers
+                mclist = []
+                for conn in self.connlist:
+                    res  = conn.recv()
+                    mclist.append( res )
             except:
                 #this is bad, it shouldn't be done here
-                self.pool.terminate()
-                self.pool.join()
+                print "exception caught during parallel MC iteration.  Terminating child processes"
+                for worker in self.workerlist:
+                    worker.terminate()
+                    worker.join()
+#                self.pool.terminate()
+#                self.pool.join()
+                print "done terminating child processes"
                 raise
             
             for r, mc in izip(configs, mclist):
@@ -274,7 +301,7 @@ class NestedSampling(object):
                 sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
                 print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
                     "Enew", mc.energy, "Eold", r.energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                    "stepsize", self.takestep.stepsize, "distance", dist
+                    "stepsize", self.takestep.stepsize #, "distance", dist removed because dist is undefined for multiple processors
 
         self.adjust_step_size(mclist)
         return rnewlist
@@ -336,22 +363,35 @@ class NestedSampling(object):
         """
         # pull out the replica with the largest energy
         rmax = self.replicas.pop()
-#        print "Epop:", rmax.energy, "n_replicas", len(self.replicas)
-        
-        #remove other nproc-1 replica
-        length = self.nproc-1
-        for i in xrange(length):
-            self.replicas.pop()
+        # print "Epop:", rmax.energy, "n_replicas", len(self.replicas)
         
         # add store it for later analysis
         self.max_energies.append(rmax.energy)
         return rmax
+    
+    def pop_replica_par(self, rtuple):
+        """
+        removes the other processes for parellel implementation
+        
+        """
+        #remove other nproc-1 replica
+        if self.triv_paral is True:
+            # sort the indices so the correct indices are removed
+            # even though the list is being modified
+            rtuple_copy = rtuple
+            indices = sorted(rtuple_copy[1][1:], reverse=True)
+            for i in indices:
+                self.replicas.pop(i)  
+        else:
+            length = self.nproc-1
+            for i in xrange(length):
+                self.replicas.pop()
 
     def get_starting_configuration_from_replicas(self):
         # choose a replica randomly
-        rlist = random.sample(self.replicas, self.nproc)
-        configlist = [r.copy() for r in rlist]
-        return configlist
+        rlist_int = random.sample(xrange(self.nreplicas-1), self.nproc)
+        configlist = [copy.deepcopy(self.replicas[i]) for i in rlist_int]
+        return configlist,rlist_int
 
     def get_starting_configuration(self, Emax):
         return self.get_starting_configuration_from_replicas()
@@ -364,7 +404,13 @@ class NestedSampling(object):
     def one_iteration(self):
         rmax = self.pop_replica()
         Emax = rmax.energy
-        configs = self.get_starting_configuration(Emax)
+        
+        rtuple = self.get_starting_configuration(Emax)
+        
+        configs = rtuple[0]
+        if self.nproc > 1:
+            self.pop_replica_par(rtuple)
+        
         # note configs is a list of starting configurations.
         # but a list of length 1 if self.nproc == 1
         
@@ -378,6 +424,11 @@ class NestedSampling(object):
 
     def finish(self):
         if self.nproc > 1:
+            for conn, worker in izip(self.connlist, self.workerlist):
+                conn.send("kill")
+                worker.join()
+                worker.terminate()
+                worker.join()
             self.pool.close()
             self.pool.join()
 
