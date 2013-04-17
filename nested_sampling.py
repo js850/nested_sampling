@@ -8,6 +8,7 @@ from itertools import izip
 
 #this import fixes some bugs in how multiprocessing deals with exceptions
 import pygmin.utils.fix_multiprocessing
+from parallel_ns import MCRunner
 
 class MonteCarloChain(object):
     """Class for doing a Monte Carlo chain
@@ -212,9 +213,18 @@ class NestedSampling(object):
 
         #initialize the pool
         if self.nproc > 1:
-            self.pool = mp.Pool(processes=self.nproc)
+#            self.pool = mp.Pool(processes=self.nproc)
+            self.connlist = []
+            self.workerlist = []
+            for i in range(self.nproc):
+                parent_conn, child_conn = mp.Pipe()
+                worker = MCRunner(child_conn, self.mc_runner)
+                self.connlist.append(parent_conn)
+                self.workerlist.append(worker)
+                worker.start()
 
-        
+    
+    
     def do_monte_carlo_chain(self, configs, Emax, **kwargs):
         """
         from an initial configuration do a monte carlo chain with niter iterations, 
@@ -231,11 +241,26 @@ class NestedSampling(object):
                 assert isinstance(t[1], np.ndarray), "%s" % str(t[1])
 
             try:
-                mclist = self.pool.map(mc_runner_wrapper, x_tuple)
+#                mclist = self.pool.map(mc_runner_wrapper, x_tuple)
+                # pass the workers the starting configurations for the MC walk
+                for conn, r in izip(self.connlist, configs):
+                    seed = np.random.randint(0, sys.maxint)
+                    message = ("do mc", r.x, self.mciter, stepsize, Emax, seed)
+                    conn.send(message)
+                # recieve the results back from the workers
+                mclist = []
+                for conn in self.connlist:
+                    res  = conn.recv()
+                    mclist.append( res )
             except:
                 #this is bad, it shouldn't be done here
-                self.pool.terminate()
-                self.pool.join()
+                print "exception caught during parallel MC iteration.  Terminating child processes"
+                for worker in self.workerlist:
+                    worker.terminate()
+                    worker.join()
+#                self.pool.terminate()
+#                self.pool.join()
+                print "done terminating child processes"
                 raise
             
             for r, mc in izip(configs, mclist):
@@ -399,6 +424,11 @@ class NestedSampling(object):
 
     def finish(self):
         if self.nproc > 1:
+            for conn, worker in izip(self.connlist, self.workerlist):
+                conn.send("kill")
+                worker.join()
+                worker.terminate()
+                worker.join()
             self.pool.close()
             self.pool.join()
 
