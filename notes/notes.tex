@@ -174,7 +174,10 @@ and set $q = \sqrt{2 dE_{target}}$.
 
 \section{parallel nested sampling}
 
-Nested sampling can be parallelized to run on P cores very easily.
+~
+\subsection{burkoff parallel algorithm}
+
+Nested sampling can be parallelized to run on P cores very easily \cite{burkoff.2012}.
 At every step we 
 
 \begin{enumerate}
@@ -190,6 +193,8 @@ At every step we
 
 The improvement of this over the serial version is that each replica spends more time 
 evolving via the monte carlo chain, and so the phase space is explored more completely.
+
+\subsubsection{efficacy}
 
 It would be nice to know how many monte carlo iterations each replica on
 average takes.  Or, phrased another way, at iteration $i$, what is the average
@@ -227,7 +232,7 @@ not equivalent to simply doing longer MC runs. Also note that if $P$ is 1 then
 we still get a total number of MC steps increasing linearly with the number of
 iterations
 
-\subsection{sampling from the minima}
+\subsubsection{sampling from the minima}
 
 If we include sampling from the minima we change the above calculation of the
 average number of MC steps.  Each time we sample from the minima we reset
@@ -262,6 +267,47 @@ steady state can be worked out by setting $\bar{n}_{i+1} = \bar{n}_i$
 \end{equation}
 Thus, when we sample from the minima, the average number of monte carlo steps saturates
 after many iterations.
+
+\subsection{trivial parallelization}
+
+There is another algorithm which is more trivial than the burkoff algorithm, and perhaps more effective.  
+It is exactly the same as the non parallelized version with the sole difference being that while
+we are doing the MC walking to generate a new replica, we choose $P-1$
+additional replicas and walk those as well.  We got the idea for this from Rob Baldock.  
+
+\subsubsection{efficacy}
+
+We now follow the above reasoning to estimate the average number of accumulated monte carlo steps 
+the replicas will have taken.
+
+\begin{itemize}
+  \item at the start of an iteration the average number of monte carlo steps is $\bar{n}_i$
+
+  \item 1 replica is thrown away, but it is selected in a way independent of the
+    number of MC steps.  So the average number of MC steps remains $\bar{n}_i$
+    
+  \item from the remaining replicas $P$ are chosen at random.  The average of these
+    replicas is again $\bar{n}_i$.
+
+  \item from the chosen replicas one is duplicated. The copy of the replica and
+    the $P-1$ other replicas are  walked for an additional $n_{mc}$ MC steps
+\end{itemize}
+
+Thus we can write down the new average value of the number of MC steps
+\begin{equation}
+  \bar{n}_{i+1} K = \bar{n}_i  (K - (P-1)-1) + (\bar{n}_i + n_{mc}) P
+\end{equation}
+\begin{equation}
+  \bar{n}_{i+1} = \bar{n}_i  +  n_{mc} P / K
+  \label{eqn:par_iter}
+\end{equation}
+From this iterative relationship we can work out the average number of
+MC steps at step $i$
+\begin{equation}
+  \bar{n}_{i} = i n_{mc} P / K
+\end{equation}
+This is linear in P and grows linearly with the number of MC steps.
+
 
 \bibliography{jakes_biblio}
 
