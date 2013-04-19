@@ -490,7 +490,7 @@ class NestedSamplingBS(NestedSampling):
             if np.random.uniform(0,1) < prob:
                 x, energy = self.get_starting_configuration_minima(Emax)
                 configs[i] = Replica(x, energy, from_random=False) 
-                print "sampling from minima, E minimum:", energy, "with probability:", onset_prob
+                print "sampling from minima, E minimum:", energy, "with probability:", prob
         return configs, rtuple[1]
 
 if __name__ == "__main__":
