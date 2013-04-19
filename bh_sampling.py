@@ -427,7 +427,7 @@ class NestedSamplingBS(NestedSampling):
         super(NestedSamplingBS, self).__init__(system, nreplicas, takestep, **kwargs)
         self.minima = minima
         self.bh_sampler = BHSampler(self.minima, self.system.k)
-    
+        
     def get_starting_configuration_minima_HA(self, Emax):
         """using the Harmonic Approximation sample a new configuration starting from a minimum sampled uniformly according to phase space volume
         
@@ -479,7 +479,12 @@ class NestedSamplingBS(NestedSampling):
         configs = rtuple[0]
         # replace each starting configuration with a one chosen
         # from the minima with probability prob
-        prob = 1. / (float(self.nproc)+1)
+        a = 10.
+        b = 1.
+        c = 2.5
+        dE = float(self.minima[-1]) - Emax
+        onset_prob = a / ( 1. + np.exp(-b * (dE + c)) )
+        prob = onset_prob / float(self.nreplicas)
         for i in range(len(configs)):
             if np.random.uniform(0,1) < prob:
                 x, energy = self.get_starting_configuration_minima(Emax)
