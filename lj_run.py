@@ -93,9 +93,9 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
         assert minima is not None
         assert(len(minima) > 0)
         print "using", len(minima), "minima"
-        ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral)
+        ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral, minprob = minprob)
     else:
-        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral, minprob = minprob)
+        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral)
     etol = 0.01
     isave = 0
     maxiter = nreplicas * iterscale
