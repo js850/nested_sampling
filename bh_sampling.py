@@ -482,7 +482,7 @@ class NestedSamplingBS(NestedSampling):
         a = 10.
         b = 1.
         c = 2.5
-        dE = float(self.minima[-1]) - Emax
+        dE = float(self.minima[-1].energy) - Emax
         onset_prob = a / ( 1. + np.exp(-b * (dE + c)) )
         prob = onset_prob / float(self.nreplicas)
         for i in range(len(configs)):
