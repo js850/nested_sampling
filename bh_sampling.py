@@ -423,10 +423,11 @@ class NestedSamplingBS(NestedSampling):
         object to do the step taking.  must be callable and have attribute takestep.stepsize
     minima : list of Minimum objects
     """
-    def __init__(self, system, nreplicas, takestep, minima, **kwargs):
+    def __init__(self, system, nreplicas, takestep, minima, minprob, **kwargs):
         super(NestedSamplingBS, self).__init__(system, nreplicas, takestep, **kwargs)
         self.minima = minima
         self.bh_sampler = BHSampler(self.minima, self.system.k)
+        self.minprob = minprob
         
     def get_starting_configuration_minima_HA(self, Emax):
         """using the Harmonic Approximation sample a new configuration starting from a minimum sampled uniformly according to phase space volume
@@ -479,7 +480,7 @@ class NestedSamplingBS(NestedSampling):
         configs = rtuple[0]
         # replace each starting configuration with a one chosen
         # from the minima with probability prob
-        a = 10.
+        a = float(self.minprob)
         b = 1.
         c = 2.5
         dE = float(self.minima[-1].energy) - Emax

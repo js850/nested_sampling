@@ -74,7 +74,7 @@ class MonteCarloCompiled(object):
         res.energy = energy
         return res
 
-def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, use_bs=False, nproc = 1, triv_paral = True):
+def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, use_bs=False, nproc = 1, triv_paral = True, minprob = 1):
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
 
@@ -95,7 +95,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
         print "using", len(minima), "minima"
         ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral)
     else:
-        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral)
+        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral, minprob = minprob)
     etol = 0.01
     isave = 0
     maxiter = nreplicas * iterscale
@@ -151,6 +151,7 @@ def main():
     parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=1)
     parser.add_argument("-p", "--trivparal", type=bool, help="set whether to do trivial parallelisation, by default True",default=True)
     parser.add_argument("-T", "--get-thermodynamic-properties", type=bool, help="recalculates the eigenvectors of the hessian and writes them to the database",default=False)
+    parser.add_argument("-a", "--minprob", type=bool, help="probability of sampling from minima as a/K, default a=1",default=1)
     args = parser.parse_args()
 
     natoms = args.nAtoms
@@ -161,6 +162,7 @@ def main():
     nproc = args.nproc
     label = "lj%d" % (natoms)
     triv_paral = args.trivparal
+    minprob = args.minprob
         
     #if args.db is None:
     #    dbname = label + ".db"
@@ -196,7 +198,7 @@ def main():
     # run nested sampling
     ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, 
                              label=label, minima=minima, mciter=mciter, 
-                             use_compiled=args.compiled_mc, use_bs=use_bs, nproc=nproc, triv_paral = triv_paral)
+                             use_compiled=args.compiled_mc, use_bs=use_bs, nproc=nproc, triv_paral = triv_paral, minprob = minprob)
 
     with open(label + ".energies", "w") as fout:
         fout.write( "\n".join([ str(e) for e in ns.max_energies]) )
