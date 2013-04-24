@@ -8,6 +8,7 @@ from pygmin.utils.rotations import vec_random_ndim
 from pygmin.potentials import BasePotential
 from pygmin.systems import BaseSystem
 from nested_sampling import MonteCarloChain
+import copy
 
 __all__ =["HarPotential","HarParticle","HarRunner"]
 
@@ -28,11 +29,12 @@ class HarPotential(BasePotential):
                 
     def getEnergy(self, coords):
         coords = np.asfarray(coords)
-        dist_vec = self.centre - coords
+        dist_vec = coords- self.centre
         E_vec = 0.5 * self.kappa * dist_vec * dist_vec      
         E = 0.
         for e in E_vec:
             E += e
+        print "getEnergy ", E
         return E
    
 class HarParticle(BaseSystem):
@@ -70,6 +72,7 @@ class HarParticle(BaseSystem):
     
     def get_config_tests_in(self, coords, radius):
         coords_norm = np.linalg.norm(coords)
+        print "coords_norm", coords_norm
         if coords is not None and radius >= coords_norm:
             return True
         else:
@@ -78,7 +81,10 @@ class HarParticle(BaseSystem):
     def get_random_configuration_Emax(self, Emax):
         """make sure they're all inside the radius, get_config_test is not strictly necessary, consider removing it"""
         #radius is a scalar corresponding to the max distance from the centre
-        radius = np.sqrt(2. * (Emax - self.Eground))
+        print "Emax", float(Emax)
+        radius = np.sqrt(2. * (float(Emax) - self.Eground))
+        print "Emax - Eground =", (float(Emax) - self.Eground)
+        print "radius =", radius
         coords = np.zeros(self.ndim)
         coords = self.vector_random_uniform_hypersphere() * np.sqrt(radius)
         assert(self.get_config_tests_in(coords, radius) == True)
@@ -100,7 +106,7 @@ class HarRunner(object):
         self.system = system
         self.pot = system.get_potential()
     
-    def __call__(self, Emax, x0=None, mciter=None, stepsize=None, seed=None):
+    def __call__(self, x0, mciter, stepsize, Emax, seed=None):
         return self.run(Emax)  
             
     def run(self, Emax):        
@@ -108,7 +114,7 @@ class HarRunner(object):
         self.mciter = 1
         self.nsteps = 1
         self.naccept = 0.7
-        self.x = self.system.get_random_configuration_Emax(Emax)
+        self.x = self.system.get_random_configuration_Emax(self.Emax)
         self.energy = self.pot.getEnergy(self.x)
         return self
 

@@ -171,6 +171,7 @@ def main():
     
     if args.system == 1:
         system = LJClusterNew(natoms)
+        label = "lj%d" % (natoms)
     elif args.system ==  2:
         ndim = 1
         centre = [0.]
@@ -178,10 +179,11 @@ def main():
         Eground = 0.
         Emax_init = 100.
         system = HarParticle(ndim, centre, kappa, Eground, Emax_init)
+        label = "HarParticle_%dD" % (ndim)
     else:
         raise TypeError('system type not known')
     nproc = args.nproc
-    label = "lj%d" % (natoms)
+    
     triv_paral = args.trivparal
     minprob = args.minprob
         
