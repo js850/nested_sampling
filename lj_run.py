@@ -2,6 +2,7 @@ import pickle
 import sys
 import argparse
 import numpy as np
+from types import *
 
 import database_eigenvecs
 from nested_sampling import NestedSampling
@@ -78,13 +79,19 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
 
-    if use_compiled:
-        mc_runner = MonteCarloCompiled(system.radius)
+    if type(system) is  LJClusterNew():
+        if use_compiled:
+            mc_runner = MonteCarloCompiled(system.radius)
  #       import pickle
  #       with open("testpickle", "w") as pout:
  #           pickle.dump(mc_runner, pout)
+        else:
+            mc_runner = None
+    else if type(system) is HarParticle():
+        mc_runnner = HarRunner(system)
     else:
-        mc_runner = None
+        raise TypeError('system type is not known')
+        
     print "using the compiled MC = ", use_compiled
     
     print "using", nproc, "processors"
@@ -152,31 +159,29 @@ def main():
     parser.add_argument("-p", "--trivparal", type=bool, help="set whether to do trivial parallelisation, by default True",default=True)
     parser.add_argument("-T", "--get-thermodynamic-properties", type=bool, help="recalculates the eigenvectors of the hessian and writes them to the database",default=False)
     parser.add_argument("-a", "--minprob", type=bool, help="probability of sampling from minima as a/K, default a=1",default=1)
+    parser.add_argument("-S", "--system", type=int, help="define system type: 1 is LJ \n2 is HarParticle",default=1)
     args = parser.parse_args()
 
     natoms = args.nAtoms
     nreplicas = args.nreplicas
     mciter = args.mciter
     nminima = args.nminima
-    system = LJClusterNew(natoms)
+    
+    if args.system is 1:
+        system = LJClusterNew(natoms)
+    else if args.system is 2:
+        ndim = 1
+        centre = [0]
+        kappa = [1]
+        Eground = 0
+        system = HarParticle(ndim, centre, kappa, Eground)
+    else:
+        raise TypeError('system type not known')
     nproc = args.nproc
     label = "lj%d" % (natoms)
     triv_paral = args.trivparal
     minprob = args.minprob
         
-    #if args.db is None:
-    #    dbname = label + ".db"
-        #dbname = "lj31_small.db"
-    #    print >> sys.stderr, "warning, using debug database"
-    #else:
-    #    dbname = args.db
-    #db = system.create_database(dbname, createdb=False)
-    #print dbname, "nminima", len(db.minima())
-    
-    # populate database
-    # if False:
-    # populate_database(system, db, niter=10000)
-    
     #create minima database if needed
     if args.db is not None:
         dbname = args.db
