@@ -4,7 +4,6 @@ import numpy as np
 import random
 from scipy.special import gamma, gammaln
 from scipy.misc import factorial
-from pygmin.accept_tests import SphericalContainer
 from pygmin.utils.rotations import vec_random_ndim
 from pygmin.potentials import BasePotential
 from pygmin.systems import BaseSystem
@@ -93,9 +92,9 @@ class HarRunner(object):
         self.mciter = 1
         self.nsteps = 1
         self.naccept = 0.7
-        self.x = self.system.get_random_configuration(Emax)
+        self.x = copy.deepcopy(self.system.get_random_configuration(Emax))
         self.energy = self.pot.getEnergy(self.x)
         return self
-        
+
         
         
