@@ -6,47 +6,96 @@ from scipy.special import gamma, gammaln
 from scipy.misc import factorial
 from pygmin.accept_tests import SphericalContainer
 from pygmin.utils.rotations import vec_random_ndim
+from pygmin.potentials import BasePotential
+from pygmin.systems import BaseSystem
+from nested_sampling import MonteCarloChain
 
-__all__ =["HParticle"]
+__all__ =["HarParticle"]
 
-class HParticle():
+class HarPotential(BasePotential):
+    """
+    Defines an harmonic potential, returns energy depending on coordinates
+    
+    Parameters
+    ----------
+    centre: list of int
+        centre of harmonic well
+    kappa: list of float
+        spring constants
+    """
+    def __init__(self, centre, kappa):
+        self.centre = np.asfarray(centre)
+        self.kappa = np.asfarray(kappa)
+                
+    def getEnergy(self, coords):
+        coords = np.asfarray(coords)
+        dist_vec = self.centre - coords
+        E_vec = 0.5 * self.kappa * dist_vec * dist_vec      
+        E = 0.
+        for e in E_vec:
+            E += e
+        return E
+   
+class HarParticle(BaseSystem):
     """
     Defines a particle in an harmonic potential of n dimensions
     """
     
-    def __init__(self, ndim, Eground, radius, centre):
-     # use numpy vectors for coordinates, centre must be a numpy vector   
+    def __init__(self, ndim, centre, kappa, Eground):
         self.ndim = ndim
+        #kappa is an ndimensional array containing n spring constants
+        self.kappa = np.asfarray(kappa)
+        assert(self.kappa.size == ndim)
+        # use numpy vectors for coordinates, centre must be a numpy vector
+        self.centre = centre
         self.Eground = Eground
-        self.radius = radius
-        self.centre = np.asarray(centre)
             
     def get_potential(self):
-        
-        potential = Eground + 0.5 *     
-        return 
+        return HarPotential(self.centre, self.kappa) 
     
     def vector_random_uniform_hypersphere(self):
-    """return a vector sampled uniformly in a hypersphere of dimension ndim"""
+    """return a normalised vector sampled uniformly in a hypersphere of dimension ndim
+       must then multiply each component by sqrt(norm_max)
+    """
     u = vec_random_ndim(self.ndim)
     #draw the magnitude of the vector from a power law density:
     #draws samples in [0, 1] from a power distribution with positive exponent k/2 - 1.
     p = np.random.power(0.5 * self.ndim)
     return p * u
     
-    def get_config_tests(self, coords):
-        coords_norm np.linalg.norm(coords)
-        if self.radius < coords_norm:
-            return False
+    def get_config_tests(self, coords, radius):
+        coords_norm = np.linalg.norm(coords)
+        if coords is not None and radius > coords_norm:
+            return True
         else:
-            return coords
+            return False
      
-    def get_random_configuration(self):
-        """make sure they're all inside the radius"""
-        test = self.get_config_tests()[0]
-        coords = np.zeros([1,self.ndim])
-        coords[i,:] = vector_random_uniform_hypersphere(self.ndim) * self.radius
-        assert(np.linalg.norm(coords[i,:]) <= self.radius)
-        assert(test.accept(coords.flatten()))
-        return coords.flatten()
+    def get_random_configuration(self, Emax):
+        """make sure they're all inside the radius, get_config_test is not strictly necessary, consider removing it"""
+        #radius is a scalar corresponding to the max distance from the centre
+        radius = np.sqrt(2. * (Emax - self.Eground))
+        coords = np.zeros(self.ndim)
+        coords = vector_random_uniform_hypersphere(self.ndim) * sqrt(self.radius)
+        assert(get_config_tests(coords, radius) is True)
+        return coords
+
+class HarRunner(object):
     
+    def __init__(self, system):
+        self.sytem = system
+        self.pot = system.get_potential()
+    
+    def __call__(self, x0=None, mciter=None, stepsize=None, Emax, seed=None):
+        return self.run(Emax)  
+            
+    def run(self, Emax):        
+        self.Emax = Emax
+        self.mciter = 1
+        self.nsteps = 1
+        self.naccept = 0.7
+        self.x = self.system.get_random_configuration(Emax)
+        self.energy = self.pot.getEnergy(self.x)
+        return self
+        
+        
+        
