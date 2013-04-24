@@ -9,7 +9,7 @@ from pygmin.potentials import BasePotential
 from pygmin.systems import BaseSystem
 from nested_sampling import MonteCarloChain
 
-__all__ =["HarParticle"]
+__all__ =["HarPotential","HarParticle","HarRunner"]
 
 class HarPotential(BasePotential):
     """
@@ -36,11 +36,9 @@ class HarPotential(BasePotential):
         return E
    
 class HarParticle(BaseSystem):
-    """
-    Defines a particle in an harmonic potential of n dimensions
-    """
+    """ Defines a particle in an harmonic potential of n dimensions """
     
-    def __init__(self, ndim, centre, kappa, Eground):
+    def __init__(self, ndim, centre, kappa, Eground, Emax_init):
         self.ndim = ndim
         #kappa is an ndimensional array containing n spring constants
         self.kappa = np.asfarray(kappa)
@@ -48,43 +46,61 @@ class HarParticle(BaseSystem):
         # use numpy vectors for coordinates, centre must be a numpy vector
         self.centre = centre
         self.Eground = Eground
+        self.Emax_init = Emax_init
             
     def get_potential(self):
         return HarPotential(self.centre, self.kappa) 
     
     def vector_random_uniform_hypersphere(self):
-    """return a normalised vector sampled uniformly in a hypersphere of dimension ndim
-       must then multiply each component by sqrt(norm_max)
-    """
-    u = vec_random_ndim(self.ndim)
-    #draw the magnitude of the vector from a power law density:
-    #draws samples in [0, 1] from a power distribution with positive exponent k/2 - 1.
-    p = np.random.power(0.5 * self.ndim)
-    return p * u
+        """
+        return a normalised vector sampled uniformly in a hypersphere of dimension ndim
+        must then multiply each component by sqrt(norm_max)
+        """
+        u = vec_random_ndim(self.ndim)
+        #draw the magnitude of the vector from a power law density:
+        #draws samples in [0, 1] from a power distribution with positive exponent k/2 - 1.
+        p = np.random.power(0.5 * self.ndim)
+        return p * u
     
-    def get_config_tests(self, coords, radius):
+    def get_config_tests(self):
+        """
+        needed to return true at all tests in run_nestedsampling
+        """ 
+        return True
+    
+    def get_config_tests_in(self, coords, radius):
         coords_norm = np.linalg.norm(coords)
-        if coords is not None and radius > coords_norm:
+        if coords is not None and radius >= coords_norm:
             return True
         else:
             return False
      
-    def get_random_configuration(self, Emax):
+    def get_random_configuration_Emax(self, Emax):
         """make sure they're all inside the radius, get_config_test is not strictly necessary, consider removing it"""
         #radius is a scalar corresponding to the max distance from the centre
         radius = np.sqrt(2. * (Emax - self.Eground))
         coords = np.zeros(self.ndim)
-        coords = vector_random_uniform_hypersphere(self.ndim) * sqrt(self.radius)
-        assert(get_config_tests(coords, radius) is True)
+        coords = self.vector_random_uniform_hypersphere() * np.sqrt(radius)
+        assert(self.get_config_tests_in(coords, radius) == True)
+        return coords
+    
+    def get_random_configuration(self):
+        """make sure they're all inside the radius, get_config_test is not strictly necessary, consider removing it"""
+        #radius is a scalar corresponding to the max distance from the centre
+        Emax = self.Emax_init
+        radius = np.sqrt(2. * (Emax - self.Eground))
+        coords = np.zeros(self.ndim)
+        coords = self.vector_random_uniform_hypersphere() * np.sqrt(radius)
+        assert(self.get_config_tests_in(coords, radius) == True)
         return coords
 
 class HarRunner(object):
     
     def __init__(self, system):
-        self.sytem = system
+        self.system = system
         self.pot = system.get_potential()
     
-    def __call__(self, x0=None, mciter=None, stepsize=None, Emax, seed=None):
+    def __call__(self, Emax, x0=None, mciter=None, stepsize=None, seed=None):
         return self.run(Emax)  
             
     def run(self, Emax):        
@@ -92,7 +108,7 @@ class HarRunner(object):
         self.mciter = 1
         self.nsteps = 1
         self.naccept = 0.7
-        self.x = copy.deepcopy(self.system.get_random_configuration(Emax))
+        self.x = self.system.get_random_configuration_Emax(Emax)
         self.energy = self.pot.getEnergy(self.x)
         return self
 

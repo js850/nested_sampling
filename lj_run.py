@@ -3,6 +3,7 @@ import sys
 import argparse
 import numpy as np
 from types import *
+from hparticle import *
 
 import database_eigenvecs
 from nested_sampling import NestedSampling
@@ -79,7 +80,7 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
 
-    if type(system) is  LJClusterNew():
+    if type(system) is  LJClusterNew:
         if use_compiled:
             mc_runner = MonteCarloCompiled(system.radius)
  #       import pickle
@@ -87,13 +88,14 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
  #           pickle.dump(mc_runner, pout)
         else:
             mc_runner = None
-    else if type(system) is HarParticle():
-        mc_runnner = HarRunner(system)
+        print "using the compiled MC = ", use_compiled
+    elif type(system) is HarParticle:
+        mc_runner = HarRunner(system)
+        print "using HarRunner"
     else:
         raise TypeError('system type is not known')
+       
         
-    print "using the compiled MC = ", use_compiled
-    
     print "using", nproc, "processors"
     
     if use_bs:
@@ -167,14 +169,15 @@ def main():
     mciter = args.mciter
     nminima = args.nminima
     
-    if args.system is 1:
+    if args.system == 1:
         system = LJClusterNew(natoms)
-    else if args.system is 2:
+    elif args.system ==  2:
         ndim = 1
-        centre = [0]
-        kappa = [1]
-        Eground = 0
-        system = HarParticle(ndim, centre, kappa, Eground)
+        centre = [0.]
+        kappa = [1.]
+        Eground = 0.
+        Emax_init = 100.
+        system = HarParticle(ndim, centre, kappa, Eground, Emax_init)
     else:
         raise TypeError('system type not known')
     nproc = args.nproc
