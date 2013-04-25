@@ -86,7 +86,8 @@ class HarParticle(BaseSystem):
         print "Emax - Eground =", (float(Emax) - self.Eground)
         print "radius =", radius
         coords = np.zeros(self.ndim)
-        coords = self.vector_random_uniform_hypersphere() * np.sqrt(radius)
+        coords = self.vector_random_uniform_hypersphere() * radius
+        print "sqrt.radius ", np.sqrt(radius)
         assert(self.get_config_tests_in(coords, radius) == True)
         return coords
     
@@ -96,7 +97,7 @@ class HarParticle(BaseSystem):
         Emax = self.Emax_init
         radius = np.sqrt(2. * (Emax - self.Eground))
         coords = np.zeros(self.ndim)
-        coords = self.vector_random_uniform_hypersphere() * np.sqrt(radius)
+        coords = self.vector_random_uniform_hypersphere() * radius
         assert(self.get_config_tests_in(coords, radius) == True)
         return coords
 
