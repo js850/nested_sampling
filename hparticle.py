@@ -29,7 +29,7 @@ class HarPotential(BasePotential):
                 
     def getEnergy(self, coords):
         coords = np.asfarray(coords)
-        dist_vec = coords- self.centre
+        dist_vec = coords - self.centre
         E_vec = 0.5 * self.kappa * dist_vec * dist_vec      
         E = 0.
         for e in E_vec:
@@ -61,7 +61,7 @@ class HarParticle(BaseSystem):
         u = vec_random_ndim(self.ndim)
         #draw the magnitude of the vector from a power law density:
         #draws samples in [0, 1] from a power distribution with positive exponent k/2 - 1.
-        p = np.random.power(0.5 * self.ndim)
+        p = np.random.power(self.ndim)
         return p * u
     
     def get_config_tests(self):
@@ -71,9 +71,9 @@ class HarParticle(BaseSystem):
         return True
     
     def get_config_tests_in(self, coords, radius):
-        coords_norm = np.linalg.norm(coords)
+        coords_norm = np.linalg.norm(coords-self.centre)
         print "coords_norm", coords_norm
-        if coords is not None and radius >= coords_norm:
+        if coords is not None and radius > coords_norm:
             return True
         else:
             return False

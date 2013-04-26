@@ -34,17 +34,18 @@ int main(int argc, char ** argv)
   
   //Parser
   
-  long double T_init = 0.01;
-  long double T_fin = 1;
-  long double T_step = 0.000002;
+  double T_init = 0.01;
+  double T_fin = 1;
+  double T_step = 0.000002;
   int opt_char;
   int K = 0;
   int L = 0;
   int P = 0;
+  int n = 0;
   char* input_str = NULL;
   char* output_str = NULL;
   
-  while ((opt_char = getopt (argc, argv, "I:O:L:K:P:h")) != EOF)
+  while ((opt_char = getopt (argc, argv, "I:O:L:K:n:P:h")) != EOF)
     switch (opt_char)
       {
       case 'I':
@@ -58,6 +59,9 @@ int main(int argc, char ** argv)
         break;
       case 'K':
 	K = atoi(optarg);
+        break;
+      case 'n':
+	n = atoi(optarg);
         break;
       case 'P':
 	P = atoi(optarg);
@@ -77,10 +81,11 @@ int main(int argc, char ** argv)
 	std::cout<<"-O \t output directory e.g. /path/to/directory "<<std::endl;
 	std::cout<<"-L \t size of LJ cluster"<<std::endl;
 	std::cout<<"-K \t number of replicas"<<std::endl;
+	std::cout<<"-n \t number of mc steps (only needed to name directory)"<<std::endl;
 	std::cout<<"-P \t number of processors"<<std::endl;
 	std::cout<<"-i \t temperature lower bound, default: 0.02"<<std::endl;
 	std::cout<<"-f \t temperature upper bound, default: 1"<<std::endl;
-	std::cout<<"-i \t temperature step, default: 2e-6"<<std::endl;
+	std::cout<<"-i \t temperature step, default: 2e-5"<<std::endl;
 	std::cout<<"-h \t help"<<std::endl;
 	return 0;
       case '?':
@@ -98,16 +103,16 @@ int main(int argc, char ** argv)
   ///////////////////////////////////////////////////////////////                                                          
   std::string K_str = std::to_string(K);
   std::string L_str = std::to_string(L);
-  
+  std::string n_str = std::to_string(n);
   std::string directory = output_str;
 
   directory += "/LJ" + L_str + "/";
   mkdir(directory.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
-  directory += "K" + K_str + "/";
+  directory += "K" + K_str + "_n" + n_str + "/";
   std::cout<<directory<<std::endl;
   mkdir(directory.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-
+    
   std::ofstream output;
   const std::string dos = directory + "dos.dat";
   const std::string free_energy = directory + "free_energy.dat";
@@ -125,12 +130,12 @@ int main(int argc, char ** argv)
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   /////////////////////////////SetConstants/////////////////////////////
   
-  std::vector<long double> En, list_X;
+  std::vector<double> En, list_X;
   list_X.reserve(K);
     
   /////////////////////////Read-datafile//////////////////////////////////
   int i;
-  long double T;
+  double T;
   std::ifstream chain_file;
   chain_file.open(input_str);
 
@@ -144,7 +149,7 @@ int main(int argc, char ** argv)
       chain_file.close();
     }  
   
-  std::vector<long double>::const_iterator itp;
+  std::vector<double>::const_iterator itp;
 
   /*
     for (itp = En.begin(); itp != En.end(); itp++)
@@ -157,11 +162,11 @@ int main(int argc, char ** argv)
   
   //create list_X
   
-  long double const Kd = (long double) K;
-  std::vector<long double> Xn;
+  double const Kd = (double) K;
+  std::vector<double> Xn;
   
   int imax = En.size();
-  long double alpha = 1;
+  double alpha = 1;
   
   if(P > 0)
     {
@@ -193,7 +198,7 @@ int main(int argc, char ** argv)
   
   
   //Renormalisation constant
-  /*
+  
   double Li = 0;
   i = 0;
   for(itp = En.begin(); itp != En.end(); ++itp)
@@ -202,47 +207,73 @@ int main(int argc, char ** argv)
       ++i;
     }                                                                                                           
   
-  std::cout<<"Li: "<<Li<<std::endl;                                                                            
+  //std::cout<<"Li: "<<Li<<std::endl;                                                                            
   //int S = list_X.size();
   double ground = Li;//0.99*100000*list_X.at(S-5);
-  */
-  long double renorm = 1;//1/ground;
+  std::cout<<"ground"<<ground<<std::endl;
+  double renorm = 1;//1/ground;
   //end of renormalisation
   
   //analysis 
   int normal = 1; //change it to whatever you like
-  long double begin_loop = 1/T_init;
-  long double end_loop = 1/T_fin;
-  long double step_loop = begin_loop - 1/(T_init + T_step);
-  std::vector<long double> density;
-  std::vector<long double> capacity;
-  std::vector<long double>::iterator it;
-  std::vector<long double>::iterator ite;
-  long double w, E;
+  double begin_loop = 1/T_init;
+  double end_loop = 1/T_fin;
+  double step_loop = begin_loop - 1/(T_init + T_step);
+  std::vector<double> density;
+  std::vector<double> density_t(imax,0);
+  std::vector<double> capacity;
+  std::vector<double> capacity_t;
+  std::vector<double>::iterator it;
+  std::vector<double>::iterator ite;
+  double w, ct, E;
+  double wt = 0;
+  double Emax;
   int l;
   
+  if(L<2)
+    {
+      Emax = 50;
+      ct = n/(4*powl(Emax,0.5*n));
+      i = 0;
+      //std::cout<<"ct: "<<ct<<std::endl;
+      
+      wt = ct * (powl(Emax,0.5*n)-powl(En.at(1),0.5*n-1));
+      density_t.at(i) = wt;
+      ++i;
+      
+      for(itp = En.begin(); itp < En.end()-2; ++itp)
+	{ 
+	  wt = ct * (powl(*itp,0.5*n)-powl(*(itp+2),0.5*n));
+	  density_t.at(i) = wt;
+	  ++i;
+	}
+      wt = ct * (powl(*(En.end()-2),0.5*n));
+      density_t.at(i) = wt;
+    }
+ 
   output.open(dos);
   output<<"# LJ"<<L<<" Nested-Sampling by Stefano Martiniani"<<std::endl;
   output<<"Resolution: "<<K<<std::endl;
   output<<"# time taken for the plot: "<<time_span.count()<<" seconds"<<std::endl;
-  output<<"# lnX \t ln(Likelyhood)"<<std::endl;
+  output<<"# X \t ln(Likelyhood)"<<std::endl;
 
   i = 0;
-  for(itp = En.begin(); itp != En.end(); ++itp)
+  for(itp = En.begin(); itp < En.end(); ++itp)
     {
       w = 0.5 * ( list_X.at(i) - list_X.at(i+2)) * renorm;
+      //std::cout<<"w i "<<i<<" is "<<w<<std::endl; 
       density.push_back(w);
-      output<<w<<"\t"<<(*itp)/normal<<std::endl;
+      output<<w<<"\t"<<(*itp)/normal<<"\t"<<density_t.at(i)<<std::endl;
       ++i;
     }
 
   output.close();
   
   ///////////////renormalise wrt ground state//////////////
-  std::cout<<*(En.end()-1)<<std::endl;
+  std::cout<<"En.back()"<<En.back()<<std::endl;
   for(ite = En.begin(); ite!= En.end(); ++ite)
   {
-    *ite = *ite - (*(En.end()-1));
+    *ite = *ite - En.back();
   }
   /////////////////////////////////////////////////////
   
@@ -252,34 +283,50 @@ int main(int argc, char ** argv)
   output<<"# time taken for the plot: "<<time_span.count()<<" seconds"<<std::endl;
   output<<"# kT \t U"<<std::endl;
   
-  std::vector<long double> internal_U;
-  std::vector<long double> partition_foo;
-  std::vector<long double> free_en;
-  std::vector<long double> canonical_dist;
+  std::vector<double> internal_U;
+  std::vector<double> partition_foo;
+  std::vector<double> free_en;
+  std::vector<double> internal_U_t;
+  std::vector<double> partition_foo_t;
+  std::vector<double> free_en_t;
+  std::vector<double> canonical_dist;
   
-  long double sum_E;
-  long double sum_Z;
-  long double c; //must go down to 0.01, c = 1/kT                                                                                                          
-  long double U;
+  double sum_E, sum_Et;
+  double sum_Z, sum_Zt;
+  double c; //must go down to 0.01, c = 1/kT
+  double gc = 0;
+  double g = 0;
+  if (L<2)
+    {
+      gc = 1;//1/( pow(M_PI,0.5*n) * std::tgamma(0.5*n));    
+    }
+  double U,Ut;
   
   l=0;
   for(c = begin_loop; c > end_loop; c = c-step_loop)
     {
-      sum_E = 0;
+      sum_E = 0; 
       sum_Z = 0;
+      sum_Et = 0; 
+      sum_Zt = 0;
       l = 0;
       for(ite = En.begin(); ite != En.end(); ++ite)
         {
           E = *ite;
-	  //std::cout<<"E: "<<E<<" exp(-E*c)"<<exp(-E*c)<<" density: "<<density.at(l)<<std::endl;
-          sum_E += E * density.at(l) * exp(-E*c);
+	  g = density_t.at(l);//;powl(E,(0.5*n - 1));
+	  sum_E += E * density.at(l) * exp(-E*c);
           sum_Z += density.at(l) * exp(-E*c);
-          ++l;
+          sum_Et += E * gc * g * exp(-E*c);
+          sum_Zt += gc * g * exp(-E*c);
+	  ++l;
         }
-      U = sum_E/sum_Z;
+      U = sum_E / sum_Z;
+      Ut = sum_Et / sum_Zt;
       internal_U.push_back(U);
+      internal_U_t.push_back(Ut);
       partition_foo.push_back(sum_Z);
-      output<<(1/c)<<"\t"<<(U/normal)<<std::endl;
+      partition_foo_t.push_back(sum_Zt);
+      output<<(1/c)<<"\t"<<(U/normal)<<"\t"<<(Ut/normal)<<std::endl;
     }
 
   output.close();
@@ -290,26 +337,42 @@ int main(int argc, char ** argv)
   output<<"# time taken for the plot: "<<time_span.count()<<" seconds"<<std::endl;
   output<<"# kT \t Cv/N"<<std::endl;
 
-  long double Cv, Tc;
+  double Cv, Cvt, Tc, kin_e;
+  
+  if (L < 2)
+    {
+      kin_e = 0;
+    }
+  else
+    {
+      kin_e = (3*L - 6) / 2;
+    }
 
   i = 0;
   for(c = begin_loop; c > end_loop; c = c-step_loop)
     {
       sum_E = 0;
+      sum_Et = 0;
       sum_Z = 0; 
+      sum_Zt = 0;
       l = 0;
       for(ite = En.begin(); ite != En.end(); ++ite)
         {
           E = *ite;
+	  g = density_t.at(l);//powl(E,0.5*n - 1);
           sum_E += (E * E * density.at(l) * exp(-E*c));
-          ++l;
+          sum_Et += gc * E * E * g * exp(-E*c);
+	  ++l;
         }
       U = internal_U.at(i);
+      Ut = internal_U_t.at(i);
       sum_Z = partition_foo.at(i);
-      Cv = ((sum_E/sum_Z) - U*U)*c*c;
+      sum_Zt = partition_foo_t.at(i);
+      Cv = ((sum_E/sum_Z) - U*U)*c*c + kin_e;
+      Cvt = ((sum_Et/sum_Zt) - Ut*Ut)*c*c + kin_e;
       capacity.push_back(Cv);
-
-      output<<(1/c)<<"\t"<<(Cv/normal)<<std::endl;
+      capacity_t.push_back(Cvt);      
+      output<<(1/c)<<"\t"<<(Cv/normal)<<"\t"<<(Cvt/normal)<<std::endl;
       ++i;
     }
 
@@ -326,15 +389,18 @@ int main(int argc, char ** argv)
   output<<"# time taken for the plot: "<<time_span.count()<<" seconds"<<std::endl;
   output<<"# kT \t F/N"<<std::endl;
 
-  long double F;
+  double F, Ft;
   i = 0;
   for(c = begin_loop; c > end_loop; c = c-step_loop)
     {
       sum_Z = partition_foo.at(i);
+      sum_Zt = partition_foo_t.at(i);
       F = -(1/c)*( log(sum_Z));
+      Ft = -(1/c)*( log(sum_Zt));
       free_en.push_back(F);
+      free_en_t.push_back(Ft);
 
-      output<<(1/c)<<"\t"<<(F/normal)<<std::endl;
+      output<<(1/c)<<"\t"<<(F/normal)<<"\t"<<(Ft/normal)<<std::endl;
       ++i;
     }
 
@@ -346,27 +412,30 @@ int main(int argc, char ** argv)
   output<<"# time taken for the plot: "<<time_span.count()<<" seconds"<<std::endl;
   output<<"# kT \t S/N"<<std::endl;
 
-  long double Se;
+  double Se,Set;
   i = 0;
   for(c = begin_loop; c > end_loop; c = c-step_loop)
     {
       U = internal_U.at(i);
       F = free_en.at(i);
+      Ut = internal_U_t.at(i);
+      Ft = free_en_t.at(i);
       Se = (U - F)*c;
-      output<<(1/c)<<"\t"<<(Se/normal)<<std::endl;
+      Set = (Ut - Ft)*c;
+      output<<(1/c)<<"\t"<<(Se/normal)<<"\t"<<(Set/normal)<<std::endl;
       ++i;
     }
 
   output.close();
-
+  /*
   output.open(canonical_distribution2);
   output<<"# LJ"<<L<<" Nested-Sampling by Stefano Martiniani"<<std::endl;
   output<<"Resolution: "<<K<<std::endl;
   output<<"# time taken for the plot: "<<time_span.count()<<" seconds"<<std::endl;
   output<<"# E/N \t D"<<std::endl;
 
-  long double D;
-  long double D_renormal;
+  double D;
+  double D_renormal;
 
   i = 0;
   for(ite = En.begin(); ite != En.end(); ++ite)
@@ -449,7 +518,7 @@ int main(int argc, char ** argv)
     }
 
   output.close();
-
+  */
   canonical_dist.clear();
   
   En.clear();
