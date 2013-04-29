@@ -71,10 +71,11 @@ class MonteCarloChain(object):
         self.Emax = Emax
         self.energy = self.potential.getEnergy(self.x)
         self.mciter = mciter
-        self.takestep.size = stepsize
+        self.takestep.stepsize = stepsize
         
         self.nsteps = 0
         self.naccept = 0
+        self.nreject_config = 0
         
         if not self.test_configuration(self.x, 0.):
             print "ERROR: initial configuration for monte carlo chain failed configuration test"
@@ -84,6 +85,7 @@ class MonteCarloChain(object):
         
         for i in xrange(self.mciter):
             self.step()
+#        print self.nsteps, self.naccept, self.nreject_config, self.takestep.stepsize, stepsize
         
         return self
 
@@ -93,6 +95,8 @@ class MonteCarloChain(object):
         if self.accept_tests is not None:
             for test in self.accept_tests:
                 if not test(energy=e, coords=x):
+                    self.nreject_config += 1
+#                    print "rejecting config"
                     return False
         return True
 
@@ -115,10 +119,12 @@ class MonteCarloChain(object):
         # get energy
         e = self.potential.getEnergy(xnew)
         
+#        print e, self.Emax
         accept = e < self.Emax
 
         if accept:
-            accept = self.test_configuration(xnew, e) 
+            accept = self.test_configuration(xnew, e)
+#            print "accepting", self.naccept
 
         if accept:
             self.x = xnew
@@ -153,10 +159,10 @@ class Replica(object):
     def copy(self):
         return copy.deepcopy(self)
 
-def mc_runner_wrapper(x_tuple):
-    mc_runner = x_tuple[0]
-    x0, mciter, stepsize, Emax, seed = x_tuple[1:]
-    return mc_runner(x0, mciter, stepsize, Emax, seed) 
+#def mc_runner_wrapper(x_tuple):
+#    mc_runner = x_tuple[0]
+#    x0, mciter, stepsize, Emax, seed = x_tuple[1:]
+#    return mc_runner(x0, mciter, stepsize, Emax, seed) 
 
 class NestedSampling(object):
     """the main class for implementing nested sampling
@@ -184,23 +190,17 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, system, nreplicas, takestep, mciter=100, 
-                  accept_tests=None, mc_runner=None, nproc=1, triv_paral = True, verbose=True):
+    def __init__(self, system, nreplicas, mc_runner, mciter=100, 
+                 stepsize=0.1, nproc=1, triv_paral=True, verbose=True):
         self.system = system
-        self.takestep = takestep
         self.mciter=mciter
-        self.accept_tests = accept_tests
         self.nproc = nproc
         self.verbose = verbose
         self.triv_paral = triv_paral
         self.nreplicas = nreplicas
-        
-        #choose between compiled and raw version of the mc_runner
-        if mc_runner is None:
-            self.mc_runner = MonteCarloChain(self.system.get_potential(), self.takestep, accept_tests=self.accept_tests)
-        else:
-            self.mc_runner = mc_runner
-        
+        self.mc_runner = mc_runner
+        self.stepsize = stepsize
+
         self.max_energies = []
         
         self.setup_replicas(nreplicas)
@@ -234,11 +234,11 @@ class NestedSampling(object):
         target_ratio. 
         """
         if self.nproc > 1:
-            stepsize = self.takestep.stepsize
-            x_tuple = [(self.mc_runner, r.x, self.mciter, stepsize, Emax, 
-                        np.random.randint(0, sys.maxint)) for r in configs]
-            for t in x_tuple: #  debug check
-                assert isinstance(t[1], np.ndarray), "%s" % str(t[1])
+            stepsize = self.stepsize
+#            x_tuple = [(self.mc_runner, r.x, self.mciter, stepsize, Emax, 
+#                        np.random.randint(0, sys.maxint)) for r in configs]
+#            for t in x_tuple: #  debug check
+#                assert isinstance(t[1], np.ndarray), "%s" % str(t[1])
 
             try:
 #                mclist = self.pool.map(mc_runner_wrapper, x_tuple)
@@ -273,14 +273,14 @@ class NestedSampling(object):
                 # print some data
                 accrat = float(sum(mc.naccept for mc in mclist))/ sum(mc.nsteps for mc in mclist)
                 print "step:", self.iter_number, "%accept", accrat, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                    "stepsize", self.takestep.stepsize
+                    "stepsize", self.stepsize
 
 
         else:
             rold = configs[0]
             x0, energy = rold.x, rold.energy
             seed = np.random.randint(0, sys.maxint)
-            mc = self.mc_runner(x0, self.mciter, self.takestep.stepsize, Emax, seed)
+            mc = self.mc_runner(x0, self.mciter, self.stepsize, Emax, seed)
             rnew = rold
             rnew.x = mc.x
             rnew.energy = mc.energy
@@ -296,14 +296,14 @@ class NestedSampling(object):
                 dist = np.linalg.norm(mc.x - x0)
                 print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
                     "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                    "stepsize", self.takestep.stepsize, "distance", dist
+                    "stepsize", self.stepsize, "distance", dist #, "%reject_config", float(mc.nreject_config) / mc.nsteps, mc.nsteps - mc.naccept 
         
         for mc, r in izip(mclist, configs):
             if mc.naccept == 0:
                 sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
                 print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
                     "Enew", mc.energy, "Eold", r.energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                    "stepsize", self.takestep.stepsize #, "distance", dist removed because dist is undefined for multiple processors
+                    "stepsize", self.stepsize #, "distance", dist removed because dist is undefined for multiple processors
 
         self.adjust_step_size(mclist)
         return rnewlist
@@ -347,16 +347,16 @@ class NestedSampling(object):
         """
         f = 0.8
         target_ratio = 0.7
-        max_stepsize = 0.5
+        max_stepsize = 0.5 # these should to be passed
         ratio = float(sum(m.naccept for m in mc))/ sum(m.nsteps for m in mc)  
         
         if ratio < target_ratio:
             # reduce step size
-            self.takestep.stepsize *= f
+            self.stepsize *= f
         else:
-            self.takestep.stepsize /= f
-        if self.takestep.stepsize > max_stepsize:
-            self.takestep.stepsize = max_stepsize
+            self.stepsize /= f
+        if self.stepsize > max_stepsize:
+            self.stepsize = max_stepsize
         
     def pop_replica(self):
         """
@@ -439,13 +439,16 @@ class NestedSampling(object):
 if __name__ == "__main__":
     from lj_run import LJClusterNew
     from pygmin.takestep import RandomDisplacement
-    natoms = 13
-    nreplicas = 1000
-    mciter = 100
+    natoms = 6
+    nreplicas = 10
+    mciter = 1000
     system = LJClusterNew(natoms)
     
+    takestep = RandomDisplacement(stepsize=0.5)
+    mcrunner = MonteCarloChain(system.get_potential(), takestep, 
+                               system.get_config_tests())
     
-    ns = NestedSampling(system, nreplicas, RandomDisplacement(stepsize=0.5), mciter=mciter)
+    ns = NestedSampling(system, nreplicas, mcrunner, mciter=mciter)
     for i in range(nreplicas * 300):
         ediff = ns.replicas[-1].energy - ns.replicas[0].energy
         if ediff < .01: break  

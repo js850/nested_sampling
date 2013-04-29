@@ -7,7 +7,7 @@ from hparticle import *
 from nested_sampling_runner import run_nested_sampling
 
 #import database_eigenvecs
-from nested_sampling import NestedSampling
+from nested_sampling import NestedSampling, MonteCarloChain
 from bh_sampling import get_thermodynamic_information, vector_random_uniform_hypersphere,\
     NestedSamplingBS
 
@@ -57,8 +57,10 @@ class LJClusterNew(LJCluster):
         com = np.sum(x, 0) / natoms
         x -= com[np.newaxis, :]
 
-
-from src.runmc import mc_cython
+try:
+    from src.runmc import mc_cython
+except ImportError:
+    print "warning, can't import compiled mc"
 class MonteCarloCompiled(object):
     def __init__(self, radius):
         self.radius = radius
@@ -89,7 +91,7 @@ def run_nested_sampling_lj(system, nreplicas=300, mciter=1000, label="test",
  #       with open("testpickle", "w") as pout:
  #           pickle.dump(mc_runner, pout)
         else:
-            mc_runner = None
+            mc_runner = MonteCarloChain(system.get_potential(), takestep, accept_tests=accept_tests)
         print "using the compiled MC = ", use_compiled
     elif type(system) is HarParticle:
         mc_runner = HarRunner(system)
@@ -103,9 +105,13 @@ def run_nested_sampling_lj(system, nreplicas=300, mciter=1000, label="test",
     if minima is not None:
         assert(len(minima) > 0)
         print "using", len(minima), "minima"
-        ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral, minprob = minprob)
+        ns = NestedSamplingBS(system, nreplicas, mc_runner, minima, 
+                              mciter=mciter, stepsize=0.07,
+                              nproc=nproc, triv_paral=triv_paral, minprob=minprob)
     else:
-        ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral)
+        ns = NestedSampling(system, nreplicas, mc_runner, 
+                            mciter=mciter, stepsize=0.07,
+                            nproc=nproc, triv_paral=triv_paral)
     etol = 0.01
 
     ns = run_nested_sampling(ns, label, etol, maxiter=maxiter)
@@ -169,7 +175,7 @@ def main():
     # exit(1)
 
     # run nested sampling
-    ns = run_nested_sampling_lj(system, nreplicas=nreplicas, iterscale=1000000, 
+    ns = run_nested_sampling_lj(system, nreplicas=nreplicas, 
                              label=label, minima=minima, mciter=mciter, 
                              use_compiled=args.compiled_mc, nproc=nproc, triv_paral = triv_paral, minprob = minprob)
 
