@@ -14,7 +14,7 @@ class MCRunner(mp.Process):
         while 1:
             message = self.conn.recv()
             #print "message", message
-            if message[0] == "kill":
+            if message == "kill":
                 #print "terminating", self.name
                 return
             elif message[0] == "do mc":

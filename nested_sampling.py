@@ -432,8 +432,9 @@ class NestedSampling(object):
                 worker.join()
                 worker.terminate()
                 worker.join()
-            self.pool.close()
-            self.pool.join()
+#            self.pool.close()
+#            self.pool.join()
+
 
 if __name__ == "__main__":
     from lj_run import LJClusterNew

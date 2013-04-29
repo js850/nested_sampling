@@ -1,14 +1,14 @@
-import pickle
+#import pickle
 import sys
 import argparse
 import numpy as np
-from types import *
+#from types import *
 from hparticle import *
+from nested_sampling_runner import run_nested_sampling
 
-import database_eigenvecs
+#import database_eigenvecs
 from nested_sampling import NestedSampling
-from bh_sampling import sample_uniformly_in_basin,\
-    get_thermodynamic_information, vector_random_uniform_hypersphere,\
+from bh_sampling import get_thermodynamic_information, vector_random_uniform_hypersphere,\
     NestedSamplingBS
 
 
@@ -76,7 +76,9 @@ class MonteCarloCompiled(object):
         res.energy = energy
         return res
 
-def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label="test", minima=None, use_compiled=True, use_bs=False, nproc = 1, triv_paral = True, minprob = 1):
+def run_nested_sampling_lj(system, nreplicas=300, mciter=1000, label="test", 
+                           minima=None, use_compiled=True, nproc=1,
+                           triv_paral=True, minprob=1, maxiter=1e100):
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
 
@@ -98,52 +100,15 @@ def run_nested_sampling(system, nreplicas=300, mciter=1000, iterscale=300, label
         
     print "using", nproc, "processors"
     
-    if use_bs:
-        assert minima is not None
+    if minima is not None:
         assert(len(minima) > 0)
         print "using", len(minima), "minima"
         ns = NestedSamplingBS(system, nreplicas, takestep, minima, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral, minprob = minprob)
     else:
         ns = NestedSampling(system, nreplicas, takestep, mciter=mciter, accept_tests=accept_tests, mc_runner=mc_runner, nproc = nproc, triv_paral = triv_paral)
     etol = 0.01
-    isave = 0
-    maxiter = nreplicas * iterscale
-    i = 0
-#    pkl = label + ".ns.pickle"
-    with open(label+".energies", "w") as fout:
-        while True:
-            ediff = ns.replicas[-1].energy - ns.replicas[0].energy
-            if i != 0 and i % 100 == 0:
-                fout.write( "\n".join([ str(e) for e in ns.max_energies[isave:i]]) )
-                fout.write("\n")
-                fout.flush()
-                isave = i
 
-            if False and i % 10000 == 0:
-                with open(label+".x", "w") as xout:
-                    for r in ns.replicas:
-                        write_xyz(xout, r.x)
-                    
-            if i % 1000 == 0:
-                if i == 0: openas = "w"
-                else: openas = "a"
-                with open(label+".replicas", openas) as xout:
-                    xout.write("#energy niter from_random\n")
-                    for r in ns.replicas:
-                        xout.write("%g %d %d\n" % (r.energy, r.niter, int(r.from_random))) 
-                    xout.write("\n\n")
-
-            if ediff < etol: break
-            if i >= maxiter: break  
-            ns.one_iteration()
-            i += 1
-        fout.write( "\n".join([ str(e) for e in ns.max_energies[isave:i]]) )
-        fout.write("\n")
-        fout.flush()
-#    print ns.max_energies
-    print "min replica energy", ns.replicas[0].energy
-    print "max replica energy", ns.replicas[-1].energy
-    ns.finish()
+    ns = run_nested_sampling(ns, label, etol, maxiter=maxiter)
     return ns
 
 def main():
@@ -191,24 +156,22 @@ def main():
     if args.db is not None:
         dbname = args.db
         db = system.create_database(dbname, createdb=False)
-        use_bs = True
         print dbname, "nminima", len(db.minima())
         minima = db.minima()
         if len(minima) > nminima:
             minima = minima[:nminima]
     else:
-        use_bs = False #can avoid writing this and do it more concisely?
         minima = None
 
     # get thermodynamic information from database
-    if (use_bs is True) and (args.get_thermodynamic_properties is True):
+    if (minima is not None) and (args.get_thermodynamic_properties is True):
         get_thermodynamic_information(system, db)
     # exit(1)
 
     # run nested sampling
-    ns = run_nested_sampling(system, nreplicas=nreplicas, iterscale=1000000, 
+    ns = run_nested_sampling_lj(system, nreplicas=nreplicas, iterscale=1000000, 
                              label=label, minima=minima, mciter=mciter, 
-                             use_compiled=args.compiled_mc, use_bs=use_bs, nproc=nproc, triv_paral = triv_paral, minprob = minprob)
+                             use_compiled=args.compiled_mc, nproc=nproc, triv_paral = triv_paral, minprob = minprob)
 
     with open(label + ".energies", "w") as fout:
         fout.write( "\n".join([ str(e) for e in ns.max_energies]) )
