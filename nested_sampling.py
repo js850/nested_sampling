@@ -171,16 +171,18 @@ class NestedSampling(object):
     ----------
     system : pygmin System
         is the particular system of interest, say LJCluster
-    takestep : callable takestep object
-        take a random montecarlo step, imported from pygmin: takestep(x) makes
-        a move from x
+    nreplicas : integer
+        number of replicas
+    mc_runner : callable
+        does Markov Chain walk to create a new configuration from an old configuration.
+        It should return an object with attributes x, energy, nsteps, naccept, etc.
     mciter : integer
-        number of steps in markov chain (sampling)
+        number of steps in Markov Chain (sampling)
     accept_test : list of callables
         it's an array of pointers to functions. The dereferenced functions
         operate a set of tests on the energy/configuration.
-    mc_runner : callable
-        use this object to do the Monte Carlo chain rather than the default
+    nproc : int
+        number of processors to use for parallel nested sampling
     
     Attributes
     ----------
@@ -234,32 +236,21 @@ class NestedSampling(object):
         target_ratio. 
         """
         if self.nproc > 1:
-            stepsize = self.stepsize
-#            x_tuple = [(self.mc_runner, r.x, self.mciter, stepsize, Emax, 
-#                        np.random.randint(0, sys.maxint)) for r in configs]
-#            for t in x_tuple: #  debug check
-#                assert isinstance(t[1], np.ndarray), "%s" % str(t[1])
 
             try:
-#                mclist = self.pool.map(mc_runner_wrapper, x_tuple)
                 # pass the workers the starting configurations for the MC walk
                 for conn, r in izip(self.connlist, configs):
                     seed = np.random.randint(0, sys.maxint)
-                    message = ("do mc", r.x, self.mciter, stepsize, Emax, seed)
+                    message = ("do mc", r.x, self.mciter, self.stepsize, Emax, seed)
                     conn.send(message)
                 # recieve the results back from the workers
-                mclist = []
-                for conn in self.connlist:
-                    res  = conn.recv()
-                    mclist.append( res )
+                mclist = [conn.recv() for conn in self.connlist]
             except:
                 #this is bad, it shouldn't be done here
                 print "exception caught during parallel MC iteration.  Terminating child processes"
                 for worker in self.workerlist:
                     worker.terminate()
                     worker.join()
-#                self.pool.terminate()
-#                self.pool.join()
                 print "done terminating child processes"
                 raise
             
@@ -301,6 +292,7 @@ class NestedSampling(object):
         for mc, r in izip(mclist, configs):
             if mc.naccept == 0:
                 sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
+                sys.stdout.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
                 print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
                     "Enew", mc.energy, "Eold", r.energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
                     "stepsize", self.stepsize #, "distance", dist removed because dist is undefined for multiple processors
@@ -374,8 +366,7 @@ class NestedSampling(object):
     
     def pop_replica_par(self, rtuple):
         """
-        removes the other processes for parellel implementation
-        
+        removes the other processes for parallel implementation
         """
         #remove other nproc-1 replica
         if self.triv_paral is True:
