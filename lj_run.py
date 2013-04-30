@@ -13,7 +13,7 @@ from bh_sampling import get_thermodynamic_information, vector_random_uniform_hyp
 
 
 from pygmin.takestep import RandomDisplacement
-from pygmin.utils.xyz import write_xyz
+#from pygmin.utils.xyz import write_xyz
 from pygmin.accept_tests import SphericalContainer
 from pygmin.systems import LJCluster
 from pygmin.mindist import PointGroupOrderCluster

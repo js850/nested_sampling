@@ -307,7 +307,7 @@ class NestedSampling(object):
         x = self.system.get_random_configuration()
         pot = self.system.get_potential()
         e = pot.getEnergy(x)
-        if self.verbose: print "pot=", e
+#        if self.verbose: print "pot=", e
         return Replica(x, e)
     
     def sort_replicas(self):
@@ -383,7 +383,7 @@ class NestedSampling(object):
 
     def get_starting_configuration_from_replicas(self):
         # choose a replica randomly
-        rlist_int = random.sample(xrange(self.nreplicas-1), self.nproc)
+        rlist_int = random.sample(xrange(len(self.replicas)), self.nproc)
         configlist = [copy.deepcopy(self.replicas[i]) for i in rlist_int]
         return configlist,rlist_int
 
@@ -396,18 +396,20 @@ class NestedSampling(object):
         return rnew
     
     def one_iteration(self):
-        rmax = self.pop_replica()
-        Emax = rmax.energy
+#        rmax = self.pop_replica()
+#        Emax = rmax.energy
+        Emax = self.replicas[-1].energy
        
         rtuple = self.get_starting_configuration(Emax)
-        
         configs = rtuple[0]
+
+        self.pop_replica()
         if self.nproc > 1:
             self.pop_replica_par(rtuple)
         
         # note configs is a list of starting configurations.
         # but a list of length 1 if self.nproc == 1
-        if self.verbose: print "one_iteration Emax", Emax
+#        if self.verbose: print "one_iteration Emax", Emax
         rlist = self.do_monte_carlo_chain(configs, Emax)
 
         for r in rlist:
