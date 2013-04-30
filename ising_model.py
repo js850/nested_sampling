@@ -1,6 +1,6 @@
 import numpy as np
 import networkx as nx
-
+import sys
 from pygmin.systems import BaseSystem
 from pygmin.potentials import BasePotential
 
@@ -31,20 +31,20 @@ def make_grid_graph(dim, periodic=True):
     
     return Gnew, spatial
         
-        
-        
+
 
 class IsingPotential(BasePotential):
     """
-    the potential object for an ising system
+    the potential object for an Ising system
     
     the networkx graph G defines the connectivity of the lattice
     
-    This is for a 2d square lattice.  Generalizing to other lattices only involes
+    This is for a 2d square lattice. Generalising to other lattices only involves
     defining a new G
     """
     def __init__(self, G):
         self.G = G
+        self.eps = sys.float_info.epsilon
         
     def getEnergy(self, spins):
         E = 0.
@@ -54,7 +54,7 @@ class IsingPotential(BasePotential):
         return E
 
     def getEnergyGradient(self, spins):
-        raise Exception("gradient not defined for ising spin system")
+        raise Exception("gradient not defined for Ising spin system")
 
     def getEnergyChange(self, spins, i):
         """
@@ -68,6 +68,11 @@ class IsingPotential(BasePotential):
             E -= deltaS * spins[j]
         return E
     
+    def randomiseEnergy(self, E):
+        u = np.random.ranf()
+        l = 1. + (u - 0.5) * self.eps
+        Erand = E * l 
+        return Erand
 
 class IsingSystem(BaseSystem):
     """
@@ -75,14 +80,14 @@ class IsingSystem(BaseSystem):
      
     the networkx graph G defines the connectivity of the lattice
     
-    This is for a 2d square lattice.  Generalizing to other lattices only involves
+    This is for a 2d square lattice.  Generalising to other lattices only involves
     defining a new G
     
     Parameters
     ----------
     L : int
         number of spins along one axis of the square lattice (this is specific
-        to a square lattice, but it could be generalized easily)
+        to a square lattice, but it could be generalised easily)
     """
     def __init__(self, L=10):
         self.G, self.spatial = make_grid_graph([L,L], periodic=True)
@@ -106,11 +111,56 @@ class IsingSystem(BaseSystem):
         xylist = [xi[1] for xi in xylist]
         xylist = np.array(xylist).flatten()
         return xylist
-        
+    
+    def get_config_tests(self):
+        """
+        needed to return true at all tests in run_nestedsampling
+        """ 
+        return True
+    
 #        spatial_to_spin = dict()
 #        for xy, node in self.spatial.iteritems():
 #            spatial_to_spin[xy] = spins[node]
 #        return spatial_to_spin
+
+class IsingRunner(object):
+    def __init__(self, system):
+        self.system = system
+        self.pot = system.get_potential()
+    
+    def __call__(self, x0, mciter, stepsize, Emax, seed=None):
+        return self.run(x0, mciter, Emax)
+    
+    def run(self, x0, mciter, Emax):        
+        self.x = x0
+        self.Emax = Emax
+        self.mciter = mciter
+        self.energy = self.pot.getEnergy(self.x)
+        self.nsteps = 0
+        self.naccept = 0
+        for i in xrange(self.mciter):
+            self.step()
+        if self.naccept > 0:
+            self.energy = self.pot.randomiseEnergy(self.energy)
+        return self
+    
+    def step(self):
+        """
+        Do one iteration in the Monte Carlo chain
+        """
+        #flip one spin
+        i = np.random.randint(self.system.get_nspins())
+        dE = self.pot.getEnergyChange(self.x, i)
+        new_energy = self.energy + self.pot.getEnergyChange(self.x,i)
+        accept = new_energy < self.Emax
+        
+        if accept: 
+            self.x[i] = - self.x[i]
+            self.energy = new_energy
+            self.naccept += 1
+        
+        self.nsteps += 1
+    
 
 def test():
     system = IsingSystem(L=10)

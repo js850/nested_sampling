@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 #from types import *
 from hparticle import HarParticle, HarRunner
+from ising_model import IsingSystem, IsingRunner
 from nested_sampling_runner import run_nested_sampling
 
 #import database_eigenvecs
@@ -96,6 +97,9 @@ def run_nested_sampling_lj(system, nreplicas=300, mciter=1000, label="test",
     elif type(system) is HarParticle:
         mc_runner = HarRunner(system)
         print "using HarRunner"
+    elif type(system) is IsingSystem:
+        mc_runner = IsingRunner(system)
+        print "using IsingRunner"
     else:
         raise TypeError('system type is not known')
        
@@ -132,7 +136,7 @@ def main():
     parser.add_argument("-p", "--trivparal", type=bool, help="set whether to do trivial parallelisation, by default True",default=True)
     parser.add_argument("-T", "--get-thermodynamic-properties", type=bool, help="recalculates the eigenvectors of the hessian and writes them to the database",default=False)
     parser.add_argument("-a", "--minprob", type=bool, help="probability of sampling from minima as a/K, default a=1",default=1)
-    parser.add_argument("-S", "--system", type=int, help="define system type: 1 is LJ \n2 is HarParticle",default=1)
+    parser.add_argument("-S", "--system", type=int, help="define system type: 1 is LJ \n2 is HarParticle \n3 is Ising",default=1)
     args = parser.parse_args()
 
     natoms = args.nAtoms
@@ -148,9 +152,12 @@ def main():
         centre = [0. for i in xrange(ndim)]
         kappa = [1. for i in xrange(ndim)]
         Eground = 0.
-        Emax_init = 50.
+        Emax_init = 10.
         system = HarParticle(ndim, centre, kappa, Eground, Emax_init)
         label = "HarParticle_%dD" % (ndim)
+    elif args.system == 3:
+        system = IsingSystem()
+        label = "Ising"
     else:
         raise TypeError('system type not known')
     nproc = args.nproc
