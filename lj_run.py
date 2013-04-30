@@ -3,7 +3,7 @@ import sys
 import argparse
 import numpy as np
 #from types import *
-from hparticle import *
+from hparticle import HarParticle, HarRunner
 from nested_sampling_runner import run_nested_sampling
 
 #import database_eigenvecs
@@ -80,7 +80,7 @@ class MonteCarloCompiled(object):
 
 def run_nested_sampling_lj(system, nreplicas=300, mciter=1000, label="test", 
                            minima=None, use_compiled=True, nproc=1,
-                           triv_paral=True, minprob=1, maxiter=1e100):
+                           triv_paral=True, minprob=1, maxiter=1e100, **kwargs):
     takestep = RandomDisplacement(stepsize=0.07)
     accept_tests = system.get_config_tests()
 
@@ -107,11 +107,11 @@ def run_nested_sampling_lj(system, nreplicas=300, mciter=1000, label="test",
         print "using", len(minima), "minima"
         ns = NestedSamplingBS(system, nreplicas, mc_runner, minima, 
                               mciter=mciter, stepsize=0.07,
-                              nproc=nproc, triv_paral=triv_paral, minprob=minprob)
+                              nproc=nproc, triv_paral=triv_paral, minprob=minprob, **kwargs)
     else:
         ns = NestedSampling(system, nreplicas, mc_runner, 
                             mciter=mciter, stepsize=0.07,
-                            nproc=nproc, triv_paral=triv_paral)
+                            nproc=nproc, triv_paral=triv_paral, **kwargs)
     etol = 0.01
 
     ns = run_nested_sampling(ns, label, etol, maxiter=maxiter)
