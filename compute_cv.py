@@ -111,7 +111,7 @@ if __name__ == "__main__":
     print "parallel nprocessors", P
     
     Tmin = .02
-    Tmax = .5
+    Tmax = 8
     nT = 1000
     dT = (Tmax-Tmin) / nT
     

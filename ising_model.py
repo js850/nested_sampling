@@ -6,7 +6,7 @@ from pygmin.potentials import BasePotential
 
 def make_grid_graph(dim, periodic=True):
     """
-    this is a wrapper for nx.grid_graph()
+    this is a wrapper for nx.grid_graph() which replaces the node definition
     
     grid_graph creates a graph where the nodes are tuples (ix, iy, ...) 
     where ix and iy are the x and y positions of the site.  It would be more useful to
@@ -64,6 +64,8 @@ class IsingPotential(BasePotential):
         Sold = float(spins[i])
         Snew = - Sold
         deltaS = Snew - Sold
+        # loop through the neighbors of i
+        # could also write as: E = sum([-deltaS * spins[j] for j in self.G[i]])
         for j in self.G[i]:
             E -= deltaS * spins[j]
         return E
@@ -133,8 +135,8 @@ class IsingRunner(object):
     
     def run(self, x0, mciter, Emax):        
         self.x = x0
-        self.Emax = Emax
-        self.mciter = mciter
+        self.Emax = Emax + 0.5 # to ensure that <= accepts when the energies are almost equal
+        self.mciter = mciter * len(self.x) # do mciter monte carlo sweeps
         self.energy = self.pot.getEnergy(self.x)
         self.nsteps = 0
         self.naccept = 0
@@ -160,7 +162,22 @@ class IsingRunner(object):
             self.naccept += 1
         
         self.nsteps += 1
-    
+
+def plot_ising(system, spins):
+    import matplotlib.pyplot as plt
+    spins = spins.astype(float)
+    xylist = system.get_spatial_arrangement()
+    xylist = xylist.reshape(-1,2)
+    x = xylist[:,0]
+    y = xylist[:,1]
+
+    plt.quiver(x, y, 0, spins, pivot="middle")
+    a = plt.gca()
+    a.set_xlim([-1, max(x)+1])
+    a.set_ylim([-1, max(y)+1])
+
+    plt.show() 
+
 
 def test():
     system = IsingSystem(L=10)
@@ -169,19 +186,8 @@ def test():
     print spins
     print pot.getEnergy(spins)
     print pot.getEnergyChange(spins, 0)
-    
-    spins = spins.astype(float)
-    xylist = system.get_spatial_arrangement()
-    xylist = xylist.reshape(-1,2)
-    x = xylist[:,0]
-    y = xylist[:,1]
-    import matplotlib.pyplot as plt
-    plt.quiver(x, y, 0, spins, pivot="middle")
-    a = plt.gca()
-    a.set_xlim([-1, max(x)+1])
-    a.set_ylim([-1, max(y)+1])
 
-    plt.show() 
+    plot_ising(system, spins)
 
 if __name__ == "__main__":
     test()

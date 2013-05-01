@@ -193,7 +193,7 @@ class NestedSampling(object):
         list of objects of type Replica
         """
     def __init__(self, system, nreplicas, mc_runner, mciter=100, 
-                 stepsize=0.1, nproc=1, triv_paral=True, verbose=True):
+                 stepsize=None, nproc=1, triv_paral=True, verbose=True):
         self.system = system
         self.mciter = mciter
         self.nproc = nproc
@@ -269,11 +269,12 @@ class NestedSampling(object):
 
         else:
             rold = configs[0]
-            x0, energy = rold.x, rold.energy
-            seed = np.random.randint(0, sys.maxint)
+            x0, energy = rold.x.copy(), rold.energy
+            x0save = x0.copy()
             attempts = 0
             success = 0
             while (success < 1) and (attempts < self.nreplicas):
+                seed = np.random.randint(0, sys.maxint)
                 mc = self.mc_runner(x0, self.mciter, self.stepsize, Emax, seed)
                 attempts += 1
                 success = mc.naccept
@@ -288,7 +289,7 @@ class NestedSampling(object):
         
             if self.verbose:
                 # print some data
-                dist = np.linalg.norm(mc.x - x0)
+                dist = np.linalg.norm(mc.x - x0save)
                 print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
                     "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
                     "stepsize", self.stepsize, "distance", dist #, "%reject_config", float(mc.nreject_config) / mc.nsteps, mc.nsteps - mc.naccept 
@@ -341,6 +342,7 @@ class NestedSampling(object):
         (new-step-size = old-step-size/f, where 0<f<1), although this is
         increased with an upper bound: max_stepsize.
         """
+        if self.stepsize is None: return
         f = 0.8
         target_ratio = 0.7
         max_stepsize = 0.5 # these should to be passed
@@ -421,6 +423,9 @@ class NestedSampling(object):
             
         self.iter_number += 1        
         self.sort_replicas()
+        
+        if self.nreplicas != len(self.replicas):
+            raise Exception("number of replicas (%d) is not correct (%d)" % (len(self.replicas), self.nreplicas))
 
     def finish(self):
         if self.nproc > 1:
