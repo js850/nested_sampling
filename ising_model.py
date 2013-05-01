@@ -152,7 +152,7 @@ class IsingRunner(object):
         i = np.random.randint(self.system.get_nspins())
         dE = self.pot.getEnergyChange(self.x, i)
         new_energy = self.energy + self.pot.getEnergyChange(self.x,i)
-        accept = new_energy < self.Emax
+        accept = new_energy <= self.Emax
         
         if accept: 
             self.x[i] = - self.x[i]

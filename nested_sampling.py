@@ -96,7 +96,7 @@ class MonteCarloChain(object):
             for test in self.accept_tests:
                 if not test(energy=e, coords=x):
                     self.nreject_config += 1
-#                    print "rejecting config"
+#                    print "rejecting config"    
                     return False
         return True
 
@@ -195,7 +195,7 @@ class NestedSampling(object):
     def __init__(self, system, nreplicas, mc_runner, mciter=100, 
                  stepsize=0.1, nproc=1, triv_paral=True, verbose=True):
         self.system = system
-        self.mciter=mciter
+        self.mciter = mciter
         self.nproc = nproc
         self.verbose = verbose
         self.triv_paral = triv_paral
@@ -271,7 +271,12 @@ class NestedSampling(object):
             rold = configs[0]
             x0, energy = rold.x, rold.energy
             seed = np.random.randint(0, sys.maxint)
-            mc = self.mc_runner(x0, self.mciter, self.stepsize, Emax, seed)
+            attempts = 0
+            success = 0
+            while (success < 1) and (attempts < self.nreplicas):
+                mc = self.mc_runner(x0, self.mciter, self.stepsize, Emax, seed)
+                attempts += 1
+                success = mc.naccept
             rnew = rold
             rnew.x = mc.x
             rnew.energy = mc.energy
@@ -280,7 +285,6 @@ class NestedSampling(object):
             rnew.niter += mc.nsteps
             rnewlist = [rnew]
             mclist = [mc]
-            
         
             if self.verbose:
                 # print some data

@@ -18,13 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#include <iostream>
-#include <chrono>
-#include <algorithm>
-#include <vector>
-#include <fstream>
-#include <sys/stat.h>
-#include <getopt.h>
+#ifndef MCISING_WANGLANDAU_BEAN_H_
+#include "mcising_NestedSampling.h"
+#endif
+
+//#include "gsl/gsl_sf_gamma.h"
 
 int main(int argc, char ** argv)
 {
@@ -45,7 +43,7 @@ int main(int argc, char ** argv)
   char* input_str = NULL;
   char* output_str = NULL;
   
-  while ((opt_char = getopt (argc, argv, "I:O:L:K:n:P:h")) != EOF)
+  while ((opt_char = getopt (argc, argv, "I:O:L:K:n:P:i:f:s:h")) != EOF)
     switch (opt_char)
       {
       case 'I':
@@ -81,11 +79,11 @@ int main(int argc, char ** argv)
 	std::cout<<"-O \t output directory e.g. /path/to/directory "<<std::endl;
 	std::cout<<"-L \t size of LJ cluster"<<std::endl;
 	std::cout<<"-K \t number of replicas"<<std::endl;
-	std::cout<<"-n \t number of mc steps (only needed to name directory)"<<std::endl;
+	std::cout<<"-n \t number of mc steps (only needed to name directory) or number of degrees of freedom for L=1"<<std::endl;
 	std::cout<<"-P \t number of processors"<<std::endl;
 	std::cout<<"-i \t temperature lower bound, default: 0.02"<<std::endl;
 	std::cout<<"-f \t temperature upper bound, default: 1"<<std::endl;
-	std::cout<<"-i \t temperature step, default: 2e-5"<<std::endl;
+	std::cout<<"-s \t temperature step, default: 2e-5"<<std::endl;
 	std::cout<<"-h \t help"<<std::endl;
 	return 0;
       case '?':
@@ -130,7 +128,7 @@ int main(int argc, char ** argv)
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   /////////////////////////////SetConstants/////////////////////////////
   
-  std::vector<double> En, list_X;
+  std::vector<double> En, Ena, list_X;
   list_X.reserve(K);
     
   /////////////////////////Read-datafile//////////////////////////////////
@@ -163,30 +161,71 @@ int main(int argc, char ** argv)
   //create list_X
   
   double const Kd = (double) K;
-  std::vector<double> Xn;
-  
   int imax = En.size();
   double alpha = 1;
+
+  i = 0;
+  int lmax = En.size()-1;
+  std::cout<<"size:"<<imax<<std::endl;
+  double min, max, ni, mi;
   
-  if(P > 0)
+  if (L == 0)
     {
-      for (i=0; i < imax; ++i)
+      mi = 0;
+      while (i <= lmax)
 	{
-	  alpha = alpha * (1 - P/(Kd+1));
-	  list_X.insert(list_X.end(), alpha);
+	  ni = 1;
+	  Ena.push_back(En.at(i));
+	  
+	  if ((i+1) < lmax)
+	    {
+	      min = abs(En.at(i+1)) - 0.1;
+	      max = abs(En.at(i+1)) + 0.1;
+	      
+	      while(abs(En.at(i)) > min && abs(En.at(i)) < max && (i+1) < lmax)
+		{
+		  ++ni;
+		  ++i;
+		  min = abs(En.at(i+1)) - 0.1;
+		  max = abs(En.at(i+1)) + 0.1;
+		}
+	    }
+	  ++i;
+	  //alpha = alpha * (Kd - ni)/Kd;
+	  alpha = alpha * Kd/(Kd+ni);
+	  std::cout<<alpha<<std::endl;
+	  //alpha = Kd / (Kd + n);                                             
+	  list_X.push_back(alpha);
+	  mi += ni;
+	  //list_N.insert(list_N.end(), mi);  //to monitor shrincage ratio of the posterior  
 	}
+      En = Ena;
+      i =0;
     }
   else
     {
-      for (i=0; i < imax; ++i)
+      if(P > 0)
 	{
-	  alpha = alpha * (Kd/(Kd+1));
-	  list_X.insert(list_X.end(), alpha);
+	  for (i=0; i < imax; ++i)
+	    {
+	      alpha = alpha * (1 - P/(Kd+1));
+	      list_X.insert(list_X.end(), alpha);
+	    }
+	}
+      else
+	{
+	  for (i=0; i < imax; ++i)
+	    {
+	      alpha = alpha * (Kd/(Kd+1));
+	      list_X.insert(list_X.end(), alpha);
+	    }
 	}
     }
+  
   list_X.insert(list_X.begin(), 1);
   list_X.insert(list_X.end(), 0);
   
+  std::cout<<"size of list_X "<<list_X.size()<<" and En "<<En.size()<<std::endl;
   //end list_X
   
   std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
@@ -230,7 +269,7 @@ int main(int argc, char ** argv)
   double Emax;
   int l;
   
-  if(L<2)
+  if(L==1)
     {
       Emax = 50;
       ct = n/(4*powl(Emax,0.5*n));
@@ -261,7 +300,7 @@ int main(int argc, char ** argv)
   for(itp = En.begin(); itp < En.end(); ++itp)
     {
       w = 0.5 * ( list_X.at(i) - list_X.at(i+2)) * renorm;
-      //std::cout<<"w i "<<i<<" is "<<w<<std::endl; 
+      std::cout<<"w_"<<i<<" is "<<w<<std::endl; 
       density.push_back(w);
       output<<w<<"\t"<<(*itp)/normal<<"\t"<<density_t.at(i)<<std::endl;
       ++i;
@@ -296,7 +335,7 @@ int main(int argc, char ** argv)
   double c; //must go down to 0.01, c = 1/kT
   double gc = 0;
   double g = 0;
-  if (L<2)
+  if (L==1)
     {
       gc = 1;//1/( pow(M_PI,0.5*n) * std::tgamma(0.5*n));    
     }
@@ -339,13 +378,13 @@ int main(int argc, char ** argv)
 
   double Cv, Cvt, Tc, kin_e;
   
-  if (L < 2)
+  if (L > 1)
     {
-      kin_e = 0;
+      kin_e = (3*L - 6) / 2;
     }
   else
     {
-      kin_e = (3*L - 6) / 2;
+      kin_e = 0;
     }
 
   i = 0;
