@@ -9,12 +9,13 @@ double get_energy_change(long int * neighbor_list, long int * nbegin, long int *
   long int n0, n, nf;
   long int ineib;
   E = 0.;
-  deltaS = 2 * spins[itrial]; // = new_spin - old_spin
+  deltaS = - 2 * spins[itrial]; // = new_spin - old_spin
 
   n0 = nbegin[itrial];
   nf = nend[itrial];
   for (n = n0; n < nf; ++n){
     ineib = neighbor_list[n];
+    //printf("itrial ineib %d %d\n", itrial, ineib);
     E -= deltaS * spins[ineib];
   }
   return E;
@@ -45,6 +46,7 @@ long int mcising(long int *spins, double *Energy, long int nspins, long long int
     itrial = gsl_rng_uniform_int(gslrng, nspins);
 
     deltaE = get_energy_change(neighbor_list, nbegin, nend, spins, itrial);
+    //printf("deltaE %g\n", deltaE);
 
     accept = ( E + deltaE <= Emax );
 

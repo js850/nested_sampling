@@ -197,6 +197,10 @@ class IsingRunnerC(object):
                 self.nend,
                 energy)
         
+        if True:
+            etest = self.pot.getEnergy(newspins)
+            if np.abs(etest - Enew) > 0.1:
+                raise Exception("energy returned from c ising mc")
         res = Result(x=newspins, energy=Enew, nsteps=mciter, naccept=naccept)
         return res
     
@@ -236,19 +240,22 @@ def test_ising_mc_c():
     from src.run_ising_mc import mc_ising_c
     Emax = energy + 20
     seed = 0
-    mciter = 2000
+    mciter = 1
     neighbor_list, nbegin, nend = system.get_neighbor_lists()
+    with open("neibs.txt", "w") as fout:
+        for edge in system.G.edges():
+            fout.write("%d %d\n" % edge)
     
-    oldspins = spins.copy()
-    newspins, Enew, naccept = mc_ising_c(spins,
-                mciter, Emax, seed,
-                neighbor_list,
-                nbegin,
-                nend,
-                energy)
-    print Enew, energy
-    print naccept
-    print np.sum(newspins - oldspins)
+#    oldspins = spins.copy()
+#    newspins, Enew, naccept = mc_ising_c(spins,
+#                mciter, Emax, seed,
+#                neighbor_list,
+#                nbegin,
+#                nend,
+#                energy)
+#    print Enew, energy
+#    print naccept
+#    print np.sum(newspins - oldspins)
     
     mcrunner = IsingRunnerC(system)
     res = mcrunner(spins, mciter, 0, Emax, seed)
