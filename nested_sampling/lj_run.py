@@ -66,7 +66,7 @@ class MonteCarloCompiled(object):
     def __init__(self, radius):
         self.radius = radius
     
-    def __call__(self, x0, mciter, stepsize, Emax, seed=None):
+    def __call__(self, x0, mciter, stepsize, Emax, energy, seed=None):
         if seed is None:
             seed = np.random.randint(0, sys.maxint)
         x, energy, naccept = mc_cython(x0, mciter, stepsize, Emax, self.radius, seed)

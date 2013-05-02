@@ -148,14 +148,15 @@ class IsingRunner(object):
         self.system = system
         self.pot = system.get_potential()
     
-    def __call__(self, x0, mciter, stepsize, Emax, seed=None):
-        return self.run(x0, mciter, Emax)
+    def __call__(self, x0, mciter, stepsize, Emax, energy, seed=None):
+        return self.run(x0, mciter, Emax, energy)
     
-    def run(self, x0, mciter, Emax):        
+    def run(self, x0, mciter, Emax, energy):        
         self.x = x0
         self.Emax = Emax + 0.5 # to ensure that <= accepts when the energies are almost equal
         self.mciter = mciter * len(self.x) # do mciter monte carlo sweeps
-        self.energy = self.pot.getEnergy(self.x)
+        self.energy = energy
+#        self.energy = self.pot.getEnergy(self.x)
         self.nsteps = 0
         self.naccept = 0
         for i in xrange(self.mciter):
@@ -187,9 +188,9 @@ class IsingRunnerC(object):
         self.pot = system.get_potential()
         self.neighbor_list, self.nbegin, self.nend = system.get_neighbor_lists()
     
-    def __call__(self, spins, mciter, stepsize, Emax, seed=None):
+    def __call__(self, spins, mciter, stepsize, Emax, energy, seed=None):
         mciter = mciter * len(spins)
-        energy = self.pot.getEnergy(spins)
+#        energy = self.pot.getEnergy(spins)
         newspins, Enew, naccept = mc_ising_c(spins,
                 mciter, Emax, seed,
                 self.neighbor_list,
@@ -197,7 +198,8 @@ class IsingRunnerC(object):
                 self.nend,
                 energy)
         
-        if True:
+        if False:
+            # test the returned energy
             etest = self.pot.getEnergy(newspins)
             if np.abs(etest - Enew) > 0.1:
                 raise Exception("energy returned from c ising mc")
@@ -240,7 +242,7 @@ def test_ising_mc_c():
     from src.run_ising_mc import mc_ising_c
     Emax = energy + 20
     seed = 0
-    mciter = 1
+    mciter = 100
     neighbor_list, nbegin, nend = system.get_neighbor_lists()
     with open("neibs.txt", "w") as fout:
         for edge in system.G.edges():
@@ -258,7 +260,8 @@ def test_ising_mc_c():
 #    print np.sum(newspins - oldspins)
     
     mcrunner = IsingRunnerC(system)
-    res = mcrunner(spins, mciter, 0, Emax, seed)
+    energy = pot.getEnergy(spins)
+    res = mcrunner(spins, mciter, 0, Emax, energy, seed)
 
 
 if __name__ == "__main__":

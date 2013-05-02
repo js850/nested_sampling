@@ -63,10 +63,10 @@ class MonteCarloChain(object):
         self.accept_tests = accept_tests
         self.events = events
             
-    def __call__(self, x0, mciter, stepsize, Emax, seed=None):
-        return self.run(x0, mciter, stepsize, Emax, seed=seed)
+    def __call__(self, x0, mciter, stepsize, Emax, energy, seed=None):
+        return self.run(x0, mciter, stepsize, Emax, energy, seed=seed)
     
-    def run(self, x0, mciter, stepsize, Emax, seed=None):        
+    def run(self, x0, mciter, stepsize, Emax, energy, seed=None):        
         self.x = x0
         self.Emax = Emax
         self.energy = self.potential.getEnergy(self.x)
@@ -241,7 +241,7 @@ class NestedSampling(object):
                 # pass the workers the starting configurations for the MC walk
                 for conn, r in izip(self.connlist, configs):
                     seed = np.random.randint(0, sys.maxint)
-                    message = ("do mc", r.x, self.mciter, self.stepsize, Emax, seed)
+                    message = ("do mc", r.x, self.mciter, self.stepsize, Emax, r.energy, seed)
                     conn.send(message)
                 # recieve the results back from the workers
                 mclist = [conn.recv() for conn in self.connlist]
@@ -274,8 +274,10 @@ class NestedSampling(object):
             attempts = 0
             success = 0
             while (success < 1) and (attempts < self.nreplicas):
+                if attempts > 0:
+                    print "warning: redoing monte carlo walk"
                 seed = np.random.randint(0, sys.maxint)
-                mc = self.mc_runner(x0, self.mciter, self.stepsize, Emax, seed)
+                mc = self.mc_runner(x0, self.mciter, self.stepsize, Emax, energy, seed)
                 attempts += 1
                 success = mc.naccept
             rnew = rold

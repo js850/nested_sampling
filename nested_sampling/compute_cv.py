@@ -1,31 +1,6 @@
 import argparse
 import numpy as np
 
-def compute_Z_old(energies, T, K, P=1):
-    beta = 1./T
-    N = len(energies)
-    Z = 0.
-    U = 0.
-    U2 = 0.
-    Cv = 0.
-    Emin = energies[-1]
-    Ediff = energies - Emin
-    for n in xrange(1, len(energies)-2):
-#        Z += (np.exp(-float(n-1) / K) - np.exp(-float(n+1) / K)) * np.exp(-beta * energies[n])
-        E = Ediff[n]
-        Zpref = np.exp(-float(n-1) / K - beta * E) * (1. - np.exp(-2. / K))
-        
-        
-        Z += Zpref
-        U += Zpref * (E + Emin)
-        U2 += Zpref * (E + Emin)**2
-    
-    U /= Z
-    U2 /= Z
-    Cv = (U2 - U**2) * beta**2
-        
-    return Z, Cv, U, U2
-
 def compute_Z(energies, T, K, P=1, ndof=1):
     """
     compute the heat capacity and other quantities from nested sampling history
