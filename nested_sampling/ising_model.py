@@ -3,6 +3,7 @@ import networkx as nx
 import sys
 from pygmin.systems import BaseSystem
 from pygmin.potentials import BasePotential
+from pygmin.optimize import Result
 
 def make_grid_graph(dim, periodic=True):
     """
@@ -120,6 +121,23 @@ class IsingSystem(BaseSystem):
         """ 
         return True
     
+    def get_neighbor_lists(self):
+        nspins = self.get_nspins()
+        nbegin = np.zeros(nspins, np.integer)
+        nend = np.zeros(nspins, np.integer)
+        neighbor_list = []
+        index = 0
+        for node in self.G:
+            nbegin[node] = index
+            for neib in self.G[node]:
+                neighbor_list.append(neib)
+                index += 1
+            nend[node] = index
+        neighbor_list = np.array(neighbor_list, np.integer)
+        return neighbor_list, nbegin, nend
+                
+             
+    
 #        spatial_to_spin = dict()
 #        for xy, node in self.spatial.iteritems():
 #            spatial_to_spin[xy] = spins[node]
@@ -163,6 +181,26 @@ class IsingRunner(object):
         
         self.nsteps += 1
 
+from src.run_ising_mc import mc_ising_c
+class IsingRunnerC(object):
+    def __init__(self, system):
+        self.pot = system.get_potential()
+        self.neighbor_list, self.nbegin, self.nend = system.get_neighbor_lists()
+    
+    def __call__(self, spins, mciter, stepsize, Emax, seed=None):
+        mciter = mciter * len(spins)
+        energy = self.pot.getEnergy(spins)
+        newspins, Enew, naccept = mc_ising_c(spins,
+                mciter, Emax, seed,
+                self.neighbor_list,
+                self.nbegin,
+                self.nend,
+                energy)
+        
+        res = Result(x=newspins, energy=Enew, nsteps=mciter, naccept=naccept)
+        return res
+    
+
 def plot_ising(system, spins):
     import matplotlib.pyplot as plt
     spins = spins.astype(float)
@@ -189,5 +227,33 @@ def test():
 
     plot_ising(system, spins)
 
+def test_ising_mc_c():
+    system = IsingSystem(L=10)
+    pot = system.get_potential()
+    spins = system.get_random_configuration()
+    energy = pot.getEnergy(spins)
+    print energy
+    from src.run_ising_mc import mc_ising_c
+    Emax = energy + 20
+    seed = 0
+    mciter = 2000
+    neighbor_list, nbegin, nend = system.get_neighbor_lists()
+    
+    oldspins = spins.copy()
+    newspins, Enew, naccept = mc_ising_c(spins,
+                mciter, Emax, seed,
+                neighbor_list,
+                nbegin,
+                nend,
+                energy)
+    print Enew, energy
+    print naccept
+    print np.sum(newspins - oldspins)
+    
+    mcrunner = IsingRunnerC(system)
+    res = mcrunner(spins, mciter, 0, Emax, seed)
+
+
 if __name__ == "__main__":
-    test()
+#    test()
+    test_ising_mc_c()

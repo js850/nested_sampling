@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 #from types import *
 from hparticle import HarParticle, HarRunner
-from ising_model import IsingSystem, IsingRunner
+from ising_model import IsingSystem, IsingRunner, IsingRunnerC
 from nested_sampling_runner import run_nested_sampling
 
 #import database_eigenvecs
@@ -98,7 +98,7 @@ def run_nested_sampling_lj(system, nreplicas=300, mciter=1000, label="test",
         mc_runner = HarRunner(system)
         print "using HarRunner"
     elif type(system) is IsingSystem:
-        mc_runner = IsingRunner(system)
+        mc_runner = IsingRunnerC(system)
         print "using IsingRunner"
     else:
         raise TypeError('system type is not known')
