@@ -18,9 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef MCISING_WANGLANDAU_BEAN_H_
-#include "mcising_NestedSampling.h"
-#endif
+#include <iostream>
+#include <chrono>
+#include <algorithm>
+#include <vector>
+#include <fstream>
+#include <sys/stat.h>
+#include <getopt.h>
 
 //#include "gsl/gsl_sf_gamma.h"
 
