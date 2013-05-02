@@ -7,8 +7,9 @@ class TestLJNS(unittest.TestCase):
     def setUp(self):
         natoms = 6
         self.system = LJClusterNew(natoms)
-        self.db = self.system.create_database("lj31_small.db")
-        self.minima = self.db.minima()[:10]
+#        self.db = self.system.create_database("lj31_small.db")
+#        self.minima = self.db.minima()[:10]
+        self.minima = None
         self.nreplicas = 10
         self.mciter = 100
         self.maxiter=10000

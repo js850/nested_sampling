@@ -7,8 +7,8 @@ class MCRunner(mp.Process):
         self.conn = conn
         self.mc_runner = mc_runner
 
-    def do_MC(self, x0, mciter, stepsize, Emax, seed):
-        return self.mc_runner(x0, mciter, stepsize, Emax, seed) 
+    def do_MC(self, x0, mciter, stepsize, Emax, energy, seed):
+        return self.mc_runner(x0, mciter, stepsize, Emax, energy, seed) 
      
     def run(self):
         while 1:
@@ -20,8 +20,8 @@ class MCRunner(mp.Process):
             elif message[0] == "do mc":
                 #print "received message: calculating gradient"
 #                print "recieved message", message[0]
-                x0, mciter, stepsize, Emax, seed = message[1:]
-                res = self.do_MC(x0, mciter, stepsize, Emax, seed)
+                x0, mciter, stepsize, Emax, energy, seed = message[1:]
+                res = self.do_MC(x0, mciter, stepsize, Emax, energy, seed)
 #                print "sending results back"
                 self.conn.send(res)
             else:

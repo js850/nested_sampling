@@ -375,19 +375,45 @@ class NestedSampling(object):
     def pop_replica_par(self, rtuple):
         """
         removes the other processes for parallel implementation
+        
+        remove nproc-1 replicas.  the one with the highest energy has already been
+        removed.  
+        
+        non trivial
+        -----------
+        remove the nproc-1 highest energy replicas
+        
+        Trivial
+        -------
+        randomly remove nproc - 1 replicas stored in rtuple[1]
+        for trivial parallelization we m
+        
         """
         #remove other nproc-1 replica
         if self.triv_paral is True:
+            indices = copy.copy(rtuple[1])
+            # we need to remove one replica randomly from indices.  This will be the replica
+            # that is duplicated before doing the monte carlo walk.    
+            try:
+                # if one of the indices is the highest energy one, then remove this one
+                indices.remove(self.nreplicas-1) # this one has already been removed
+            except ValueError:
+                # indices is already randomly arranged, so removing the first one is fine
+                indices = indices[1:]
+            indices.sort(reverse=True)
             # sort the indices so the correct indices are removed
             # even though the list is being modified
-            rtuple_copy = rtuple
-            indices = sorted(rtuple_copy[1][1:], reverse=True)
             for i in indices:
+                if i == self.nreplicas - 1: 
+                    continue # this is already popped
                 self.replicas.pop(i)  
         else:
             length = self.nproc-1
             for i in xrange(length):
                 self.replicas.pop()
+#        print len(self.replicas), len(indices)
+#        if len(self.replicas) != self.nreplicas - self.nproc:
+#            raise Exception("wrong number of replicas %d" % (len(self.replicas)))
 
     def get_starting_configuration_from_replicas(self):
         # choose a replica randomly
@@ -415,8 +441,6 @@ class NestedSampling(object):
         if self.nproc > 1:
             self.pop_replica_par(rtuple)
         
-        # note configs is a list of starting configurations.
-        # but a list of length 1 if self.nproc == 1
 #        if self.verbose: print "one_iteration Emax", Emax
         rlist = self.do_monte_carlo_chain(configs, Emax)
 
