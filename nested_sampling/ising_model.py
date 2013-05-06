@@ -153,7 +153,7 @@ class IsingRunner(object):
     
     def run(self, x0, mciter, Emax, energy):        
         self.x = x0
-        self.Emax = Emax + 0.5 # to ensure that <= accepts when the energies are almost equal
+        self.Emax = Emax - 0.5 # to ensure that <= accepts when the energies are almost equal
         self.mciter = mciter * len(self.x) # do mciter monte carlo sweeps
         self.energy = energy
 #        self.energy = self.pot.getEnergy(self.x)
@@ -161,7 +161,7 @@ class IsingRunner(object):
         self.naccept = 0
         for i in xrange(self.mciter):
             self.step()
-        if self.naccept > 0:
+        if self.naccept > 0: 
             self.energy = self.pot.randomiseEnergy(self.energy)
         return self
     
@@ -173,7 +173,7 @@ class IsingRunner(object):
         i = np.random.randint(self.system.get_nspins())
         dE = self.pot.getEnergyChange(self.x, i)
         new_energy = self.energy + self.pot.getEnergyChange(self.x,i)
-        accept = new_energy <= self.Emax
+        accept = new_energy < self.Emax
         
         if accept: 
             self.x[i] = - self.x[i]
