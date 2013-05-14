@@ -9,6 +9,7 @@ from pygmin.potentials import BasePotential
 from pygmin.systems import BaseSystem
 from nested_sampling import MonteCarloChain
 import copy
+from pygmin.optimize import Result
 
 __all__ =["HarPotential","HarParticle","HarRunner"]
 
@@ -30,17 +31,18 @@ class HarPotential(BasePotential):
     def getEnergy(self, coords):
         coords = np.asfarray(coords)
         dist_vec = coords - self.centre
-        E_vec = 0.5 * self.kappa * dist_vec * dist_vec      
-        E = 0.
-        for e in E_vec:
-            E += e
-        print "getEnergy ", E
-        return E
+        return 0.5 * dist_vec.dot(self.kappa * dist_vec)
+#        E_vec = 0.5 * self.kappa * dist_vec * dist_vec      
+#        E = 0.
+#        for e in E_vec:
+#            E += e
+##        print "getEnergy ", E
+#        return E
    
 class HarParticle(BaseSystem):
     """ Defines a particle in an harmonic potential of n dimensions """
     
-    def __init__(self, ndim, centre, kappa, Eground, Emax_init):
+    def __init__(self, ndim, centre, kappa, Eground=0., Emax_init=10.):
         self.ndim = ndim
         #kappa is an ndimensional array containing n spring constants
         self.kappa = np.asfarray(kappa)
@@ -72,7 +74,7 @@ class HarParticle(BaseSystem):
     
     def get_config_tests_in(self, coords, radius):
         coords_norm = np.linalg.norm(coords-self.centre)
-        print "coords_norm", coords_norm
+#        print "coords_norm", coords_norm
         if coords is not None and radius > coords_norm:
             return True
         else:
@@ -81,13 +83,13 @@ class HarParticle(BaseSystem):
     def get_random_configuration_Emax(self, Emax):
         """make sure they're all inside the radius, get_config_test is not strictly necessary, consider removing it"""
         #radius is a scalar corresponding to the max distance from the centre
-        print "Emax", float(Emax)
+#        print "Emax", float(Emax)
         radius = np.sqrt(2. * (float(Emax) - self.Eground))
-        print "Emax - Eground =", (float(Emax) - self.Eground)
-        print "radius =", radius
-        coords = np.zeros(self.ndim)
+#        print "Emax - Eground =", (float(Emax) - self.Eground)
+#        print "radius =", radius
+#        coords = np.zeros(self.ndim)
         coords = self.vector_random_uniform_hypersphere() * radius
-        print "sqrt.radius ", np.sqrt(radius)
+#        print "sqrt.radius ", np.sqrt(radius)
         assert(self.get_config_tests_in(coords, radius) == True)
         return coords
     
@@ -96,7 +98,7 @@ class HarParticle(BaseSystem):
         #radius is a scalar corresponding to the max distance from the centre
         Emax = self.Emax_init
         radius = np.sqrt(2. * (Emax - self.Eground))
-        coords = np.zeros(self.ndim)
+#        coords = np.zeros(self.ndim)
         coords = self.vector_random_uniform_hypersphere() * radius
         assert(self.get_config_tests_in(coords, radius) == True)
         return coords
@@ -107,17 +109,31 @@ class HarRunner(object):
         self.system = system
         self.pot = system.get_potential()
     
-    def __call__(self, x0, mciter, stepsize, Emax, seed=None):
+    def __call__(self, x0, mciter, stepsize, Emax, energy, seed=None):
         return self.run(Emax)  
             
-    def run(self, Emax):        
+    def run(self, Emax):
         self.Emax = Emax
-        self.mciter = 1
-        self.nsteps = 1
-        self.naccept = 0.7
-        self.x = self.system.get_random_configuration_Emax(self.Emax)
-        self.energy = self.pot.getEnergy(self.x)
-        return self
+        res = Result()
+        res.mciter = 100
+        res.nsteps = 100
+        res.naccept = 70
+        res.x = self.system.get_random_configuration_Emax(self.Emax)
+        res.energy = self.pot.getEnergy(res.x)
+        return res
 
         
-        
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    n = 5
+    hp = HarParticle(n, centre=[0]*n, kappa=[1.]*n)
+    pot = hp.get_potential()
+    
+    coords = np.array([hp.get_random_configuration_Emax(10.) for i in range(10000)])
+    energies = [pot.getEnergy(x) for x in coords]
+    print coords
+#    plt.plot(vals, 'o')
+    plt.hist(coords[:,0], bins=50)
+    plt.show()
+    plt.hist(energies, bins=50)
+    plt.show()

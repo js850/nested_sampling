@@ -48,10 +48,7 @@ class NormalModes(Base):
 
 class HessianEigs(Base):
     """hessian eigenvalues and associated eigenvectors
-    
-    actually frequencies are stored rather than eigenvalues.  Frequencies are
-    eigenvalues with the appropriate weighting for (from the mass or from rigid bodies)
-    
+        
     Parameters
     ----------
     m : Minimum object
