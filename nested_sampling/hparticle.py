@@ -90,18 +90,14 @@ class HarParticle(BaseSystem):
 #        coords = np.zeros(self.ndim)
         coords = self.vector_random_uniform_hypersphere() * radius
 #        print "sqrt.radius ", np.sqrt(radius)
-        assert(self.get_config_tests_in(coords, radius) == True)
+        assert(self.get_config_tests_in(coords, radius))
         return coords
     
     def get_random_configuration(self):
         """make sure they're all inside the radius, get_config_test is not strictly necessary, consider removing it"""
         #radius is a scalar corresponding to the max distance from the centre
         Emax = self.Emax_init
-        radius = np.sqrt(2. * (Emax - self.Eground))
-#        coords = np.zeros(self.ndim)
-        coords = self.vector_random_uniform_hypersphere() * radius
-        assert(self.get_config_tests_in(coords, radius) == True)
-        return coords
+        return self.get_random_configuration_Emax(Emax)
 
 class HarRunner(object):
     
@@ -122,11 +118,11 @@ class HarRunner(object):
         res.energy = self.pot.getEnergy(res.x)
         return res
 
-        
-if __name__ == "__main__":
+
+def test():
     import matplotlib.pyplot as plt
-    n = 5
-    hp = HarParticle(n, centre=[0]*n, kappa=[1.]*n)
+    n = 1
+    hp = HarParticle(n, centre=[0.]*n, kappa=[1.]*n)
     pot = hp.get_potential()
     
     coords = np.array([hp.get_random_configuration_Emax(10.) for i in range(10000)])
@@ -137,3 +133,6 @@ if __name__ == "__main__":
     plt.show()
     plt.hist(energies, bins=50)
     plt.show()
+    
+if __name__ == "__main__":
+    test()
