@@ -75,18 +75,33 @@ def compute_Z(energies, T, K, P=1, ndof=0):
     return lZfinal, Cv, U, U2
 
 
+def get_energies(fnames):
+    if len(fnames) == 1:
+        return np.genfromtxt(fnames[0])
+    eall = []
+    for fname in fnames:
+        e = np.genfromtxt(fname)
+        eall += e.tolist()
+    
+    eall.sort(key=lambda x: -x)
+    return np.array(eall).flatten()
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="load energy intervals and compute cv")
+    parser = argparse.ArgumentParser(description="load energy intervals and compute cv", 
+                                     epilog="if more than one file name is give the energies from all runs will be combined and sorted."
+                                     "  the number of replicas must be the sum of the replicas used from all runs")
 #    parser.add_argument("--db", type=str, nargs=1, help="database filename",
 #                        default="otp.db")
     parser.add_argument("K", type=int, help="number of replicas")
-    parser.add_argument("fname", type=str, help="filenames with energies")
+    parser.add_argument("fname", nargs="+", type=str, help="filenames with energies")
     parser.add_argument("-P", type=int, help="number of cores for parallel run", default=1)
     parser.add_argument("--ndof", type=int, help="number of degrees of freedom", default=0)
     args = parser.parse_args()
     print args.fname
 
-    energies = np.genfromtxt(args.fname)
+    energies = get_energies(args.fname)
+
+#    energies = np.genfromtxt(args.fname)
     
     P = args.P
     print "parallel nprocessors", P
