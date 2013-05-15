@@ -23,6 +23,7 @@ class HarPotential(BasePotential):
         centre of harmonic well
     kappa: list of float
         spring constants
+    
     """
     def __init__(self, centre, kappa):
         self.centre = np.asfarray(centre)
@@ -40,17 +41,35 @@ class HarPotential(BasePotential):
 #        return E
    
 class HarParticle(BaseSystem):
-    """ Defines a particle in an harmonic potential of n dimensions """
+    """ Defines a particle in an harmonic potential of n dimensions 
     
-    def __init__(self, ndim, centre, kappa, Eground=0., Emax_init=10.):
+    Notes
+    -----
+    with n degrees of freedom and spring constant k:
+     
+        Z = (2*pi*T/k)^(n/2)
+        <E> = -n*T/2
+        <E^2> = T^2*n*(n+2)/4
+        Cv = n/2
+    """
+    
+    def __init__(self, ndim, centre=None, kappa=None, Eground=0., Emax_init=10.):
         self.ndim = ndim
         #kappa is an ndimensional array containing n spring constants
-        self.kappa = np.asfarray(kappa)
+        if kappa is None:
+            self.kappa = np.ones(self.ndim)
+        else:
+            self.kappa = np.asfarray(kappa)
         assert(self.kappa.size == ndim)
         # use numpy vectors for coordinates, centre must be a numpy vector
-        self.centre = centre
+        if centre is None:
+            self.centre = np.zeros(self.ndim)
+        else:
+            self.centre = np.array(centre)
         self.Eground = Eground
         self.Emax_init = Emax_init
+        
+        print "Emax_init", self.Emax_init
             
     def get_potential(self):
         return HarPotential(self.centre, self.kappa) 
@@ -118,10 +137,16 @@ class HarRunner(object):
         res.energy = self.pot.getEnergy(res.x)
         return res
 
+def test1():
+    import matplotlib.pyplot as plt
+    v = np.random.uniform(-4,4,size=10000)
+    energies = v**2 / 2.
+    plt.hist(energies, bins=50)
+    plt.show()
 
 def test():
     import matplotlib.pyplot as plt
-    n = 1
+    n = 1000
     hp = HarParticle(n, centre=[0.]*n, kappa=[1.]*n)
     pot = hp.get_potential()
     
@@ -136,3 +161,4 @@ def test():
     
 if __name__ == "__main__":
     test()
+#    test1()
