@@ -3,6 +3,7 @@ import argparse
 from hparticle import HarParticle, HarRunner
 from nested_sampling_runner import run_nested_sampling
 from nested_sampling import NestedSampling
+from nested_sampling_serial import NestedSamplingSerial
 
 
 def main():
@@ -19,6 +20,8 @@ def main():
 
     system = HarParticle(args.ndof, Emax_init=1000.)
     mcrunner = HarRunner(system)
+#    ns = NestedSamplingSerial(system, args.nreplicas, mcrunner, 
+#                              verbose=not args.q)
     ns = NestedSampling(system, args.nreplicas, mcrunner, nproc=args.nproc, 
                         triv_paral=args.trivparal, verbose=not args.q)
     print "harmonic particle ndof", args.ndof
