@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 
-def compute_Z(energies, T, K, P=1, ndof=1):
+def compute_Z(energies, T, K, P=1, ndof=0):
     """
     compute the heat capacity and other quantities from nested sampling history
     
@@ -40,12 +40,16 @@ def compute_Z(energies, T, K, P=1, ndof=1):
     beta = np.array(1./T)    
     K = float(K)
     E = energies[1:-1]
-    n = np.array(range(1,len(E)+1), np.float)
+    n = np.array(xrange(1,len(E)+1), np.float)
     
     # compute the term in the partition function sum for each temperature and each energy
     # lZ[iT, iE] is the contribution to the partition function at temperature 1./beta[iT] from the data at energy E[iE]
     if P == 1:
-        lZ = (-(n[np.newaxis,:]-1.) / K - beta[:,np.newaxis] * E[np.newaxis,:])  + np.log(1. - np.exp(-2. / K))
+#        lZ = (-(n[np.newaxis,:]-1.) / K - beta[:,np.newaxis] * E[np.newaxis,:])  + np.log(1. - np.exp(-2. / K))
+        lZ = (-(n[np.newaxis,:]) / K - beta[:,np.newaxis] * E[np.newaxis,:])  - np.log(K)
+#        lZ = (- beta[:,np.newaxis] * E[np.newaxis,:])  - np.log(K) + n[np.newaxis,:] * np.log(K/(K+1))
+#        lZ = (-(n[np.newaxis,:]+1) / K - beta[:,np.newaxis] * E[np.newaxis,:])  - np.log((1.+2*K)/K**2)
+#        lZ = (- beta[:,np.newaxis] * E[np.newaxis,:])  - np.log((1.+2*K)/K**2) + (n[np.newaxis,:]+1) * np.log(K/(K+1))
     else:
         a = 1. - float(P) / (K + 1.)
         lZ = n[np.newaxis,:] * np.log(a) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a)
@@ -64,9 +68,11 @@ def compute_Z(energies, T, K, P=1, ndof=1):
     U2 /= Z
     # compute Cv from the energy fluctuations
     Cv = (U2 - U**2) * beta**2 + float(ndof)/2 # this is not quite right
-    Z *= np.exp(lZmax)
+    
+    lZfinal = np.log(Z) + lZmax
+#    Z *= np.exp(lZmax)
         
-    return Z, Cv, U, U2
+    return lZfinal, Cv, U, U2
 
 
 if __name__ == "__main__":
@@ -76,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("K", type=int, help="number of replicas")
     parser.add_argument("fname", type=str, help="filenames with energies")
     parser.add_argument("-P", type=int, help="number of cores for parallel run", default=1)
-    parser.add_argument("--ndof", type=int, help="number of degrees of freedom", default=1)
+    parser.add_argument("--ndof", type=int, help="number of degrees of freedom", default=0)
     args = parser.parse_args()
     print args.fname
 
@@ -91,12 +97,12 @@ if __name__ == "__main__":
     dT = (Tmax-Tmin) / nT
     
     T = np.array([Tmin + dT*i for i in range(nT)])
-    Z, Cv, U, U2 = compute_Z(energies, T, args.K, P=P, ndof=args.ndof)
+    lZ, Cv, U, U2 = compute_Z(energies, T, args.K, P=P, ndof=args.ndof)
     
     with open("cv", "w") as fout:
-        fout.write("#T Cv <E> <E**2>\n")
-        for vals in zip(T, Cv, U, U2):
-            fout.write("%g %g %g %g\n" % vals)
+        fout.write("#T Cv <E> <E**2> logZ\n")
+        for vals in zip(T, Cv, U, U2, lZ):
+            fout.write("%g %g %g %g %g\n" % vals)
     
     import pylab as pl
     pl.plot(T, Cv, 'o-')
