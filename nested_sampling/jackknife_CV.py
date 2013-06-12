@@ -35,7 +35,7 @@ class Jackknife_CV(object):
         return array of Jacknife averages (more like combined subsets than averages):    
         """
         EJack = [[] for i in xrange(self.nsubset)]
-        for i in xrange
+        for i in xrange(self.nsubset):
             EJack_tmp = copy.deepcopy(ESplit)
             EJack_tmp = np.delete(EJack_tmp, i, 0) 
             EJack_tmp = np.ravel(Esplit,F)
@@ -109,8 +109,9 @@ if __name__ == "__main__":
             fout.write("%g %g %g %g %g %g\n" % vals)
     
     import pylab as pl
-    pl.plot(T, Cv, yerr=Cv_stdev,'o-')
+    pl.figure()
+    pl.plot.errorbars(T, Cv, yerr=Cv_stdev)
     pl.xlabel("T")
     pl.ylabel("Cv")
-    pl.savefig("cv.pdf")
+    pl.savefig("cv_std.pdf")
         
