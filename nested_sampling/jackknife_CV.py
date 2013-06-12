@@ -14,7 +14,7 @@ class Jackknife_CV(object):
         self.ndof = ndof
     
     def __call__(self):
-        ESplit = self.split_energies()
+        Esplit = self.split_energies()
         EJack = self.jack_E_averages(Esplit)
         CvJack = self.jack_Cv_averages(EJack)
         return self.jack_Cv_stdev(EJack)
