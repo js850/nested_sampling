@@ -1,5 +1,6 @@
 import argparse
 import numpy as np
+import copy
 from compute_cv import compute_Z, get_energies
 
 class Jackknife_CV(object):
