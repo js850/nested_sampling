@@ -71,7 +71,7 @@ class Jackknife_CV(object):
         sigma = sqrt(self.nsubset-1)*np.sqrt(sigmasquare_jack) 
         return sigma
         
-def run_jacknife(self, energies, nsubsets, K, T, P, ndof):
+def run_jackknife(self, energies, nsubsets, K, T, P, ndof):
     """
     returns the stdev calculated by jackknifing
     """
