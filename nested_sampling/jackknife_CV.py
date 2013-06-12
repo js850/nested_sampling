@@ -4,7 +4,7 @@ from compute_cv import compute_Z, get_energies
 
 class Jackknife_CV(object):
     
-    def _init_(self, energies, nsubsets, K, T, P, ndof):
+    def __init__(self, energies, nsubsets, K, T, P, ndof):
         self.E = np.array(energies)
         self.n = floor(float(K)/float(nsubsets))
         self.K = K
@@ -13,7 +13,7 @@ class Jackknife_CV(object):
         self.P = P
         self.ndof = ndof
     
-    def _call_(self):
+    def __call__(self):
         ESplit = split_energies()
         EJack = jack_E_averages(Esplit)
         CvJack = jack_Cv_averages(EJack)
