@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 import copy
 from compute_cv import compute_Z, get_energies
+from itertools import chain
 
 class Jackknife_CV(object):
     
@@ -18,7 +19,7 @@ class Jackknife_CV(object):
         Esplit = self.split_energies()
         EJack = self.jack_E_averages(Esplit)
         CvJack = self.jack_Cv_averages(EJack)
-        return self.jack_Cv_stdev(EJack)
+        return self.jack_Cv_stdev(CvJack)
     
     def split_energies(self):
         """
@@ -38,9 +39,13 @@ class Jackknife_CV(object):
         EJack = [[] for i in xrange(self.nsubsets)]
         for i in xrange(self.nsubsets):
             EJack_tmp = copy.deepcopy(Esplit)
+            print 'EJack_tmp shape',np.shape(EJack_tmp) 
             EJack_tmp = np.delete(EJack_tmp, i, 0) 
-            EJack_tmp = np.ravel(Esplit,order='F') 
+            #EJack_tmp = np.ravel(Esplit,order='F')
+            EJack_tmp = [l for l in chain.from_iterable(EJack_tmp)]
+            print np.shape(EJack_tmp)
             EJack[i] = np.sort(EJack_tmp)[::-1]
+        print np.shape(EJack)
         EJack = np.array(EJack)
         return EJack
     
@@ -50,13 +55,15 @@ class Jackknife_CV(object):
         """
         CvJack = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
-            CvJack[i,:] = compute_Z(np.array(EJack[i]), self.T, self.K, P=self.P, ndof=self.ndof)[1]
-        return CvJack
+            CvJack[i][:] = compute_Z(np.array(EJack[i][:]), self.T, self.K, P=self.P, ndof=self.ndof)[1]
+        print 'CvJack shape',np.shape(CvJack)
+        return np.array(CvJack)
     
     def jack_Cv_moments(self, CvJack):
         """
         return Cv expectation value from the Jackknife averages of Cv
         """
+        print 'again CvJack shape',np.shape(CvJack)
         CvMom1 = (1/self.nsubsets) * np.sum(CvJack,axis=0)               #first moments
         CvMom2 = (1/self.nsubsets) * np.sum(np.square(CvJack),axis=0)    #second moments
         return CvMom1, CvMom2
@@ -67,9 +74,9 @@ class Jackknife_CV(object):
         estimate and then from this finds the standard deviation of the heat capacity estimate obtained 
         from the sample average
         """
-        CvMom1, CvMom2 = self.jack_Cv_moments(self, CvJack)
+        CvMom1, CvMom2 = self.jack_Cv_moments(CvJack)
         sigmasquare_jack = CvMom2 - np.square(CvMom1)
-        sigma = sqrt(self.nsubsets-1)*np.sqrt(sigmasquare_jack) 
+        sigma = np.sqrt(self.nsubsets-1)*np.sqrt(sigmasquare_jack) 
         return sigma
         
 def run_jackknife(energies, nsubsets, K, T, P, ndof):
