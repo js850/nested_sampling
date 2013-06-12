@@ -25,7 +25,7 @@ class Jackknife_CV(object):
         """
         Esplit = [[] for i in xrange(self.nsubsets)]
         for x in self.E:
-            i = random.randint(self.nsubsets)
+            i = np.random.randint(self.nsubsets)
             Esplit[i].append(x)
         Esplit = np.array(Esplit)
         return Esplit
