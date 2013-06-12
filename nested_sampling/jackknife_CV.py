@@ -56,16 +56,16 @@ class Jackknife_CV(object):
         CvJack = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
             CvJack[i][:] = compute_Z(np.array(EJack[i][:]), self.T, self.K, P=self.P, ndof=self.ndof)[1]
-        print 'CvJack shape',np.shape(CvJack)
+        print 'CvJack ',CvJack
         return np.array(CvJack)
     
     def jack_Cv_moments(self, CvJack):
         """
         return Cv expectation value from the Jackknife averages of Cv
         """
-        print 'again CvJack shape',np.shape(CvJack)
-        CvMom1 = (1/self.nsubsets) * np.sum(CvJack,axis=0)               #first moments
-        CvMom2 = (1/self.nsubsets) * np.sum(np.square(CvJack),axis=0)    #second moments
+        CvMom1 = (float(1)/float(self.nsubsets))*np.sum(CvJack,axis=0)               #first moments (1/self.nsubsets)
+        CvMom2 = (float(1)/float(self.nsubsets))*np.sum(np.square(CvJack),axis=0)    #second moments
+        print 'CvMom1',CvMom1,'CvMom2',CvMom2
         return CvMom1, CvMom2
     
     def jack_Cv_stdev(self, CvJack):
@@ -116,10 +116,10 @@ if __name__ == "__main__":
         for vals in zip(T, Cv, Cv_stdev, U, U2, lZ):
             fout.write("%g %g %g %g %g %g\n" % vals)
     
-    import pylab as pl
-    pl.figure()
-    pl.plot.errorbars(T, Cv, yerr=Cv_stdev)
-    pl.xlabel("T")
-    pl.ylabel("Cv")
-    pl.savefig("cv_std.pdf")
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.errorbar(T, Cv, yerr=Cv_stdev, ecolor='g', capsize=None)
+    plt.xlabel("T")
+    plt.ylabel("Cv")
+    plt.savefig("cv_std.pdf")
         
