@@ -6,7 +6,7 @@ class Jackknife_CV(object):
     
     def __init__(self, energies, nsubsets, K, T, P, ndof):
         self.E = np.array(energies)
-        self.n = floor(float(K)/float(nsubsets))
+        self.n = np.floor(float(K)/float(nsubsets))
         self.K = K
         self.nsubset = nsubset
         self.T = np.array(T)
