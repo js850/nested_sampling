@@ -37,7 +37,7 @@ class Jackknife_CV(object):
         """
         EJack = [[] for i in xrange(self.nsubsets)]
         for i in xrange(self.nsubsets):
-            EJack_tmp = copy.deepcopy(ESplit)
+            EJack_tmp = copy.deepcopy(Esplit)
             EJack_tmp = np.delete(EJack_tmp, i, 0) 
             EJack_tmp = np.ravel(Esplit,F)
             EJack[i] = np.sort(EJack,kind='mergesort',reverse=True)
