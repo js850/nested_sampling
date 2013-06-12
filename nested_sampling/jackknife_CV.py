@@ -50,7 +50,7 @@ class Jackknife_CV(object):
         """
         CvJack = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
-            CvJack[i,:] = compute_Z(EJack[i,:], self.T, self.K, P=self.P, ndof=self.ndof)[1]
+            CvJack[i,:] = compute_Z(EJack[i], self.T, self.K, P=self.P, ndof=self.ndof)[1]
         return CvJack
     
     def jack_Cv_moments(self, CvJack):
