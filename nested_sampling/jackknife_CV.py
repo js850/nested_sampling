@@ -8,7 +8,7 @@ class Jackknife_CV(object):
         self.E = np.array(energies)
         self.n = np.floor(float(K)/float(nsubsets))
         self.K = K
-        self.nsubset = nsubset
+        self.nsubsets = nsubsets
         self.T = np.array(T)
         self.P = P
         self.ndof = ndof
@@ -23,9 +23,9 @@ class Jackknife_CV(object):
         """
         split the array of energies into n subsets of size n/K
         """
-        Esplit = [[] for i in xrange(self.nsubset)]
+        Esplit = [[] for i in xrange(self.nsubsets)]
         for x in self.E:
-            i = random.randint(self.nsubset)
+            i = random.randint(self.nsubsets)
             Esplit[i].append(x)
         Esplit = np.array(Esplit)
         return Esplit
@@ -34,8 +34,8 @@ class Jackknife_CV(object):
         """
         return array of Jacknife averages (more like combined subsets than averages):    
         """
-        EJack = [[] for i in xrange(self.nsubset)]
-        for i in xrange(self.nsubset):
+        EJack = [[] for i in xrange(self.nsubsets)]
+        for i in xrange(self.nsubsets):
             EJack_tmp = copy.deepcopy(ESplit)
             EJack_tmp = np.delete(EJack_tmp, i, 0) 
             EJack_tmp = np.ravel(Esplit,F)
@@ -45,9 +45,9 @@ class Jackknife_CV(object):
     
     def jack_Cv_averages(self, EJack):
         """
-        returns the M(=self.nsubset) Cv Jackknife averages (from the combined subsets)
+        returns the M(=self.nsubsets) Cv Jackknife averages (from the combined subsets)
         """
-        CvJack = np.zeros((self.nsubset,self.T.size))
+        CvJack = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
             CvJack[i,:] = compute_Z(EJack[i,:], self.T, self.K, P=self.P, ndof=self.ndof)[1]
         return CvJack
@@ -56,8 +56,8 @@ class Jackknife_CV(object):
         """
         return Cv expectation value from the Jackknife averages of Cv
         """
-        CvMom1 = (1/self.nsubset) * np.sum(CvJack,axis=0)               #first moments
-        CvMom2 = (1/self.nsubset) * np.sum(np.square(CvJack),axis=0)    #second moments
+        CvMom1 = (1/self.nsubsets) * np.sum(CvJack,axis=0)               #first moments
+        CvMom2 = (1/self.nsubsets) * np.sum(np.square(CvJack),axis=0)    #second moments
         return CvMom1, CvMom2
     
     def jack_Cv_stdev(self, CvJack):
@@ -68,7 +68,7 @@ class Jackknife_CV(object):
         """
         CvMom1, CvMom2 = jack_Cv_moments(self, CvJack)
         sigmasquare_jack = CvMom2 - np.square(CvMom1)
-        sigma = sqrt(self.nsubset-1)*np.sqrt(sigmasquare_jack) 
+        sigma = sqrt(self.nsubsets-1)*np.sqrt(sigmasquare_jack) 
         return sigma
         
 def run_jackknife(energies, nsubsets, K, T, P, ndof):
