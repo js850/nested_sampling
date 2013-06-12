@@ -40,7 +40,7 @@ class Jackknife_CV(object):
             EJack_tmp = copy.deepcopy(Esplit)
             EJack_tmp = np.delete(EJack_tmp, i, 0) 
             EJack_tmp = np.ravel(Esplit,order='F') 
-            EJack[i] = np.sort(EJack_tmp,kind='mergesort')[::-1]
+            EJack[i] = np.sort(EJack_tmp)[::-1]
         EJack = np.array(EJack)
         return EJack
     
