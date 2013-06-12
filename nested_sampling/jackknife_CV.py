@@ -80,7 +80,7 @@ def run_jacknife(self, energies, nsubsets, K, T, P, ndof):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load energy intervals and compute Cv stdev", 
-                                     epilog="if more than one file name is give the energies from all runs will be combined and sorted."
+                                     epilog="if more than one file name is given the energies from all runs will be combined and sorted."
                                      "  the number of replicas must be the sum of the replicas used from all runs")
     parser.add_argument("K", type=int, help="number of replicas")
     parser.add_argument("N", type=int, help="number of subsets for jackknifing")
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     print "parallel nprocessors", P
     
     Tmin = .02
-    Tmax = 8
+    Tmax = 1
     nT = 1000
     dT = (Tmax-Tmin) / nT
     
