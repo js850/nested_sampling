@@ -14,10 +14,10 @@ class Jackknife_CV(object):
         self.ndof = ndof
     
     def __call__(self):
-        ESplit = split_energies()
-        EJack = jack_E_averages(Esplit)
-        CvJack = jack_Cv_averages(EJack)
-        return jack_Cv_stdev(EJack)
+        ESplit = self.split_energies()
+        EJack = self.jack_E_averages(Esplit)
+        CvJack = self.jack_Cv_averages(EJack)
+        return self.jack_Cv_stdev(EJack)
     
     def split_energies(self):
         """
@@ -66,7 +66,7 @@ class Jackknife_CV(object):
         estimate and then from this finds the standard deviation of the heat capacity estimate obtained 
         from the sample average
         """
-        CvMom1, CvMom2 = jack_Cv_moments(self, CvJack)
+        CvMom1, CvMom2 = self.jack_Cv_moments(self, CvJack)
         sigmasquare_jack = CvMom2 - np.square(CvMom1)
         sigma = sqrt(self.nsubsets-1)*np.sqrt(sigmasquare_jack) 
         return sigma
