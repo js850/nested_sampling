@@ -42,7 +42,7 @@ class Jackknife_CV(object):
             EJack_tmp = np.ravel(Esplit,order='F') 
             EJack[i] = np.sort(EJack_tmp)[::-1]
         EJack = np.array(EJack)
-        print EJack
+        print np.shape(EJack)
         return EJack
     
     def jack_Cv_averages(self, EJack):
