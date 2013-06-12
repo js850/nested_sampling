@@ -28,9 +28,7 @@ class Jackknife_CV(object):
         for x in self.E:
             i = np.random.randint(0,self.nsubsets-1)
             Esplit[i].append(x)
-        print 'Esplit shape',np.shape(Esplit)
         Esplit = np.array(Esplit)
-        print 'Esplit shape',np.shape(Esplit)
         return Esplit
     
     def jack_E_averages(self, Esplit): 
@@ -43,9 +41,7 @@ class Jackknife_CV(object):
             EJack_tmp = np.delete(EJack_tmp, i, 0) 
             EJack_tmp = np.ravel(Esplit,order='F') 
             EJack[i] = np.sort(EJack_tmp)[::-1]
-        print 'EJack shape',np.shape(EJack)
         EJack = np.array(EJack)
-        print 'EJack shape',np.shape(EJack)
         return EJack
     
     def jack_Cv_averages(self, EJack):
