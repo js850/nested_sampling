@@ -47,8 +47,10 @@ class Jackknife_CV(object):
         returns the correct type of energy subsets, as chosen by the user
         """
         if self.block == False:
+            print 'splitting energies at random in ',self.nsubsets,' subsets'
             Esplit = self.split_energies_randomly()
         else:
+            print 'keeping energies as from input'
             Esplit = self.split_energies_block()
         return Esplit
     
@@ -75,12 +77,12 @@ class Jackknife_CV(object):
         """
         CvJack = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
-            CvJack[i][:] = compute_Z(np.array(EJack[i][:]), self.T, (self.K - self.K/self.nsubsets), P=self.P, ndof=self.ndof)[1]
+            CvJack[i][:] = compute_Z(np.array(EJack[i][:]), self.T, (self.K - self.n), P=self.P, ndof=self.ndof)[1]
         print 'CvJack ',CvJack
         return np.array(CvJack)
     
     def jack_Cv_moments(self, CvJack):
-        """
+        """    
         return Cv expectation value from the Jackknife averages of Cv
         """
         CvMom1 = (float(1)/float(self.nsubsets))*np.sum(CvJack,axis=0)               #first moments (1/self.nsubsets)
@@ -125,7 +127,7 @@ if __name__ == "__main__":
     if args.B is 2:
         args.B = len(args.fname) > 1
 
-    energies_Cv = get_energies(args.fname,0) #provide the sorted flatten list of energies to calculate the unbiased estimate for the Cv
+    energies_Cv = get_energies(args.fname,False) #provide the sorted flatten list of energies to calculate the unbiased estimate for the Cv
     energies = get_energies(args.fname,args.B)
     P = args.P
     print "parallel nprocessors", P
