@@ -27,9 +27,11 @@ class Jackknife_CV(object):
         """
         Esplit = [[] for i in xrange(self.nsubsets)]
         for x in self.E:
-            i = np.random.randint(0,self.nsubsets-1)
+            i = np.random.randint(0,self.nsubsets)
             Esplit[i].append(x)
         Esplit = np.array(Esplit)
+        for i in xrange(self.nsubsets):
+            print 'Esplit size',i, 'is',np.size(Esplit[i])
         return Esplit
     
     def jack_E_averages(self, Esplit): 
