@@ -111,7 +111,8 @@ def run_jackknife(energies, nsubsets, K, T, P, ndof, block):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load energy intervals and compute Cv stdev", 
                                      epilog="if more than one file name is given the energies from all runs will be combined and sorted."
-                                     "  the number of replicas will be the sum of the replicas used from all runs (automated!!!)")
+                                     "  the number of replicas will be the sum of the replicas used from all runs (automated!!!"
+                                        "does not support sets with different number of replicas yet)")
     parser.add_argument("K", type=int, help="number of replicas")
     parser.add_argument("N", type=int, help="number of subsets for jackknifing")
     parser.add_argument("fname", nargs="+", type=str, help="filenames with energies")
@@ -141,7 +142,7 @@ if __name__ == "__main__":
     lZ, Cv, U, U2 = compute_Z(energies_Cv, T, args.K*len(args.fname), P=P, ndof=args.ndof)
     Cv_stdev = run_jackknife(energies, args.N, args.K*len(args.fname), T, P=P, ndof=args.ndof, block=args.B)
     
-    with open("cv", "w") as fout:
+    with open('cv_std_K{K}_Nsub{N}_d{ndof}_B{B}.dat'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B), "w") as fout:
         fout.write("#T Cv stdev <E> <E**2> logZ\n")
         for vals in zip(T, Cv, Cv_stdev, U, U2, lZ):
             fout.write("%g %g %g %g %g %g\n" % vals)
@@ -151,5 +152,5 @@ if __name__ == "__main__":
     plt.errorbar(T, Cv, yerr=Cv_stdev, ecolor='g', capsize=None)
     plt.xlabel("T")
     plt.ylabel("Cv")
-    plt.savefig("cv_std.pdf")
+    plt.savefig('cv_std_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
         
