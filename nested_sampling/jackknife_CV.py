@@ -19,8 +19,9 @@ class Jackknife_CV(object):
     def __call__(self):
         Esplit = self.split_energies()
         EJack = self.jack_E_averages(Esplit)
+        CvSingle = self.Cv_singles(Esplit)
         CvJack = self.jack_Cv_averages(EJack)
-        return self.jack_Cv_stdev(CvJack),CvJack 
+        return self.jack_Cv_stdev(CvJack), CvSingle 
     
     def split_energies_randomly(self):
         """
@@ -39,7 +40,7 @@ class Jackknife_CV(object):
         """
         split the array of energies into n subsets of size n/K as provided
         """
-        Esplit = self.E
+        Esplit = copy.deepcopy(self.E)
         return Esplit
     
     def split_energies(self):
@@ -78,8 +79,18 @@ class Jackknife_CV(object):
         CvJack = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
             CvJack[i][:] = compute_Z(np.array(EJack[i][:]), self.T, (self.K - self.n), P=self.P, ndof=self.ndof)[1]
-        print 'CvJack ',CvJack
+        #print 'CvJack ',CvJack
         return np.array(CvJack)
+    
+    def Cv_singles(self,Esplit):
+        """
+        returns the single Cvs
+        """
+        CvSingle = np.zeros((self.nsubsets,self.T.size))
+        for i in xrange(self.nsubsets):
+            CvSingle[i][:] = compute_Z(np.array(Esplit[i][:]), self.T, (self.n), P=self.P, ndof=self.ndof)[1]
+        #print 'CvSingle ',CvSingle
+        return np.array(CvSingle)
     
     def jack_Cv_moments(self, CvJack):
         """    
@@ -134,13 +145,13 @@ if __name__ == "__main__":
     print "parallel nprocessors", P
     
     Tmin = .02
-    Tmax = 1
+    Tmax = 8
     nT = 1000
     dT = (Tmax-Tmin) / nT
     
     T = np.array([Tmin + dT*i for i in range(nT)])
     lZ, Cv, U, U2 = compute_Z(energies_Cv, T, args.K*len(args.fname), P=P, ndof=args.ndof)
-    Cv_stdev,Cv_singles = run_jackknife(energies, args.N, args.K*len(args.fname), T, P=P, ndof=args.ndof, block=args.B)
+    Cv_stdev, Cv_singles = run_jackknife(energies, args.N, args.K*len(args.fname), T, P=P, ndof=args.ndof, block=args.B)
     
     with open('cv_std_K{K}_Nsub{N}_d{ndof}_B{B}.dat'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B), "w") as fout:
         fout.write("#T Cv stdev <E> <E**2> logZ\n")
