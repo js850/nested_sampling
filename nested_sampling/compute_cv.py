@@ -1,5 +1,6 @@
 import argparse
 import numpy as np
+import copy
 
 def compute_Z(energies, T, K, P=1, ndof=0):
     """
@@ -89,8 +90,7 @@ def get_energies(fnames,block=False):
         eall = [[] for i in xrange(len(fnames))]
         for fname,i in zip(fnames,xrange(len(fnames))):
             e = np.genfromtxt(fname)
-            eall[i] = e.tolist()
-        print 'np.shape(eall)',np.shape(eall).flatten()
+            eall[i] = copy.deepcopy(e.tolist())
         return np.array(eall)
     
 if __name__ == "__main__":

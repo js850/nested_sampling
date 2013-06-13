@@ -39,7 +39,7 @@ class Jackknife_CV(object):
         """
         split the array of energies into n subsets of size n/K as provided
         """
-        ESplit = self.E
+        Esplit = self.E
         return Esplit
     
     def split_energies(self):
@@ -125,6 +125,7 @@ if __name__ == "__main__":
     if args.B is 2:
         args.B = len(args.fname) > 1
 
+    energies_Cv = get_energies(args.fname,0) #provide the sorted flatten list of energies to calculate the unbiased estimate for the Cv
     energies = get_energies(args.fname,args.B)
     P = args.P
     print "parallel nprocessors", P
@@ -135,7 +136,7 @@ if __name__ == "__main__":
     dT = (Tmax-Tmin) / nT
     
     T = np.array([Tmin + dT*i for i in range(nT)])
-    lZ, Cv, U, U2 = compute_Z(energies, T, args.K, P=P, ndof=args.ndof)
+    lZ, Cv, U, U2 = compute_Z(energies_Cv, T, args.K, P=P, ndof=args.ndof)
     Cv_stdev = run_jackknife(energies, args.N, args.K, T, P=P, ndof=args.ndof, block=args.B)
     
     with open("cv", "w") as fout:
