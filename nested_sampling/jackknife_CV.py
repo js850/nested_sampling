@@ -20,7 +20,7 @@ class Jackknife_CV(object):
         Esplit = self.split_energies()
         EJack = self.jack_E_averages(Esplit)
         CvJack = self.jack_Cv_averages(EJack)
-        return self.jack_Cv_stdev(CvJack)
+        return self.jack_Cv_stdev(CvJack),CvJack 
     
     def split_energies_randomly(self):
         """
@@ -100,7 +100,7 @@ class Jackknife_CV(object):
         sigmasquare_jack = CvMom2 - np.square(CvMom1)
         sigma = np.sqrt(self.nsubsets-1)*np.sqrt(sigmasquare_jack) 
         return sigma
-        
+            
 def run_jackknife(energies, nsubsets, K, T, P, ndof, block):
     """
     returns the stdev calculated by jackknifing
@@ -140,17 +140,40 @@ if __name__ == "__main__":
     
     T = np.array([Tmin + dT*i for i in range(nT)])
     lZ, Cv, U, U2 = compute_Z(energies_Cv, T, args.K*len(args.fname), P=P, ndof=args.ndof)
-    Cv_stdev = run_jackknife(energies, args.N, args.K*len(args.fname), T, P=P, ndof=args.ndof, block=args.B)
+    Cv_stdev,Cv_singles = run_jackknife(energies, args.N, args.K*len(args.fname), T, P=P, ndof=args.ndof, block=args.B)
     
     with open('cv_std_K{K}_Nsub{N}_d{ndof}_B{B}.dat'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B), "w") as fout:
         fout.write("#T Cv stdev <E> <E**2> logZ\n")
         for vals in zip(T, Cv, Cv_stdev, U, U2, lZ):
             fout.write("%g %g %g %g %g %g\n" % vals)
     
+    with open('cv_singles_K{K}_Nsub{N}_d{ndof}_B{B}.dat'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B), "w") as fout:
+        for i in xrange(args.N):
+            fout.write("#T Cv\n")
+            for vals in zip(T, Cv_singles[i]):
+                fout.write("%g %g \n" % vals)
+    
     import matplotlib.pyplot as plt
-    plt.figure()
-    plt.errorbar(T, Cv, yerr=Cv_stdev, ecolor='g', capsize=None)
+    fig1 = plt.figure()
+    plt.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None)
     plt.xlabel("T")
     plt.ylabel("Cv")
     plt.savefig('cv_std_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
-        
+    
+    plt.figure()
+    for i in xrange(args.N):
+        plt.plot(T, Cv_singles[i])
+    plt.xlabel("T")
+    plt.ylabel("Cv")
+    plt.savefig('cv_singles_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
+    
+    plt.figure()
+    plt.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None )
+    for i in xrange(args.N):
+        plt.plot(T, Cv_singles[i],"o-")
+    plt.xlabel("T")
+    plt.ylabel("Cv")
+    plt.savefig('cv_combined_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
+    
+    
+
