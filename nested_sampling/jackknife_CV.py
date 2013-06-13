@@ -6,7 +6,7 @@ from itertools import chain
 
 class Jackknife_CV(object):
     
-    def __init__(self, energies, nsubsets, K, T, P, ndof):
+    def __init__(self, energies, nsubsets, K, T, P, ndof, block):
         self.E = np.array(energies)
         self.n = np.floor(float(K)/float(nsubsets))
         self.K = K
@@ -14,6 +14,7 @@ class Jackknife_CV(object):
         self.T = np.array(T)
         self.P = P
         self.ndof = ndof
+        self.block = block
     
     def __call__(self):
         Esplit = self.split_energies()
@@ -21,9 +22,9 @@ class Jackknife_CV(object):
         CvJack = self.jack_Cv_averages(EJack)
         return self.jack_Cv_stdev(CvJack)
     
-    def split_energies(self):
+    def split_energies_randomly(self):
         """
-        split the array of energies into n subsets of size n/K
+        split the array of energies into n subsets of size n/K randomly
         """
         Esplit = [[] for i in xrange(self.nsubsets)]
         for x in self.E:
@@ -32,6 +33,23 @@ class Jackknife_CV(object):
         Esplit = np.array(Esplit)
         for i in xrange(self.nsubsets):
             print 'Esplit size',i, 'is',np.size(Esplit[i])
+        return Esplit
+    
+    def split_energies_block(self):
+        """
+        split the array of energies into n subsets of size n/K as provided
+        """
+        ESplit = self.E
+        return Esplit
+    
+    def split_energies(self):
+        """
+        returns the correct type of energy subsets, as chosen by the user
+        """
+        if self.block == False:
+            Esplit = self.split_energies_randomly()
+        else:
+            Esplit = self.split_energies_block()
         return Esplit
     
     def jack_E_averages(self, Esplit): 
@@ -81,11 +99,11 @@ class Jackknife_CV(object):
         sigma = np.sqrt(self.nsubsets-1)*np.sqrt(sigmasquare_jack) 
         return sigma
         
-def run_jackknife(energies, nsubsets, K, T, P, ndof):
+def run_jackknife(energies, nsubsets, K, T, P, ndof, block):
     """
     returns the stdev calculated by jackknifing
     """
-    Cv_sigma = Jackknife_CV(energies, nsubsets, K, T, P, ndof)
+    Cv_sigma = Jackknife_CV(energies, nsubsets, K, T, P, ndof, block)
     return Cv_sigma()
 
 if __name__ == "__main__":
@@ -97,10 +115,17 @@ if __name__ == "__main__":
     parser.add_argument("fname", nargs="+", type=str, help="filenames with energies")
     parser.add_argument("-P", type=int, help="number of cores for parallel run", default=1)
     parser.add_argument("--ndof", type=int, help="number of degrees of freedom", default=0)
+    parser.add_argument("--B", type=int, help="randomise energies in blocks or keep data as they are," 
+                                                "by default is randomised for a single set of data,"
+                                                "while multiple sets are used as they are", default=2)
     args = parser.parse_args()
     print args.fname
 
-    energies = get_energies(args.fname)
+    #by default define automatically weather to split things in block or not
+    if args.B is 2:
+        args.B = len(args.fname) > 1
+
+    energies = get_energies(args.fname,args.B)
     P = args.P
     print "parallel nprocessors", P
     
@@ -111,7 +136,7 @@ if __name__ == "__main__":
     
     T = np.array([Tmin + dT*i for i in range(nT)])
     lZ, Cv, U, U2 = compute_Z(energies, T, args.K, P=P, ndof=args.ndof)
-    Cv_stdev = run_jackknife(energies, args.N, args.K, T, P=P, ndof=args.ndof)
+    Cv_stdev = run_jackknife(energies, args.N, args.K, T, P=P, ndof=args.ndof, block=args.B)
     
     with open("cv", "w") as fout:
         fout.write("#T Cv stdev <E> <E**2> logZ\n")

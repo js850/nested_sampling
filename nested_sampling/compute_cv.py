@@ -75,17 +75,24 @@ def compute_Z(energies, T, K, P=1, ndof=0):
     return lZfinal, Cv, U, U2
 
 
-def get_energies(fnames):
+def get_energies(fnames,block=False):
     if len(fnames) == 1:
         return np.genfromtxt(fnames[0])
-    eall = []
-    for fname in fnames:
-        e = np.genfromtxt(fname)
-        eall += e.tolist()
+    if block == False:
+        eall = []
+        for fname in fnames:
+            e = np.genfromtxt(fname)
+            eall += e.tolist()
+        eall.sort(key=lambda x: -x)
+        return np.array(eall).flatten()
+    else:
+        eall = [[] for i in xrange(len(fnames))]
+        for fname,i in zip(fnames,xrange(len(fnames))):
+            e = np.genfromtxt(fname)
+            eall[i] = e.tolist()
+        print 'np.shape(eall)',np.shape(eall).flatten()
+        return np.array(eall)
     
-    eall.sort(key=lambda x: -x)
-    return np.array(eall).flatten()
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load energy intervals and compute cv", 
                                      epilog="if more than one file name is give the energies from all runs will be combined and sorted."
@@ -99,7 +106,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print args.fname
 
-    energies = get_energies(args.fname)
+    energies = get_energies(args.fname,block=False)
 
 #    energies = np.genfromtxt(args.fname)
     
