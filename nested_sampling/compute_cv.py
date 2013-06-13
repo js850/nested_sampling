@@ -96,7 +96,7 @@ def get_energies(fnames,block=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load energy intervals and compute cv", 
                                      epilog="if more than one file name is give the energies from all runs will be combined and sorted."
-                                     "  the number of replicas must be the sum of the replicas used from all runs")
+                                     "  the number of replicas will be the sum of the replicas used from all runs (automated!!!)")
 #    parser.add_argument("--db", type=str, nargs=1, help="database filename",
 #                        default="otp.db")
     parser.add_argument("K", type=int, help="number of replicas")
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     dT = (Tmax-Tmin) / nT
     
     T = np.array([Tmin + dT*i for i in range(nT)])
-    lZ, Cv, U, U2 = compute_Z(energies, T, args.K, P=P, ndof=args.ndof)
+    lZ, Cv, U, U2 = compute_Z(energies, T, args.K*len(args.fname), P=P, ndof=args.ndof)
     
     with open("cv", "w") as fout:
         fout.write("#T Cv <E> <E**2> logZ\n")

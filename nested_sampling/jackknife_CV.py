@@ -75,7 +75,7 @@ class Jackknife_CV(object):
         """
         CvJack = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
-            CvJack[i][:] = compute_Z(np.array(EJack[i][:]), self.T, self.K, P=self.P, ndof=self.ndof)[1]
+            CvJack[i][:] = compute_Z(np.array(EJack[i][:]), self.T, (self.K - self.K/self.nsubsets), P=self.P, ndof=self.ndof)[1]
         print 'CvJack ',CvJack
         return np.array(CvJack)
     
@@ -109,7 +109,7 @@ def run_jackknife(energies, nsubsets, K, T, P, ndof, block):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load energy intervals and compute Cv stdev", 
                                      epilog="if more than one file name is given the energies from all runs will be combined and sorted."
-                                     "  the number of replicas must be the sum of the replicas used from all runs")
+                                     "  the number of replicas will be the sum of the replicas used from all runs (automated!!!)")
     parser.add_argument("K", type=int, help="number of replicas")
     parser.add_argument("N", type=int, help="number of subsets for jackknifing")
     parser.add_argument("fname", nargs="+", type=str, help="filenames with energies")
@@ -136,8 +136,8 @@ if __name__ == "__main__":
     dT = (Tmax-Tmin) / nT
     
     T = np.array([Tmin + dT*i for i in range(nT)])
-    lZ, Cv, U, U2 = compute_Z(energies_Cv, T, args.K, P=P, ndof=args.ndof)
-    Cv_stdev = run_jackknife(energies, args.N, args.K, T, P=P, ndof=args.ndof, block=args.B)
+    lZ, Cv, U, U2 = compute_Z(energies_Cv, T, args.K*len(args.fname), P=P, ndof=args.ndof)
+    Cv_stdev = run_jackknife(energies, args.N, args.K*len(args.fname), T, P=P, ndof=args.ndof, block=args.B)
     
     with open("cv", "w") as fout:
         fout.write("#T Cv stdev <E> <E**2> logZ\n")
