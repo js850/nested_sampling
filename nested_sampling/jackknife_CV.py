@@ -17,8 +17,11 @@ class Jackknife_CV(object):
         self.block = block
     
     def __call__(self):
+        print 'Splitting energies...'
         Esplit = self.split_energies()
+        print 'Calculating Jacknife averages (combining sets)'
         EJack = self.jack_E_averages(Esplit)
+        print 'Producing single '
         CvSingle = self.Cv_singles(Esplit)
         CvJack = self.jack_Cv_averages(EJack)
         return self.jack_Cv_stdev(CvJack), CvSingle 
@@ -146,7 +149,7 @@ if __name__ == "__main__":
     
     Tmin = .02
     Tmax = 8
-    nT = 1000
+    nT = 100
     dT = (Tmax-Tmin) / nT
     
     T = np.array([Tmin + dT*i for i in range(nT)])
