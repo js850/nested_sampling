@@ -21,10 +21,11 @@ class Jackknife_CV(object):
         Esplit = self.split_energies()
         print 'Calculating Jacknife averages (combining sets)'
         EJack = self.jack_E_averages(Esplit)
-        print 'Producing single '
+        print 'Producing Cv curves for each subset'
         CvSingle = self.Cv_singles(Esplit)
+        print 'Calculating Cv Jacknife average (from the combination of subsets)'
         CvJack = self.jack_Cv_averages(EJack)
-        return self.jack_Cv_stdev(CvJack), CvSingle 
+        return self.jack_Cv_stdev(CvJack), CvSingle
     
     def split_energies_randomly(self):
         """
@@ -174,11 +175,17 @@ if __name__ == "__main__":
     import matplotlib
     matplotlib.use('PDF')
     import matplotlib.pyplot as plt
-    fig1 = plt.figure()
-    plt.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None)
-    plt.xlabel("T")
-    plt.ylabel("Cv")
-    plt.savefig('cv_std_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
+    fig, (ax1,ax2) = plt.subplots(2,1,sharey=True)
+    ax = ax2
+    ax.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None)
+    ax.set_xlabel("T")
+    ax.set_ylabel("Cv")
+    ax = ax1
+    ax.set_xlim([0,1])
+    ax.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None)
+    ax.set_xlabel("T")
+    ax.set_ylabel("Cv")
+    fig.savefig('cv_std_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
     
     plt.figure()
     for i in xrange(args.N):
@@ -187,13 +194,21 @@ if __name__ == "__main__":
     plt.ylabel("Cv")
     plt.savefig('cv_singles_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
         
-    plt.figure()
-    plt.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None )
+    fig, (ax1,ax2) = plt.subplots(2,1,sharey=True)
+    ax = ax2
+    ax.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None )
     for i in xrange(args.N):
-        plt.plot(T, Cv_singles[i],"o-")
-    plt.xlabel("T")
-    plt.ylabel("Cv")
-    plt.savefig('cv_combined_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
+        ax.plot(T, Cv_singles[i],'k')
+    ax.set_xlabel("T")
+    ax.set_ylabel("Cv")
+    ax = ax1
+    ax.set_xlim([0,1])
+    ax.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None )
+    for i in xrange(args.N):
+        ax.plot(T, Cv_singles[i],'k')
+    ax.set_xlabel("T")
+    ax.set_ylabel("Cv")
+    fig.savefig('cv_combined_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
     
     
 
