@@ -164,6 +164,12 @@ if __name__ == "__main__":
             for vals in zip(T, Cv_singles[i]):
                 fout.write("%g %g \n" % vals)
     
+    #####################
+    ####### PLOT ########
+    #####################
+    
+    import matplotlib
+    matplotlib.use('PDF')
     import matplotlib.pyplot as plt
     fig1 = plt.figure()
     plt.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None)
@@ -177,7 +183,7 @@ if __name__ == "__main__":
     plt.xlabel("T")
     plt.ylabel("Cv")
     plt.savefig('cv_singles_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
-    
+        
     plt.figure()
     plt.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None )
     for i in xrange(args.N):
