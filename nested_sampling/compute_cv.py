@@ -126,7 +126,7 @@ if __name__ == "__main__":
         for vals in zip(T, Cv, U, U2, lZ):
             fout.write("%g %g %g %g %g\n" % vals)
     
-    mport matplotlib
+    import matplotlib
     matplotlib.use('PDF')
     import pylab as pl
     pl.plot(T, Cv, 'o-')
