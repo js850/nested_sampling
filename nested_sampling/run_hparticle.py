@@ -7,7 +7,7 @@ from nested_sampling_serial import NestedSamplingSerial
 
 
 def main():
-    parser = argparse.ArgumentParser(description="do nested sampling on a p[article in a n-dimensional harmonic well")
+    parser = argparse.ArgumentParser(description="do nested sampling on a p[article in a n-dimensional Harmonic well")
 #    parser.add_argument("--db", type=str, nargs=1, help="database filename",
 #                        default="otp.db")
     parser.add_argument("-K", "--nreplicas", type=int, help="number of replicas", default=300)
@@ -25,7 +25,7 @@ def main():
     ns = NestedSampling(system, args.nreplicas, mcrunner, nproc=args.nproc, 
                         triv_paral=args.trivparal, verbose=not args.q)
     print "harmonic particle ndof", args.ndof
-    run_nested_sampling(ns, label="hparticle", etol=.000001)
+    run_nested_sampling(ns, label="hparticle", etol=.0000001)
     
 
 if __name__ == "__main__":

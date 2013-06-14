@@ -115,7 +115,7 @@ if __name__ == "__main__":
     
     Tmin = .02
     Tmax = 8
-    nT = 1000
+    nT = 100
     dT = (Tmax-Tmin) / nT
     
     T = np.array([Tmin + dT*i for i in range(nT)])
