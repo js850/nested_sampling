@@ -25,7 +25,7 @@ def main():
     ns = NestedSampling(system, args.nreplicas, mcrunner, nproc=args.nproc, 
                         triv_paral=args.trivparal, verbose=not args.q)
     print "harmonic particle ndof", args.ndof
-    run_nested_sampling(ns, label="hparticle", etol=.0000001)
+    run_nested_sampling(ns, label="hparticle", etol=.00000001)
     
 
 if __name__ == "__main__":
