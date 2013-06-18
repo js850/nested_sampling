@@ -4,7 +4,7 @@ from lj_run import LJClusterNew
 from pygmin.takestep import RandomDisplacement, AdaptiveStepsize
 
 if __name__ == "__main__":
-    natoms = 31
+    natoms = 38
     system = LJClusterNew(natoms)
     
     ts = RandomDisplacement(stepsize=0.5)

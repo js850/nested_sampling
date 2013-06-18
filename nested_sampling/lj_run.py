@@ -139,7 +139,8 @@ def main():
     parser.add_argument("-a", "--minprob", type=float, help="probability of sampling from minima as a/K, default a=1",default=1)
     parser.add_argument("-S", "--system", type=int, help="define system type: 1 is LJ \n2 is HarParticle \n3 is Ising",default=1)
     args = parser.parse_args()
-
+    print args
+    
     natoms = args.nAtoms
     nreplicas = args.nreplicas
     mciter = args.mciter
