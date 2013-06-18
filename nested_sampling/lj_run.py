@@ -62,6 +62,7 @@ try:
     from src.runmc import mc_cython
 except ImportError:
     print "warning, can't import compiled mc"
+
 class MonteCarloCompiled(object):
     def __init__(self, radius):
         self.radius = radius
@@ -130,12 +131,12 @@ def main():
     parser.add_argument("-n", "--mciter", type=int, help="number of iterations in the monte carlo chain", default=10000)
     parser.add_argument("-m", "--nminima", type=int, help="number of minima to use from the database", default=100)
     parser.add_argument("-A", "--nAtoms", type=int, help="number of atoms", default=31)
-    parser.add_argument("-C", "--compiled-mc", type=bool, help="option to use the Markov chain routine from C source (unique to LJ systems)", 
+    parser.add_argument("-C", "--not-compiled-mc", action="store_false", help="option to use the Markov chain routine from C source (unique to LJ systems)", 
                         default=True)
     parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=1)
-    parser.add_argument("-p", "--trivparal", type=bool, help="set whether to do trivial parallelisation, by default True",default=True)
-    parser.add_argument("-T", "--get-thermodynamic-properties", type=bool, help="recalculates the eigenvectors of the hessian and writes them to the database",default=False)
-    parser.add_argument("-a", "--minprob", type=bool, help="probability of sampling from minima as a/K, default a=1",default=1)
+    parser.add_argument("-p", "--trivparal", action="store_true", help="set whether to do trivial parallelisation, by default True",default=False)
+    parser.add_argument("-T", "--get-thermodynamic-properties", action="store_true", help="recalculates the eigenvectors of the hessian and writes them to the database",default=False)
+    parser.add_argument("-a", "--minprob", type=float, help="probability of sampling from minima as a/K, default a=1",default=1)
     parser.add_argument("-S", "--system", type=int, help="define system type: 1 is LJ \n2 is HarParticle \n3 is Ising",default=1)
     args = parser.parse_args()
 
