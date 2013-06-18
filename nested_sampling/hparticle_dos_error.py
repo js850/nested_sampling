@@ -22,7 +22,7 @@ def run_hparticle_ea(K,ndof,P,E_init=1000,E_fin=0.000001):
     sig_beta = np.sqrt(float(K) / ((K+2)*(K+1)**2))
     print 'sig_beta',sig_beta
     while E > E_fin:
-        E = float(E) * ((np.random.normal(0,sig_beta) + alpha)**expo) #(np.random.uniform()*0.01 + 0.995) //randomise compression by 10%
+        E = float(E) * ((np.random.normal(0,sig_beta) + alpha)**expo)
         E_list.append(E)
     
     return np.array(E_list)

@@ -432,7 +432,10 @@ class NestedSampling(object):
     def one_iteration(self):
 #        rmax = self.pop_replica()
 #        Emax = rmax.energy
-        Emax = self.replicas[-1].energy
+        if self.nproc > 1 and self.triv_paral is False:
+            Emax = self.replicas[-self.nproc].energy
+        else:
+            Emax = self.replicas[-1].energy
        
         rtuple = self.get_starting_configuration(Emax)
         configs = rtuple[0]
