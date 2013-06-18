@@ -6,7 +6,7 @@ cimport numpy as np
 cdef extern:
     int mcising(long int *spins, double *Energy, long int nspins, 
                 long int niter, double Emax, long int seed,
-                long int *neighbor_list, long int *nbegin, long int *nend, double macheps)
+                long int *neighbor_list, long int *nbegin, long int *nend)#double macheps
 
 def mc_ising_c(np.ndarray[long int, ndim=1, mode="c"] spins,
                 long int mciter, double Emax, long int seed,
