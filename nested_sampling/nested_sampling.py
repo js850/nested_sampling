@@ -417,7 +417,10 @@ class NestedSampling(object):
 
     def get_starting_configuration_from_replicas(self):
         # choose a replica randomly
-        rlist_int = random.sample(xrange(len(self.replicas)), self.nproc)
+        if self.nproc > 1 and self.triv_paral is False:
+            rlist_int = random.sample(xrange(len(self.replicas)-self.nproc+1), self.nproc)
+        else:
+            rlist_int = random.sample(xrange(len(self.replicas)), self.nproc)
         configlist = [copy.deepcopy(self.replicas[i]) for i in rlist_int]
         return configlist,rlist_int
 
