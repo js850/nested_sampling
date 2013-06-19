@@ -186,7 +186,7 @@ def main():
     # run nested sampling
     ns = run_nested_sampling_lj(system, nreplicas=nreplicas, 
                              label=label, minima=minima, mciter=mciter, 
-                             use_compiled=args.compiled_mc, nproc=nproc, triv_paral = triv_paral, minprob = minprob)
+                             use_compiled=args.not_compiled_mc, nproc=nproc, triv_paral = triv_paral, minprob = minprob)
 
     with open(label + ".energies", "w") as fout:
         fout.write( "\n".join([ str(e) for e in ns.max_energies]) )

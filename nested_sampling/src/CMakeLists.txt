@@ -17,9 +17,9 @@ add_library(runmc SHARED runmc.c mc.c lj.c ${PYTHON_LIBS})
 target_link_libraries(runmc  -lm -lgsl -lgslcblas)
 set_target_properties(runmc PROPERTIES PREFIX "")
 
-#add_library(run_ising_mc SHARED run_ising_mc.c mcising.c ${PYTHON_LIBS})
-#target_link_libraries(run_ising_mc -lm -lgsl -lgslcblas)
-#set_target_properties(run_ising_mc PROPERTIES PREFIX "")
+add_library(run_ising_mc SHARED run_ising_mc.c mcising.c ${PYTHON_LIBS})
+target_link_libraries(run_ising_mc -lm -lgsl -lgslcblas)
+set_target_properties(run_ising_mc PROPERTIES PREFIX "")
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 #add_executable(LJ_ns_plot LJ_ns_plot.cpp)
