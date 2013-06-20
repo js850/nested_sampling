@@ -406,7 +406,7 @@ class NestedSampling(object):
             for i in indices:
                 if i == self.nreplicas - 1: 
                     continue # this is already popped
-                self.replicas.pop(i)  
+                self.replicas.pop(i)
         else:
             length = self.nproc-1
             for i in xrange(length):
@@ -433,8 +433,6 @@ class NestedSampling(object):
         return rnew
     
     def one_iteration(self):
-#        rmax = self.pop_replica()
-#        Emax = rmax.energy
         if self.nproc > 1 and self.triv_paral is False:
             Emax = self.replicas[-self.nproc].energy
         else:
@@ -442,10 +440,12 @@ class NestedSampling(object):
        
         rtuple = self.get_starting_configuration(Emax)
         configs = rtuple[0]
-
-        self.pop_replica()
-        if self.nproc > 1:
-            self.pop_replica_par(rtuple)
+        
+        for i in xrange(self.nproc):
+            self.pop_replica()
+                    
+        if self.nproc > 1 and self.triv_paral is True:  #this is a dirty fix because pop_replica_par is also written for burkoff
+            self.pop_replica_par(rtuple)                #consider adding a flag to decide between burkoff and improved burkoff
         
 #        if self.verbose: print "one_iteration Emax", Emax
         rlist = self.do_monte_carlo_chain(configs, Emax)
