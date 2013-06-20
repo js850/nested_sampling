@@ -466,8 +466,10 @@ class NestedSampling(object):
                 worker.join()
                 worker.terminate()
                 worker.join()
+        print "copying live replicas"
         for replica in reversed(self.replicas):
             self.max_energies.append(replica.energy)
+        print "terminated copying live replica"
 #            self.pool.close()
 #            self.pool.join()
 
