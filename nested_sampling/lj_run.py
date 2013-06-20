@@ -134,8 +134,8 @@ def main():
     parser.add_argument("-C", "--not-compiled-mc", action="store_false", help="option to use the Markov chain routine from C source (unique to LJ systems)", 
                         default=True)
     parser.add_argument("-P", "--nproc", type=int, help="number of precessors", default=1)
-    parser.add_argument("-p", "--trivparal", action="store_true", help="set whether to do trivial parallelisation, by default True",default=False)
-    parser.add_argument("-T", "--get-thermodynamic-properties", action="store_true", help="recalculates the eigenvectors of the hessian and writes them to the database",default=False)
+    parser.add_argument("-p", "--trivparal", action="store_true", help="set whether to do trivial parallelisation, by default False",default=False)
+    parser.add_argument("-T", "--get-thermodynamic-properties", action="store_true", help="ricalculates the eigenvectors of the hessian and writes them to the database",default=False)
     parser.add_argument("-a", "--minprob", type=float, help="probability of sampling from minima as a/K, default a=1",default=1)
     parser.add_argument("-S", "--system", type=int, help="define system type: 1 is LJ \n2 is HarParticle \n3 is Ising",default=1)
     args = parser.parse_args()
