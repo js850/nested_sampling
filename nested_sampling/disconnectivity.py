@@ -1,5 +1,5 @@
-from pygmin.landscape import Graph
-from pygmin.utils.disconnectivity_graph import DisconnectivityGraph
+from pele.landscape import Graph
+from pele.utils.disconnectivity_graph import DisconnectivityGraph
 import matplotlib.pyplot as plt
 from lj_run import LJClusterNew
 import sys

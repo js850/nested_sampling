@@ -165,7 +165,7 @@ def run_gui(system, nested_sampling):
     Parameters
     ----------
     system : System class
-        A pygmin system, derrived from BaseSystemClass.  All information 
+        A pele system, derrived from BaseSystemClass.  All information 
         about the system is in this class.
     db : str, optional
         connect to the database at this file location
@@ -197,7 +197,7 @@ def run_gui(system, nested_sampling):
 #    sys.exit(app.exec_())
 
 def build_lj_nested_sampling(system, db):
-    from pygmin.takestep import RandomDisplacement
+    from pele.takestep import RandomDisplacement
     nreplicas = 20
     mciter = 10000
     nminima = 10000

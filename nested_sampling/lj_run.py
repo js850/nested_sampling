@@ -13,12 +13,12 @@ from bh_sampling import get_thermodynamic_information, vector_random_uniform_hyp
     NestedSamplingBS
 
 
-from pygmin.takestep import RandomDisplacement
-#from pygmin.utils.xyz import write_xyz
-from pygmin.accept_tests import SphericalContainer
-from pygmin.systems import LJCluster
-from pygmin.mindist import PointGroupOrderCluster
-from pygmin.optimize import Result
+from pele.takestep import RandomDisplacement
+#from pele.utils.xyz import write_xyz
+from pele.accept_tests import SphericalContainer
+from pele.systems import LJCluster
+from pele.mindist import PointGroupOrderCluster
+from pele.optimize import Result
 
 class SphericalContainerNew(SphericalContainer):
     def __call__(self, energy=None, coords=None):
@@ -43,7 +43,7 @@ class LJClusterNew(LJCluster):
     
     def get_random_configuration(self):
         """make sure they're all inside the radius"""
-        from pygmin.accept_tests import SphericalContainer
+        from pele.accept_tests import SphericalContainer
         test = self.get_config_tests()[0]
         coords = np.zeros([self.natoms,3])
         for i in range(self.natoms):

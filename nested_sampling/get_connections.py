@@ -1,6 +1,6 @@
 from lj_run import LJClusterNew
 import sys
-from pygmin.landscape import Graph
+from pele.landscape import Graph
 
 natoms = int(sys.argv[1])
 dbname = sys.argv[2]

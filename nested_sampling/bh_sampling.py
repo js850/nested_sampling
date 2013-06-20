@@ -10,9 +10,9 @@ from scipy.misc import factorial
 from database_eigenvecs import HessianEigs
 from nested_sampling import NestedSampling, Replica
 
-from pygmin.utils.rotations import vec_random_ndim
-from pygmin.utils.hessian import sort_eigs, get_eig
-from pygmin.thermodynamics import logproduct_freq2, normalmodes
+from pele.utils.rotations import vec_random_ndim
+from pele.utils.hessian import sort_eigs, get_eig
+from pele.thermodynamics import logproduct_freq2, normalmodes
 
 def vector_random_uniform_hypersphere(k):
     """return a vector sampled uniformly in a hypersphere of dimension k"""
@@ -182,7 +182,7 @@ def sample_from_database(system, minima, Emax):
     Parameters
     ----------
     
-    system : pygmin System
+    system : pele System
         is the particular system of interest, say LJCluster
     minima: array of Minimum objects
     Emax : float
@@ -211,7 +211,7 @@ def get_thermodynamic_information(system, db):
     Parameters
     ----------
     
-    system : pygmin System
+    system : pele System
         is the particular system of interest, say LJCluster
     db : database of minima
     
@@ -416,7 +416,7 @@ class NestedSamplingBS(NestedSampling):
     
     Parameters
     ----------
-    system : pygmin system object
+    system : pele system object
     nreplicas : int
         number of replicas
     takestep : callable

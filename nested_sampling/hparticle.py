@@ -2,9 +2,9 @@
 
 import numpy as np
 
-from pygmin.potentials import BasePotential
-from pygmin.systems import BaseSystem
-from pygmin.optimize import Result
+from pele.potentials import BasePotential
+from pele.systems import BaseSystem
+from pele.optimize import Result
 
 from bh_sampling import vector_random_uniform_hypersphere
 

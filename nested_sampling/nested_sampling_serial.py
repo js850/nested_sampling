@@ -12,7 +12,7 @@ class NestedSamplingSerial(object):
 
     Parameters
     ----------
-    system : pygmin System
+    system : pele System
         is the particular system of interest, say LJCluster
     nreplicas : integer
         number of replicas

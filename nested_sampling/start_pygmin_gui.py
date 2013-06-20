@@ -1,4 +1,4 @@
-from pygmin.gui import run_gui
+from pele.gui import run_gui
 from lj_run import LJClusterNew
 import sys
 

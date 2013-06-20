@@ -3,8 +3,8 @@ from src.runmc import mc_cython
 
 from lj_run import LJClusterNew, MonteCarloCompiled
 from nested_sampling import MonteCarloChain
-from pygmin.takestep import RandomDisplacement
-from pygmin.utils.xyz import write_xyz
+from pele.takestep import RandomDisplacement
+from pele.utils.xyz import write_xyz
 
 system = LJClusterNew(31)
 

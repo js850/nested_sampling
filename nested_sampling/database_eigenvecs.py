@@ -6,8 +6,8 @@ import numpy as np
 from sqlalchemy.orm import relationship, backref, deferred
 from sqlalchemy import Column, Integer, Float, PickleType, ForeignKey
 
-from pygmin.storage.database import Base
-from pygmin.storage import Database
+from pele.storage.database import Base
+from pele.storage import Database
 
 class NormalModes(Base):
     """normal mode frequencies and associated eigenvectors
@@ -74,8 +74,8 @@ class HessianEigs(Base):
 
 
 if __name__ == "__main__":
-    from pygmin.systems import LJCluster
-    from pygmin.utils.hessian import get_sorted_eig
+    from pele.systems import LJCluster
+    from pele.utils.hessian import get_sorted_eig
     system = LJCluster(20)
     db = system.create_database()#"test.sqlite")
     coords, energy = system.get_random_minimized_configuration()[:2]

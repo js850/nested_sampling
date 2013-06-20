@@ -110,4 +110,4 @@ class Ui_MainWindow(object):
         self.label_3.setText(QtGui.QApplication.translate("MainWindow", "mciter", None, QtGui.QApplication.UnicodeUTF8))
         self.btn_db_sample_coords.setText(QtGui.QApplication.translate("MainWindow", "sample from database", None, QtGui.QApplication.UnicodeUTF8))
 
-from pygmin.gui.show3d import Show3DWithSlider
+from pele.gui.show3d import Show3DWithSlider

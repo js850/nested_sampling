@@ -7,7 +7,7 @@ import copy
 from itertools import izip
 
 #this import fixes some bugs in how multiprocessing deals with exceptions
-import pygmin.utils.fix_multiprocessing
+import pele.utils.fix_multiprocessing
 from parallel_ns import MCRunner
 
 class MonteCarloChain(object):
@@ -16,17 +16,17 @@ class MonteCarloChain(object):
 
     Parameters
     -----------
-    potential : pygmin Potentials
+    potential : pele Potentials
         attribute of system with member function getEnergy (in essence a
         particular potential energy function)
     x : array
         are the coordinates
     takestep : callable takestep object
-        take a random montecarlo step, imported from pygmin: takestep(x) makes
+        take a random montecarlo step, imported from pele: takestep(x) makes
         a move from x
     Emax : float
         energy upperbound
-    energy : pygmin LJCluster
+    energy : pele LJCluster
         energy of a given configuration
     accept_test : list of callables
         it's an array of pointers to functions. The dereferenced functions
@@ -79,7 +79,7 @@ class MonteCarloChain(object):
         
         if not self.test_configuration(self.x, 0.):
             print "ERROR: initial configuration for monte carlo chain failed configuration test"
-            from pygmin.utils.xyz import write_xyz
+            from pele.utils.xyz import write_xyz
             with open("error.xyz", "w") as fout:
                 write_xyz(fout, self.x)
         
@@ -169,7 +169,7 @@ class NestedSampling(object):
 
     Parameters
     ----------
-    system : pygmin System
+    system : pele System
         is the particular system of interest, say LJCluster
     nreplicas : integer
         number of replicas
@@ -472,7 +472,7 @@ class NestedSampling(object):
 
 if __name__ == "__main__":
     from lj_run import LJClusterNew
-    from pygmin.takestep import RandomDisplacement
+    from pele.takestep import RandomDisplacement
     natoms = 6
     nreplicas = 10
     mciter = 1000

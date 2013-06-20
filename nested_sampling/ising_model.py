@@ -1,9 +1,9 @@
 import numpy as np
 import networkx as nx
 import sys
-from pygmin.systems import BaseSystem
-from pygmin.potentials import BasePotential
-from pygmin.optimize import Result
+from pele.systems import BaseSystem
+from pele.potentials import BasePotential
+from pele.optimize import Result
 
 def make_grid_graph(dim, periodic=True):
     """

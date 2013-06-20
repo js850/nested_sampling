@@ -43,7 +43,7 @@ def compute_cv(minima, T, k):
     return Z, U, U2, Cv
         
 if __name__ == "__main__":
-    from pygmin.storage import Database
+    from pele.storage import Database
     parser = argparse.ArgumentParser(description="load energy intervals and compute cv")
 #    parser.add_argument("--db", type=str, nargs=1, help="database filename",
 #                        default="otp.db")
