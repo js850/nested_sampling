@@ -34,8 +34,8 @@ def run_nested_sampling(ns, label="nsout", etol=0.01, maxiter=1e100):
         fout.write("\n")
         fout.flush()
 #    print ns.max_energies
+    ns.finish()
     print "min replica energy", ns.replicas[0].energy
     print "max replica energy", ns.replicas[-1].energy
-    ns.finish()
     return ns
 
