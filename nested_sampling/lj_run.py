@@ -1,3 +1,4 @@
+import datetime
 #import pickle
 import sys
 import argparse
@@ -141,6 +142,9 @@ def main():
     args = parser.parse_args()
     print args
     
+    ###get time start
+    init_time = datetime.datetime.now()
+    
     natoms = args.nAtoms
     nreplicas = args.nreplicas
     mciter = args.mciter
@@ -198,6 +202,9 @@ def main():
 #        pl.plot(e)
 #        pl.show()
     
+    ###get time end
+    fin_time = datetime.datetime.now() 
+    print 'Time taken for calculation', (fin_time - init_time)
     
     
 if __name__ == "__main__":
