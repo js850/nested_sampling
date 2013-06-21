@@ -1,3 +1,4 @@
+from __future__ import division
 import argparse
 import numpy as np
 import copy
@@ -148,9 +149,9 @@ if __name__ == "__main__":
     P = args.P
     print "parallel nprocessors", P
     
-    Tmin = .02
-    Tmax = 8
-    nT = 100
+    Tmin = .001
+    Tmax = 0.5
+    nT = 600
     dT = (Tmax-Tmin) / nT
     
     T = np.array([Tmin + dT*i for i in range(nT)])
@@ -181,7 +182,7 @@ if __name__ == "__main__":
     ax.set_xlabel("T")
     ax.set_ylabel("Cv")
     ax = ax1
-    ax.set_xlim([0,1])
+    ax.set_xlim([0,0.1])
     ax.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None)
     ax.set_xlabel("T")
     ax.set_ylabel("Cv")
@@ -202,7 +203,7 @@ if __name__ == "__main__":
     ax.set_xlabel("T")
     ax.set_ylabel("Cv")
     ax = ax1
-    ax.set_xlim([0,1])
+    ax.set_xlim([0,0.1])
     ax.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None )
     for i in xrange(args.N):
         ax.plot(T, Cv_singles[i],'k')
