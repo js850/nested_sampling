@@ -55,7 +55,9 @@ def compute_Z(energies, T, K, P=1, ndof=0):
     else:
         #a = 1. - float(P) / (K + 1.)
         #lZ = n[np.newaxis,:] * np.log(a) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a)
-        a = (K-(n+1)%P)/(K-(n+1)%P+1) #testing
+        a = (K-(n[:-K+1]+1)%P)/(K-(n[:-K+1]+1)%P+1) #testing
+        for i in xrange(K-1)
+            a.append(K/(K+1))
         lZ = n[np.newaxis,:] * np.log(a[np.newaxis,:]) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a[np.newaxis,:])
 
     # subtract out the smallest value to avoid overflow issues when lZ is exponentiated
