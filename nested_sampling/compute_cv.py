@@ -1,3 +1,4 @@
+from __future__ import division
 import argparse
 import numpy as np
 import copy
@@ -52,8 +53,10 @@ def compute_Z(energies, T, K, P=1, ndof=0):
 #        lZ = (-(n[np.newaxis,:]+1) / K - beta[:,np.newaxis] * E[np.newaxis,:])  - np.log((1.+2*K)/K**2)
 #        lZ = (- beta[:,np.newaxis] * E[np.newaxis,:])  - np.log((1.+2*K)/K**2) + (n[np.newaxis,:]+1) * np.log(K/(K+1))
     else:
-        a = 1. - float(P) / (K + 1.)
-        lZ = n[np.newaxis,:] * np.log(a) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a)
+        #a = 1. - float(P) / (K + 1.)
+        #lZ = n[np.newaxis,:] * np.log(a) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a)
+        a = (K-(n+1)%P)/(K-(n+1)%P+1) #testing
+        lZ = n[np.newaxis,:] * np.log(a[np.newaxis,:]) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a[np.newaxis,:])
         
     # subtract out the smallest value to avoid overflow issues when lZ is exponentiated
     lZmax = np.max(lZ,axis=1) #  maximum lZ for each temperature
