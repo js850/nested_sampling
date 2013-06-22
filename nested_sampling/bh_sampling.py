@@ -485,8 +485,11 @@ class NestedSamplingBS(NestedSampling):
         a = float(self.minprob)
         b = 1.
         c = 2.5
-        dE = float(self.minima[-1].energy) - Emax
-        onset_prob = a / ( 1. + np.exp(-b * (dE + c)) )
+        if Emax > 0: ##this is a reasonable assumption for LJ clusters but not for general systems but necessary to avoid overfloat
+            onset_prob = 0
+        else:
+            dE = float(self.minima[-1].energy) - Emax
+            onset_prob = a / ( 1. + np.exp(-b * (dE + c)) )
         prob = onset_prob / float(self.nreplicas)
         for i in range(len(configs)):
             if np.random.uniform(0,1) < prob:
