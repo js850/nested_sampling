@@ -2,6 +2,7 @@ from __future__ import division
 import argparse
 import numpy as np
 import copy
+from src.cv_trapezoidal import  compute_cv_c
 
 def compute_Z(energies, T, K, P=1, ndof=0):
     """
@@ -53,12 +54,12 @@ def compute_Z(energies, T, K, P=1, ndof=0):
 #        lZ = (-(n[np.newaxis,:]+1) / K - beta[:,np.newaxis] * E[np.newaxis,:])  - np.log((1.+2*K)/K**2)
 #        lZ = (- beta[:,np.newaxis] * E[np.newaxis,:])  - np.log((1.+2*K)/K**2) + (n[np.newaxis,:]+1) * np.log(K/(K+1))
     else:
-        #a = 1. - float(P) / (K + 1.)
-        #lZ = n[np.newaxis,:] * np.log(a) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a)
-        a = (K-(n[:-K+1]+1)%P)/(K-(n[:-K+1]+1)%P+1) #testing
-        for i in xrange(int(K)-1):
-            a = np.append(a,(K-i)/(K-i+1))
-        lZ = n[np.newaxis,:] * np.log(a[np.newaxis,:]) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a[np.newaxis,:])
+        a = 1. - float(P) / (K + 1.)
+        lZ = n[np.newaxis,:] * np.log(a) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a)
+        #a = (K-(n[:-K+1]+1)%P)/(K-(n[:-K+1]+1)%P+1) #testing
+        #for i in xrange(int(K)-1):
+        #    a = np.append(a,(K-i)/(K-i+1))
+        #lZ = n[np.newaxis,:] * np.log(a[np.newaxis,:]) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a[np.newaxis,:])
 
     # subtract out the smallest value to avoid overflow issues when lZ is exponentiated
     lZmax = np.max(lZ,axis=1) #  maximum lZ for each temperature
@@ -107,12 +108,13 @@ if __name__ == "__main__":
     parser.add_argument("K", type=int, help="number of replicas")
     parser.add_argument("fname", nargs="+", type=str, help="filenames with energies")
     parser.add_argument("-P", type=int, help="number of cores for parallel run", default=1)
+    parser.add_argument("-i", type=int, help="0 for trapezoidal from arithmetic mean,1 for rectangular from geometric mean", default=0)
     parser.add_argument("--ndof", type=int, help="number of degrees of freedom", default=0)
     args = parser.parse_args()
     print args.fname
 
     energies = get_energies(args.fname,block=False)
-
+    print "energies size", np.size(energies)
 #    energies = np.genfromtxt(args.fname)
     
     P = args.P
@@ -120,17 +122,27 @@ if __name__ == "__main__":
     
     Tmin = .01
     Tmax = 0.5
-    nT = 500
+    nT = 100
     dT = (Tmax-Tmin) / nT
-    
     T = np.array([Tmin + dT*i for i in range(nT)])
-    lZ, Cv, U, U2 = compute_Z(energies, T, args.K*len(args.fname), P=P, ndof=args.ndof)
     
-    with open("cv", "w") as fout:
-        fout.write("#T Cv <E> <E**2> logZ\n")
-        for vals in zip(T, Cv, U, U2, lZ):
-            fout.write("%g %g %g %g %g\n" % vals)
+    if args.i is 1:
+        print "rectangular"
+        lZ, Cv, U, U2 = compute_Z(energies, T, args.K*len(args.fname), P=P, ndof=args.ndof)
     
+        with open("cv", "w") as fout:
+            fout.write("#T Cv <E> <E**2> logZ\n")
+            for vals in zip(T, Cv, U, U2, lZ):
+                fout.write("%g %g %g %g %g\n" % vals)
+    else:
+        print "trapezoidal"
+        Cv = compute_cv_c(energies, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof))
+        
+        with open("cv", "w") as fout:
+            fout.write("#T Cv\n")
+            for vals in zip(T, Cv):
+                fout.write("%g %g\n" % vals)
+                
     import matplotlib
     matplotlib.use('PDF')
     import pylab as pl
