@@ -67,6 +67,7 @@ void compute_dos_imp(double* gl, int N, double P, double K)
   //calculate density of states for stored energies
   for(i=1;i<(N-K-1);++i)
     {
+      //printf("Xm %E \n",Xm);
       Xb = Xm;
       Xm = Xf;
       Xf = Xm * X_imp(i+1,K,P);
