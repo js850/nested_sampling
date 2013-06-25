@@ -137,7 +137,7 @@ double heat_capacity(double* El, double* wl, int N, double T, double ndof)
 void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof)
 {
   //Cvl is a 0's array of size N (same size as El)
-  int i;
+  int i,j;
   double dT = (Tmax - Tmin) / nT;
   double T = Tmin;
   double wl_max;
@@ -147,9 +147,11 @@ void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, int N, 
     log_weigths(El, gl, wl, N, T);
     wl_max = max_array(wl,N);
     
-    for(i;i<N;++i)
+    //printf("wl_max %d \n",wl_max);
+    
+    for(j=0;j<N;++j)
       {
-	wl[i] -= wl_max;
+	wl[j] -= wl_max;
       }
     
     Cvl[i] = heat_capacity(El, wl, N, T, ndof);
