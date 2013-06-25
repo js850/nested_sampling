@@ -64,8 +64,9 @@ void compute_dos_imp(double* gl, int N, double P, double K)
   Xb = 2-X_imp(0,K,P); // reflecting boundary condition, this is X0
   Xf = Xm * X_imp(1,K,P); 
   gl[0] = 0.5 * (Xb - Xf);
-  //calculate density of states for stored energies
-  for(i=1;i<(N-K-1);++i)
+  //calculate density of states for stored energies, don't do it because of numerical instability
+  //for(i=1;i<(N-K-1);++i) when using live replica
+  for(i=1;i<(N-1);++i)
     {
       //printf("Xm %E \n",Xm);
       Xb = Xm;
@@ -74,6 +75,7 @@ void compute_dos_imp(double* gl, int N, double P, double K)
       gl[i] = 0.5 * (Xb - Xf);
     }
   //calculate density of states for live replica energies
+  /*
   for(i=(N-K-1);i<(N-1);++i)
     {
       Xb = Xm;
@@ -81,6 +83,7 @@ void compute_dos_imp(double* gl, int N, double P, double K)
       Xf = Xm * (K-i)/(K-i+1);
       gl[i] = 0.5 * (Xb - Xf);
     }
+  */
   Xb = Xm;
   Xm = Xf;
   Xf = -Xm;
@@ -93,6 +96,11 @@ void log_weigths(double* El, double* gl, double* wl, int N, double T)
   double beta = 1/T;
   for(i=0;i<N;++i)
     {
+      if(gl[i]<0)
+	{
+	  printf("gl[%d] is %E \n",i, gl[i]);
+	  abort();
+	}
       wl[i] = log(gl[i]) - beta * El[i];
     }
 }
@@ -113,16 +121,17 @@ double heat_capacity(double* El, double* wl, int N, double T, double ndof)
   //K is the number of replicas, beta the reduced temperature and E is the array of energies 
   int i;
   double Cv;
-  double bolz;
   double Z = 0;
   double U = 0;
   double U2 = 0;
   double beta = 1/T;
-
+  double bolz = 0.;
+  
   for(i=0;i<N;++i)
   {
-    bolz = exp(wl[i]); 
+    bolz = exp(wl[i]);
     Z += bolz;
+    //printf("Z %E \n",Z);
     U += El[i] * bolz;
     U2 += El[i] * El[i] * bolz;
   }
@@ -130,7 +139,7 @@ double heat_capacity(double* El, double* wl, int N, double T, double ndof)
   U /= Z;
   U2 /= Z;
   Cv =  (U2 - U*U)*beta*beta + ndof/2;
-  
+  //printf("Z U U2 Cv %E %E %E %E \n",Z,U,U2,Cv);
   return Cv;
 }
 

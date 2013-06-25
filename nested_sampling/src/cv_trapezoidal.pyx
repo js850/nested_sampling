@@ -35,7 +35,11 @@ def compute_cv_c(np.ndarray[double, ndim=1, mode="c"] E_list,
     else:
         compute_dos_imp(<double*>dos_list.data, N, P, K)
     
+    print "dos list",dos_list
+    
     heat_capacity_loop(<double*>E_list.data,<double*>dos_list.data,<double*>logw_list.data,<double*>cv_list.data, N, Tmin, Tmax, nT, ndof)
+    
+    print "logw list",logw_list
     
     return cv_list
 

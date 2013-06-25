@@ -58,11 +58,22 @@ def compute_Z(energies, T, K, P=1, ndof=0, imp=1):
             a = 1. - float(P) / (K + 1.)
             lZ = n[np.newaxis,:] * np.log(a) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a)
         else:
-            a = (K-(n[:-K+1]+1)%P)/(K-(n[:-K+1]+1)%P+1)
-            for i in xrange(int(K)-1):
-                a = np.append(a,(K-i)/(K-i+1))
-            lZ = n[np.newaxis,:] * np.log(a[np.newaxis,:]) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a[np.newaxis,:])
-
+            #this code commented out is wrong but works!!! find out why
+            #a = (K-(n[:-K+1]+1)%P)/(K-(n[:-K+1]+1)%P+1)
+            #for i in xrange(int(K)-1):
+            #    a = np.append(a,(K-i)/(K-i+1))
+            #lZ = n[np.newaxis,:] * np.log(a[np.newaxis,:]) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a[np.newaxis,:])
+            n = np.array(xrange(1,len(E)+1), np.float)
+            a = np.floor(n[:]/P) * np.log(1. - float(P) / (K + 1.))
+            b = (K - (n[:]%P))/K
+            c = (K-(n[:]+2)%P)/(K-(n[:]+2)%P+1)
+            #this is whhat to do if menage to avoid underflow of log(dos) for the live replica energy
+            #for i in xrange(int(K)-1):
+            #    a = np.append( a , np.log(a[-1]*(K-i)/(K-i+1)) )
+            #    b = np.append(b,1)
+            #    c = np.append(c, (K-i+1)/(K-i+2))
+            lZ =  a[np.newaxis,:] + np.log(b[np.newaxis,:]) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - c[np.newaxis,:])
+            
     # subtract out the smallest value to avoid overflow issues when lZ is exponentiated
     lZmax = np.max(lZ,axis=1) #  maximum lZ for each temperature
     lZ -= lZmax[:,np.newaxis]
@@ -131,6 +142,10 @@ if __name__ == "__main__":
     nT = args.nT
     dT = (Tmax-Tmin) / nT
     T = np.array([Tmin + dT*i for i in range(nT)])
+    
+    #in the improved brkf we save the energies of the replicas at the live replica but the ln(dos) underflows for these, hence this:
+    if args.imp == 1:
+            energies = energies[:-args.K] 
     
     if args.rect is 1:
         print "rectangular"

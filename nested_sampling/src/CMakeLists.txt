@@ -13,7 +13,7 @@ include_directories(${PYTHON_INCLUDE_PATH})
 
 enable_language(C)
 enable_language(Fortran)
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
 
 add_library(runmc SHARED runmc.c mc.c lj.c ${PYTHON_LIBS})
 target_link_libraries(runmc -L/usr/lib -lgsl -lgslcblas -lm)
