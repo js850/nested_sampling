@@ -132,7 +132,7 @@ if __name__ == "__main__":
     dT = (Tmax-Tmin) / nT
     T = np.array([Tmin + dT*i for i in range(nT)])
     
-    if args.i is 1:
+    if args.rect is 1:
         print "rectangular"
         lZ, Cv, U, U2 = compute_Z(energies, T, args.K*len(args.fname), P=P, ndof=args.ndof)
     
