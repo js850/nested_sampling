@@ -1,11 +1,28 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <float.h>
+double max_array(double* a, int N);
 double X_imp(int i, double K, double P);
 void compute_dos(double* gl, int N, double P, double K);
 void renorm_energies(double* El, int N, double Emin);
+void log_weigths(double* El, double* gl, double* wl, int N, double T);
 double heat_capacity(double* El, double* gl, int N, double T, double ndof);
-void heat_capacity_loop(double* El, double* gl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof);
+void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof);
+
+double max_array(double* a, int N)
+{
+  int i;
+  double max=-DBL_MAX;
+  for (i=0; i<N; ++i)
+    {
+      if (a[i]>max)
+	{
+	  max=a[i];
+	}
+    }
+  return max;
+}
 
 double X_imp(int i, double K, double P)
 {
@@ -69,6 +86,16 @@ void compute_dos_imp(double* gl, int N, double P, double K)
   gl[N-1] =  0.5 * (Xb - Xf);  
 }
 
+void log_weigths(double* El, double* gl, double* wl, int N, double T)
+{
+  int i;
+  double beta = 1/T;
+  for(i=0;i<N;++i)
+    {
+      wl[i] = log(gl[i]) - beta * El[i];
+    }
+}
+
 ////////////renormalise energies wrt ground state/////////////////
 void renorm_energies(double* El, int N, double Emin)
 {
@@ -80,7 +107,7 @@ void renorm_energies(double* El, int N, double Emin)
 }
 
 ////////////////////////////caclulate heat capacity for a single T////////////////////////
-double heat_capacity(double* El, double* gl, int N, double T, double ndof)
+double heat_capacity(double* El, double* wl, int N, double T, double ndof)
 {
   //K is the number of replicas, beta the reduced temperature and E is the array of energies 
   int i;
@@ -93,12 +120,12 @@ double heat_capacity(double* El, double* gl, int N, double T, double ndof)
 
   for(i=0;i<N;++i)
   {
-    bolz = gl[i]*exp(-beta*El[i]); 
-    Z += bolz; 
+    bolz = exp(wl[i]); 
+    Z += bolz;
     U += El[i] * bolz;
     U2 += El[i] * El[i] * bolz;
   }
-  
+
   U /= Z;
   U2 /= Z;
   Cv =  (U2 - U*U)*beta*beta + ndof/2;
@@ -107,16 +134,25 @@ double heat_capacity(double* El, double* gl, int N, double T, double ndof)
 }
 
 //////////////////////////////calculate heat capacity over a set of Ts/////////////////////
-void heat_capacity_loop(double* El, double* gl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof)
+void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof)
 {
   //Cvl is a 0's array of size N (same size as El)
   int i;
   double dT = (Tmax - Tmin) / nT;
   double T = Tmin;
+  double wl_max;
   
   for(i=0;i<nT;++i)
   {
-    Cvl[i] = heat_capacity(El, gl, N, T, ndof);
+    log_weigths(El, gl, wl, N, T);
+    wl_max = max_array(wl,N);
+    
+    for(i;i<N;++i)
+      {
+	wl[i] -= wl_max;
+      }
+    
+    Cvl[i] = heat_capacity(El, wl, N, T, ndof);
     T += dT;
   }
 }
