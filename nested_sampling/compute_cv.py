@@ -54,12 +54,12 @@ def compute_Z(energies, T, K, P=1, ndof=0):
 #        lZ = (-(n[np.newaxis,:]+1) / K - beta[:,np.newaxis] * E[np.newaxis,:])  - np.log((1.+2*K)/K**2)
 #        lZ = (- beta[:,np.newaxis] * E[np.newaxis,:])  - np.log((1.+2*K)/K**2) + (n[np.newaxis,:]+1) * np.log(K/(K+1))
     else:
-        a = 1. - float(P) / (K + 1.)
-        lZ = n[np.newaxis,:] * np.log(a) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a)
-        #a = (K-(n[:-K+1]+1)%P)/(K-(n[:-K+1]+1)%P+1) #testing
-        #for i in xrange(int(K)-1):
-        #    a = np.append(a,(K-i)/(K-i+1))
-        #lZ = n[np.newaxis,:] * np.log(a[np.newaxis,:]) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a[np.newaxis,:])
+        #a = 1. - float(P) / (K + 1.)
+        #lZ = n[np.newaxis,:] * np.log(a) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a)
+        a = (K-(n[:-K+1]+1)%P)/(K-(n[:-K+1]+1)%P+1) #testing
+        for i in xrange(int(K)-1):
+            a = np.append(a,(K-i)/(K-i+1))
+        lZ = n[np.newaxis,:] * np.log(a[np.newaxis,:]) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - a[np.newaxis,:])
 
     # subtract out the smallest value to avoid overflow issues when lZ is exponentiated
     lZmax = np.max(lZ,axis=1) #  maximum lZ for each temperature
@@ -109,7 +109,11 @@ if __name__ == "__main__":
     parser.add_argument("fname", nargs="+", type=str, help="filenames with energies")
     parser.add_argument("-P", type=int, help="number of cores for parallel run", default=1)
     parser.add_argument("-i", type=int, help="0 for trapezoidal from arithmetic mean,1 for rectangular from geometric mean", default=0)
+    parser.add_argument("--Tmin", type=float,help="set minimum temperature for Cv evaluation (default=0.01)",default=0.01)
+    parser.add_argument("--Tmax", type=float,help="set maximum temperature for Cv evaluation (default=0.5)",default=0.5)
+    parser.add_argument("--nT", type=int,help="set number of temperature in the interval Tmin-Tmax at which Cv is evaluated (default=500)",default=500)
     parser.add_argument("--ndof", type=int, help="number of degrees of freedom", default=0)
+    parser.add_argument("--imp", type=int, help="define whether to use improved Burkoff (use all energies and live replica energies (default=1), otherwise set to 0)", default=1)
     args = parser.parse_args()
     print args.fname
 
@@ -120,9 +124,9 @@ if __name__ == "__main__":
     P = args.P
     print "parallel nprocessors", P
     
-    Tmin = .01
-    Tmax = 0.5
-    nT = 100
+    Tmin = args.Tmin
+    Tmax = args.Tmax
+    nT = args.nT
     dT = (Tmax-Tmin) / nT
     T = np.array([Tmin + dT*i for i in range(nT)])
     
@@ -136,7 +140,7 @@ if __name__ == "__main__":
                 fout.write("%g %g %g %g %g\n" % vals)
     else:
         print "trapezoidal"
-        Cv = compute_cv_c(energies, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof))
+        Cv = compute_cv_c(energies, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof), args.imp)
         
         with open("cv", "w") as fout:
             fout.write("#T Cv\n")
@@ -146,7 +150,7 @@ if __name__ == "__main__":
     import matplotlib
     matplotlib.use('PDF')
     import pylab as pl
-    pl.plot(T, Cv, 'o-')
+    pl.plot(T, Cv)
     pl.xlabel("T")
     pl.ylabel("Cv")
     pl.savefig("cv.pdf")

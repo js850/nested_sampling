@@ -1,10 +1,18 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+double X_imp(int i, double K, double P);
 void compute_dos(double* gl, int N, double P, double K);
 void renorm_energies(double* El, int N, double Emin);
 double heat_capacity(double* El, double* gl, int N, double T, double ndof);
 void heat_capacity_loop(double* El, double* gl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof);
+
+double X_imp(int i, double K, double P)
+{
+  double X;
+  X = (K - ((i+1)%(int)P) )/( K - ((i+1)%(int)P) + 1);
+  return X;
+}
 
 void compute_dos(double* gl, int N, double P, double K)
 {
@@ -17,12 +25,44 @@ void compute_dos(double* gl, int N, double P, double K)
   Xf = Xm * X; 
   gl[0] = 0.5 * (Xb - Xf);
   for(i=1;i<(N-1);++i)
-  {
-    Xb = Xm;
-    Xm = Xf;
-    Xf = Xm * X;
-    gl[i] = 0.5 * (Xb - Xf);
-  }
+    {
+      Xb = Xm;
+      Xm = Xf;
+      Xf = Xm * X;
+      gl[i] = 0.5 * (Xb - Xf);
+    }
+  Xb = Xm;
+  Xm = Xf;
+  Xf = -Xm;
+  gl[N-1] =  0.5 * (Xb - Xf);  
+}
+
+void compute_dos_imp(double* gl, int N, double P, double K)
+{
+  // gl is an array of 0's of size N, K is the number of replicas
+  int i;
+  double X;
+  double Xm = X_imp(0,K,P); //this is X1
+  double Xf, Xb;
+  Xb = 2-X_imp(0,K,P); // reflecting boundary condition, this is X0
+  Xf = Xm * X_imp(1,K,P); 
+  gl[0] = 0.5 * (Xb - Xf);
+  //calculate density of states for stored energies
+  for(i=1;i<(N-K-1);++i)
+    {
+      Xb = Xm;
+      Xm = Xf;
+      Xf = Xm * X_imp(i+1,K,P);
+      gl[i] = 0.5 * (Xb - Xf);
+    }
+  //calculate density of states for live replica energies
+  for(i=(N-K-1);i<(N-1);++i)
+    {
+      Xb = Xm;
+      Xm = Xf;
+      Xf = Xm * (K-i)/(K-i+1);
+      gl[i] = 0.5 * (Xb - Xf);
+    }
   Xb = Xm;
   Xm = Xf;
   Xf = -Xm;
