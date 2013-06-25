@@ -151,9 +151,9 @@ if __name__ == "__main__":
     parser.add_argument("--Tmin", type=float,help="set minimum temperature for Cv evaluation (default=0.01)",default=0.01)
     parser.add_argument("--Tmax", type=float,help="set maximum temperature for Cv evaluation (default=0.5)",default=0.5)
     parser.add_argument("--nT", type=int,help="set number of temperature in the interval Tmin-Tmax at which Cv is evaluated (default=500)",default=500)
-    parser.add_argument("--ndof", type=int, help="number of degrees of freedom", default=0)
+    parser.add_argument("--ndof", type=int, help="number of degrees of freedom (default=0)", default=0)
     parser.add_argument("--imp", type=int, help="define whether to use improved Burkoff (use all energies and live replica energies (default=1), otherwise set to 0)", default=1)
-    parser.add_argument("--rect", type=int, help="0 for trapezoidal from arithmetic mean,1 for rectangular from geometric mean", default=0)
+    parser.add_argument("--rect", type=int, help="0 for trapezoidal from arithmetic mean (default=0),1 for rectangular from geometric mean", default=0)
     parser.add_argument("--B", type=int, help="randomise energies (set 0) or keep data as they are in blocks (set 1)," 
                                                 "by default is randomised for a single set of data,"
                                                 "while multiple sets are used as they are", default=2)

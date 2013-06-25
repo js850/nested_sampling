@@ -28,7 +28,7 @@ def compute_cv_c(np.ndarray[double, ndim=1, mode="c"] E_list,
         
     renorm_energies(<double*>E_list.data, N, Emin)
     
-    if (P == 1) or (imp == 0): 
+    if imp == 0:
         compute_dos(<double*>dos_list.data, N, P, K)
     else:
         compute_dos_imp(<double*>dos_list.data, N, P, K)
