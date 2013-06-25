@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 double X_imp(int i, double K, double P);
-void compute_dos(double* gl, int N, double P, double K);
-void renorm_energies(double* El, int N, double Emin);
-double heat_capacity(double* El, double* gl, int N, double T, double ndof);
-void heat_capacity_loop(double* El, double* gl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof);
+void compute_dos(long double* gl, int N, double P, double K);
+void renorm_energies(long double* El, int N, long double Emin);
+double heat_capacity(long double* El, long double* gl, int N, double T, double ndof);
+void heat_capacity_loop(long double* El, long double* gl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof);
 
 double X_imp(int i, double K, double P)
 {
@@ -14,13 +14,13 @@ double X_imp(int i, double K, double P)
   return X;
 }
 
-void compute_dos(double* gl, int N, double P, double K)
+void compute_dos(long double* gl, int N, double P, double K)
 {
   // gl is an array of 0's of size N, K is the number of replicas
   int i;
-  double X = 1 - P/(K+1);
-  double Xm = X; //this is X1
-  double Xf, Xb;
+  long double X = 1 - P/(K+1);
+  long double Xm = X; //this is X1
+  long double Xf, Xb;
   Xb = 2-X; // reflecting boundary condition, this is X0
   Xf = Xm * X; 
   gl[0] = 0.5 * (Xb - Xf);
@@ -37,13 +37,13 @@ void compute_dos(double* gl, int N, double P, double K)
   gl[N-1] =  0.5 * (Xb - Xf);  
 }
 
-void compute_dos_imp(double* gl, int N, double P, double K)
+void compute_dos_imp(long double* gl, int N, double P, double K)
 {
   // gl is an array of 0's of size N, K is the number of replicas
   int i;
-  double X;
-  double Xm = X_imp(0,K,P); //this is X1
-  double Xf, Xb;
+  long double X;
+  long double Xm = X_imp(0,K,P); //this is X1
+  long double Xf, Xb;
   Xb = 2-X_imp(0,K,P); // reflecting boundary condition, this is X0
   Xf = Xm * X_imp(1,K,P); 
   gl[0] = 0.5 * (Xb - Xf);
@@ -70,7 +70,7 @@ void compute_dos_imp(double* gl, int N, double P, double K)
 }
 
 ////////////renormalise energies wrt ground state/////////////////
-void renorm_energies(double* El, int N, double Emin)
+void renorm_energies(long double* El, int N, long double Emin)
 {
   int i;
   for(i=0;i<N;++i)
@@ -80,15 +80,16 @@ void renorm_energies(double* El, int N, double Emin)
 }
 
 ////////////////////////////caclulate heat capacity for a single T////////////////////////
-double heat_capacity(double* El, double* gl, int N, double T, double ndof)
+double heat_capacity(long double* El, long double* gl, int N, double T, double ndof)
 {
   //K is the number of replicas, beta the reduced temperature and E is the array of energies 
   int i;
-  double bolz,Cv;
-  double Z = 0;
-  double U = 0;
-  double U2 = 0;
-  double beta = 1/T;
+  double Cv;
+  long double bolz;
+  long double Z = 0;
+  long double U = 0;
+  long double U2 = 0;
+  long double beta = 1/T;
 
   for(i=0;i<N;++i)
   {
@@ -106,7 +107,7 @@ double heat_capacity(double* El, double* gl, int N, double T, double ndof)
 }
 
 //////////////////////////////calculate heat capacity over a set of Ts/////////////////////
-void heat_capacity_loop(double* El, double* gl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof)
+void heat_capacity_loop(long double* El, long double* gl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof)
 {
   //Cvl is a 0's array of size N (same size as El)
   int i;
