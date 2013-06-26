@@ -8,7 +8,7 @@ from itertools import chain
 
 class Jackknife_CV(object):
     
-    def __init__(self, energies, nsubsets, K, Tmin, Tmax, nT, P, ndof, block, rect, imp):
+    def __init__(self, energies, nsubsets, K, Tmin, Tmax, nT, P, ndof, block, rect, imp, live):
         self.E = np.array(energies)
         self.n = np.floor(float(K)/float(nsubsets))
         self.K = K
@@ -23,6 +23,7 @@ class Jackknife_CV(object):
         self.block = block
         self.rect = rect
         self.imp = imp
+        self.live = live
     
     def __call__(self):
         print 'Splitting energies...'
@@ -91,10 +92,10 @@ class Jackknife_CV(object):
         CvJack = np.zeros((self.nsubsets,self.T.size))
         if self.rect is 1:
             for i in xrange(self.nsubsets):
-                CvJack[i][:] = compute_Z(np.array(EJack[i][:]), self.T, (self.K - self.n), P=self.P, ndof=self.ndof, imp=self.imp)[1]
+                CvJack[i][:] = compute_Z(np.array(EJack[i][:]), self.T, (self.K - self.n), P=self.P, ndof=self.ndof, imp=self.imp, live=self.live)[1]
         else:
             for i in xrange(self.nsubsets):
-                CvJack[i][:] = compute_cv_c(np.array(EJack[i][:]), float(P), (self.K - self.n), float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.imp)
+                CvJack[i][:] = compute_cv_c(np.array(EJack[i][:]), float(P), (self.K - self.n), float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.imp, self.live)
         #print 'CvJack ',CvJack
         return np.array(CvJack)
     
@@ -105,10 +106,10 @@ class Jackknife_CV(object):
         CvSingle = np.zeros((self.nsubsets,self.T.size))
         if self.rect is 1:
             for i in xrange(self.nsubsets):
-                CvSingle[i][:] = compute_Z(np.array(Esplit[i][:]), self.T, (self.n), P=self.P, ndof=self.ndof, imp=self.imp)[1]
+                CvSingle[i][:] = compute_Z(np.array(Esplit[i][:]), self.T, (self.n), P=self.P, ndof=self.ndof, imp=self.imp, live=self.live)[1]
         else:
             for i in xrange(self.nsubsets):
-                CvSingle[i][:] = compute_cv_c(np.array(Esplit[i][:]), float(P), (self.n), float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.imp)
+                CvSingle[i][:] = compute_cv_c(np.array(Esplit[i][:]), float(P), (self.n), float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.imp, self.live)
         #print 'CvSingle ',CvSingle
         return np.array(CvSingle)
     
@@ -132,19 +133,20 @@ class Jackknife_CV(object):
         sigma = np.sqrt(self.nsubsets-1)*np.sqrt(sigmasquare_jack) 
         return sigma
             
-def run_jackknife(energies, nsubsets, K, Tmin, Tmax, nT, P, ndof, block, rect, imp):
+def run_jackknife(energies, nsubsets, K, Tmin, Tmax, nT, P, ndof, block, rect, imp, live):
     """
     returns the stdev calculated by jackknifing
     """
-    Cv_sigma = Jackknife_CV(energies, nsubsets, K, Tmin, Tmax, nT, P, ndof, block, rect, imp)
+    Cv_sigma = Jackknife_CV(energies, nsubsets, K, Tmin, Tmax, nT, P, ndof, block, rect, imp, live)
     return Cv_sigma()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load energy intervals and compute Cv stdev", 
-                                     epilog="if more than one file name is given the energies from all runs will be combined and sorted."
-                                     "  the number of replicas will be the sum of the replicas used from all runs (automated!!!"
+                                     epilog="if more than one file name is given and Nsubs is same as the number of inputs, the energies from all runs will be kept as they are by default"
+                                     " (if want to combine and sort them at random add --B 0)."
+                                     "  The number of replicas will be the sum of the replicas used from all runs (automated!!!"
                                         "does not support sets with different number of replicas yet)")
-    parser.add_argument("K", type=int, help="number of replicas")
+    parser.add_argument("K", type=int, help="number of replicas for each single run (they all must be equal in the present implementation)")
     parser.add_argument("N", type=int, help="number of subsets for jackknifing")
     parser.add_argument("fname", nargs="+", type=str, help="filenames with energies")
     parser.add_argument("-P", type=int, help="number of cores for parallel run", default=1)
@@ -154,22 +156,41 @@ if __name__ == "__main__":
     parser.add_argument("--ndof", type=int, help="number of degrees of freedom (default=0)", default=0)
     parser.add_argument("--imp", type=int, help="define whether to use improved Burkoff (use all energies and live replica energies (default=1), otherwise set to 0)", default=1)
     parser.add_argument("--rect", type=int, help="0 for trapezoidal from arithmetic mean (default=0),1 for rectangular from geometric mean", default=0)
+    parser.add_argument("--live", action="store_true", help="use live replica energies (default=False), numerically unstable for K>2.5k.",default=False)
+    parser.add_argument("--live_not_stored", action="store_true", help="turn this flag on if you're using a set of data that does not contain the live replica.",default=False)
     parser.add_argument("--B", type=int, help="randomise energies (set 0) or keep data as they are in blocks (set 1)," 
                                                 "by default is randomised for a single set of data,"
                                                 "while multiple sets are used as they are", default=2)
     args = parser.parse_args()
     print args.fname
-
+    P = args.P
+    
+    ####################################################################################################
+    #deal with input
     #by default define automatically weather to split things in block or not
     if args.B is 2:
-        if len(args.fname) > 1:
+        if (len(args.fname) > 1) and (args.N == len(args.fname)):
             args.B = 1
         else:
             args.B = 0
 
-    energies_Cv = get_energies(args.fname,False) #provide the sorted flatten list of energies to calculate the unbiased estimate for the Cv
-    energies = get_energies(args.fname,args.B)
-    P = args.P
+    energies = get_energies(args.fname,1) #always copy in blocks, then depending on B flatten or not
+            
+    #in the improved brkf we save the energies of the replicas at the live replica but the ln(dos) underflows for these, hence this:
+    if args.live_not_stored == False:
+        for i in xrange(len(args.fname)):
+                energies[i] = energies[i][:-args.K]
+    else:
+        assert args.live == False,"cannot use live replica under any circumstances if they have not been saved" 
+    
+    energies_Cv =  [l for l in chain.from_iterable(energies)] #provide the sorted flatten list of energies to calculate the unbiased estimate for the Cv
+    energies_Cv = np.sort(energies_Cv)[::-1]
+    energies_Cv = np.array(energies_Cv)
+    
+    if args.B is 0:
+        energies = energies_Cv #if want to rearrange energies randomly flatten energies
+    ##########################################################################################################
+     
     print "parallel nprocessors", P
     
     Tmin = args.Tmin
@@ -180,12 +201,12 @@ if __name__ == "__main__":
     
     if args.rect is 1:
         print "rectangular"
-        Cv = compute_Z(energies_Cv, T, args.K*len(args.fname), P=P, ndof=args.ndof, imp=args.imp)[1]
+        Cv = compute_Z(energies_Cv, T, args.K*len(args.fname), P=P, ndof=args.ndof, imp=args.imp, live=args.live)[1]
     else:
         print "trapezoidal"
-        Cv = compute_cv_c(energies_Cv, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof), args.imp)
+        Cv = compute_cv_c(energies_Cv, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof), args.imp, args.live)
     
-    Cv_stdev, Cv_singles = run_jackknife(energies, args.N, args.K*len(args.fname), Tmin, Tmax, nT, P, args.ndof, args.B, args.rect, args.imp)
+    Cv_stdev, Cv_singles = run_jackknife(energies, args.N, (args.K*len(args.fname)), Tmin, Tmax, nT, P, args.ndof, args.B, args.rect, args.imp, args.live)
     
     with open('cv_std_K{K}_Nsub{N}_d{ndof}_B{B}.dat'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B), "w") as fout:
         fout.write("#T Cv stdev\n")
@@ -211,7 +232,7 @@ if __name__ == "__main__":
     ax.set_xlabel("T")
     ax.set_ylabel("Cv")
     ax = ax1
-    ax.set_xlim([0,0.1])
+    ax.set_xlim([0,0.5])
     ax.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None)
     ax.set_xlabel("T")
     ax.set_ylabel("Cv")
@@ -232,7 +253,7 @@ if __name__ == "__main__":
     ax.set_xlabel("T")
     ax.set_ylabel("Cv")
     ax = ax1
-    ax.set_xlim([0,0.1])
+    ax.set_xlim([0,0.5])
     ax.errorbar(T, Cv, yerr=Cv_stdev,ecolor='g', capsize=None )
     for i in xrange(args.N):
         ax.plot(T, Cv_singles[i],'k')
