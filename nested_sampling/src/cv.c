@@ -4,7 +4,8 @@
 #include <float.h>
 double max_array(double* a, int N);
 double X_imp(int i, double K, double P);
-void compute_dos(double* gl, int N, double P, double K);
+void compute_dos(double* gl, int N, double P, double K, int live);
+void compute_dos_imp(double* gl, int N, double P, double K, int live);
 void renorm_energies(double* El, int N, double Emin);
 void log_weigths(double* El, double* gl, double* wl, int N, double T);
 double heat_capacity(double* El, double* gl, int N, double T, double ndof);
@@ -31,22 +32,41 @@ double X_imp(int i, double K, double P)
   return X;
 }
 
-void compute_dos(double* gl, int N, double P, double K)
+void compute_dos(double* gl, int N, double P, double K, int live)
 {
   // gl is an array of 0's of size N, K is the number of replicas
-  int i;
+  int i,lim;
   double X = 1 - P/(K+1);
   double Xm = X; //this is X1
   double Xf, Xb;
   Xb = 2-X; // reflecting boundary condition, this is X0
   Xf = Xm * X; 
   gl[0] = 0.5 * (Xb - Xf);
-  for(i=1;i<(N-1);++i)
+  if (live == 1)
+    {
+      lim = (N-K-1);
+    }
+  else
+    {
+      lim = (N-1);
+    }
+  for(i=1;i<lim;++i)
     {
       Xb = Xm;
       Xm = Xf;
       Xf = Xm * X;
       gl[i] = 0.5 * (Xb - Xf);
+    }
+  //calculate density of states for live replica energies (if flag is on)
+  if (live == 1)
+    {
+      for(i=live;i<(N-1);++i)
+	{
+	  Xb = Xm;
+	  Xm = Xf;
+	  Xf = Xm * (K-i)/(K-i+1);
+	  gl[i] = 0.5 * (Xb - Xf);
+	}
     }
   Xb = Xm;
   Xm = Xf;
@@ -54,10 +74,10 @@ void compute_dos(double* gl, int N, double P, double K)
   gl[N-1] =  0.5 * (Xb - Xf);  
 }
 
-void compute_dos_imp(double* gl, int N, double P, double K)
+void compute_dos_imp(double* gl, int N, double P, double K, int live)
 {
   // gl is an array of 0's of size N, K is the number of replicas
-  int i;
+  int i,lim;
   double X;
   double Xm = X_imp(0,K,P); //this is X1
   double Xf, Xb;
@@ -66,7 +86,15 @@ void compute_dos_imp(double* gl, int N, double P, double K)
   gl[0] = 0.5 * (Xb - Xf);
   //calculate density of states for stored energies, don't do it because of numerical instability
   //for(i=1;i<(N-K-1);++i) when using live replica
-  for(i=1;i<(N-1);++i)
+  if (live == 1)
+    {
+      lim = (N-K-1);
+    }
+  else
+    {
+      lim = (N-1);
+    }
+  for(i=1;i<lim;++i)
     {
       //printf("Xm %E \n",Xm);
       Xb = Xm;
@@ -74,16 +102,17 @@ void compute_dos_imp(double* gl, int N, double P, double K)
       Xf = Xm * X_imp(i+1,K,P);
       gl[i] = 0.5 * (Xb - Xf);
     }
-  //calculate density of states for live replica energies
-  /*
-  for(i=(N-K-1);i<(N-1);++i)
+  //calculate density of states for live replica energies (if flag is on)
+  if (live == 1)
     {
-      Xb = Xm;
-      Xm = Xf;
-      Xf = Xm * (K-i)/(K-i+1);
-      gl[i] = 0.5 * (Xb - Xf);
+      for(i=live;i<(N-1);++i)
+	{
+	  Xb = Xm;
+	  Xm = Xf;
+	  Xf = Xm * (K-i)/(K-i+1);
+	  gl[i] = 0.5 * (Xb - Xf);
+	}
     }
-  */
   Xb = Xm;
   Xm = Xf;
   Xf = -Xm;

@@ -1,12 +1,13 @@
+from cpython cimport bool
 import sys
 import numpy as np
 cimport numpy as np
 
 cdef extern:
-    void compute_dos(double* gl, int N, double P, double K)
+    void compute_dos(double* gl, int N, double P, double K, int live)
 
 cdef extern:
-    void compute_dos_imp(double* gl, int N, double P, double K)
+    void compute_dos_imp(double* gl, int N, double P, double K, int live)
 
 cdef extern:
     void renorm_energies(double* El, int N, double Emin)
@@ -16,7 +17,7 @@ cdef extern:
     
 def compute_cv_c(np.ndarray[double, ndim=1, mode="c"] E_list,
                  double P, double K, double Tmin, double Tmax,
-                 int nT, double ndof, int imp):
+                 int nT, double ndof, int imp, bool live):
     cdef double Emin
     cdef int N
     cdef np.ndarray[double, ndim=1, mode="c"] dos_list
@@ -31,9 +32,9 @@ def compute_cv_c(np.ndarray[double, ndim=1, mode="c"] E_list,
     #renorm_energies(<double*>E_list.data, N, Emin)
     
     if imp == 0:
-        compute_dos(<double*>dos_list.data, N, P, K)
+        compute_dos(<double*>dos_list.data, N, P, K, <bint>live)
     else:
-        compute_dos_imp(<double*>dos_list.data, N, P, K)
+        compute_dos_imp(<double*>dos_list.data, N, P, K, <bint>live)
     
     print "dos list",dos_list
     
@@ -42,22 +43,3 @@ def compute_cv_c(np.ndarray[double, ndim=1, mode="c"] E_list,
     print "logw list",logw_list
     
     return cv_list
-
-#cdef extern:
-#    double heat_capacity(double* El, double* wl, int N, double T, double ndof)
-    
-#def compute_cv_c_single(np.ndarray[double, ndim=1, mode="c"] E_list, 
-#                      double K, double P, double T, double ndof, int imp):
-#    cdef double Emin
-#    cdef int N
-#    cdef np.ndarray[double, ndim=1, mode="c"] dos_list
-#    Emin = E_list[-1]
-#    N = np.size(E_list)
-#    dos_list = np.zeros(N)
-#    
-#    renorm_energies(<double*>E_list.data, N, Emin)
-#    if (P == 1) or (imp == 0): 
-#        compute_dos(<double*>dos_list.data, N, P, K)
-#    else:
-#        compute_dos_imp(<double*>dos_list.data, N, P, K)
-#    return heat_capacity(<double*>E_list.data,<double*>dos_list.data, N, T, ndof)

@@ -4,7 +4,7 @@ import numpy as np
 import copy
 from src.cv_trapezoidal import  compute_cv_c
 
-def compute_Z(energies, T, K, P=1, ndof=0, imp=1):
+def compute_Z(energies, T, K, P=1, ndof=0, imp=1, live=False):
     """
     compute the heat capacity and other quantities from nested sampling history
     
@@ -67,11 +67,12 @@ def compute_Z(energies, T, K, P=1, ndof=0, imp=1):
             a = np.floor(n[:]/P) * np.log(1. - float(P) / (K + 1.))
             b = (K - (n[:]%P))/K
             c = (K-(n[:]+2)%P)/(K-(n[:]+2)%P+1)
-            #this is whhat to do if menage to avoid underflow of log(dos) for the live replica energy
-            #for i in xrange(int(K)-1):
-            #    a = np.append( a , np.log(a[-1]*(K-i)/(K-i+1)) )
-            #    b = np.append(b,1)
-            #    c = np.append(c, (K-i+1)/(K-i+2))
+            #this is what to do if manage to avoid underflow of log(dos) for the live replica energy
+            if live is True:
+                for i in xrange(int(K)-1):
+                    a = np.append( a , np.log(a[-1]*(K-i)/(K-i+1)) )
+                    b = np.append(b,1)
+                    c = np.append(c, (K-i+1)/(K-i+2))
             lZ =  a[np.newaxis,:] + np.log(b[np.newaxis,:]) + (-beta[:,np.newaxis] * E[np.newaxis,:]) + np.log(1 - c[np.newaxis,:])
             
     # subtract out the smallest value to avoid overflow issues when lZ is exponentiated
@@ -126,7 +127,9 @@ if __name__ == "__main__":
     parser.add_argument("--nT", type=int,help="set number of temperature in the interval Tmin-Tmax at which Cv is evaluated (default=500)",default=500)
     parser.add_argument("--ndof", type=int, help="number of degrees of freedom (default=0)", default=0)
     parser.add_argument("--imp", type=int, help="define whether to use improved Burkoff (use all energies and live replica energies (default=1), otherwise set to 0)", default=1)
-    parser.add_argument("--rect", type=int, help="0 for trapezoidal from arithmetic mean (default=0),1 for rectangular from geometric mean", default=0)
+    parser.add_argument("--rect", type=int, help="0 for trapezoidal from arithmetic mean (default=0),1 for rectangular from geometric mean (arithmetic if using improved brkf but from python code)", default=0)
+    parser.add_argument("--live", action="store_true", help="use live replica energies (default=False), numerically unstable for K>2.5k.",default=False)
+    parser.add_argument("--live_not_stored", action="store_true", help="turn this flag on if you're using a set of data that does not contain the live replica.",default=False)
     args = parser.parse_args()
     print args.fname
 
@@ -144,12 +147,14 @@ if __name__ == "__main__":
     T = np.array([Tmin + dT*i for i in range(nT)])
     
     #in the improved brkf we save the energies of the replicas at the live replica but the ln(dos) underflows for these, hence this:
-    if args.imp == 1:
-            energies = energies[:-args.K] 
+    if args.live_not_stored == False:
+            energies = energies[:-args.K]
+    else:
+        assert args.live == False,"cannot use live replica under any circumstances if they have not been saved" 
     
     if args.rect is 1:
         print "rectangular"
-        lZ, Cv, U, U2 = compute_Z(energies, T, args.K*len(args.fname), P=P, ndof=args.ndof)
+        lZ, Cv, U, U2 = compute_Z(energies, T, args.K*len(args.fname), P=P, ndof=args.ndof, live=args.live)
     
         with open("cv", "w") as fout:
             fout.write("#T Cv <E> <E**2> logZ\n")
@@ -157,7 +162,7 @@ if __name__ == "__main__":
                 fout.write("%g %g %g %g %g\n" % vals)
     else:
         print "trapezoidal"
-        Cv = compute_cv_c(energies, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof), args.imp)
+        Cv = compute_cv_c(energies, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof), args.imp, args.live)
         
         with open("cv", "w") as fout:
             fout.write("#T Cv\n")
