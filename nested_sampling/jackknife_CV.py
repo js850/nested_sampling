@@ -178,17 +178,21 @@ if __name__ == "__main__":
             
     #in the improved brkf we save the energies of the replicas at the live replica but the ln(dos) underflows for these, hence this:
     if args.live_not_stored == False:
-        for i in xrange(len(args.fname)):
-                energies[i] = energies[i][:-args.K]
+        if len(args.fname) > 1:
+            for i in xrange(len(args.fname)):
+                    energies[i] = energies[i][:-args.K]
+        else:
+            energies = energies[:-args.K]
     else:
         assert args.live == False,"cannot use live replica under any circumstances if they have not been saved" 
     
-    energies_Cv =  [l for l in chain.from_iterable(energies)] #provide the sorted flatten list of energies to calculate the unbiased estimate for the Cv
-    energies_Cv = np.sort(energies_Cv)[::-1]
-    energies_Cv = np.array(energies_Cv)
-    
-    if args.B is 0:
-        energies = energies_Cv #if want to rearrange energies randomly flatten energies
+    if len(args.fname) > 1:
+        energies_Cv =  [l for l in chain.from_iterable(energies)] #provide the sorted flatten list of energies to calculate the unbiased estimate for the Cv
+        energies_Cv = np.sort(energies_Cv)[::-1]
+        if args.B is 0:
+            energies = energies_Cv #if want to rearrange energies randomly flatten energies
+    else:
+        energies_Cv = energies
     ##########################################################################################################
      
     print "parallel nprocessors", P
