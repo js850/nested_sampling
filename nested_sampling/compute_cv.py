@@ -152,6 +152,9 @@ if __name__ == "__main__":
     else:
         assert args.live == False,"cannot use live replica under any circumstances if they have not been saved" 
     
+    #make nd-arrays C contiguous 
+    energies = np.array(energies, order='C')
+    
     if args.rect is 1:
         print "rectangular"
         lZ, Cv, U, U2 = compute_Z(energies, T, args.K*len(args.fname), P=P, ndof=args.ndof, live=args.live)

@@ -193,6 +193,10 @@ if __name__ == "__main__":
             energies = energies_Cv #if want to rearrange energies randomly flatten energies
     else:
         energies_Cv = energies
+    
+    #make nd-arrays C contiguous 
+    energies = np.array(energies, order='C')
+    energies_Cv = np.array(energies_Cv, order='C')
     ##########################################################################################################
      
     print "parallel nprocessors", P
