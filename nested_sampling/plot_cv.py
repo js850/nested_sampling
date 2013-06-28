@@ -1,13 +1,16 @@
 import argparse
 import numpy as np
 import copy
-from compute_cv import compute_Z, get_energies
-from src.cv_trapezoidal import  compute_cv_c
-from itertools import chain, cycle
+from itertools import cycle
 import matplotlib
 from matplotlib import rc
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+
+#####################LINE STYLE CYCLER####################
+lines = ["-","--","-.",":"]
+linecycler = cycle(lines)
+##########################################################
 
 #######################SET LATEX OPTIONS###################
 rc('text', usetex=True)
@@ -17,26 +20,31 @@ plt.rcParams.update({'font.size': 12})
 plt.rcParams['xtick.major.pad'] = 8
 plt.rcParams['ytick.major.pad'] = 8
 ##########################################################
-#####################LINE STYLE CYCLER####################
-lines = ["-","--","-.",":"]
-linecycler = cycle(lines)
-##########################################################
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load energy intervals and compute Cv stdev", 
                                      epilog="must write file name followed by a label string, otherwise raise the flag --nolabels")
     parser.add_argument("fname", nargs="+", type=str, help="filenames with heat capacity followed by label")
-    parser.add_argument("--nolabels", action="store_true", help="turn on if do not want to insert labels",default=False)
-    parser.add_argument("--show", action="store_true", help="show explorable plot preview",default=False)
     parser.add_argument("--leg_loc", type=int, help="define location of the legend (default upper right 1):"
                         " \"upper right=1\" \"upper left=2\" \"lower left=3\" \"lower right=4\" \"right=5\" "
                         "\"center left=6\" \"center right=7\" \"lower center=8\" \"upper center=9\" \"center=10\"",default=1)
     parser.add_argument("--xlabel", type=str, help="set x-label",default="T")
     parser.add_argument("--ylabel", type=str, help="set y-label",default="Cv")
+    parser.add_argument("--xtop", type=float, help="set x-axis top",default=None)
+    parser.add_argument("--xbot", type=float, help="set x-axis bottom",default=None)
+    parser.add_argument("--ytop", type=float, help="set y-axis top",default=None)
+    parser.add_argument("--ybot", type=float, help="set y-axis bottom",default=None)
     parser.add_argument("--title", type=str, help="set title",default=None)
-    parser.add_argument("--linewidth", type=float, help="set line width",default=2.5)
+    parser.add_argument("--linewidth", type=float, help="set line width",default=2.2)
+    parser.add_argument("--colormap", type=str, help="set colormap (default spectral)",default='spectral')
+    parser.add_argument("--ecolor", type=str, help="set error bars color (default light gray)",default='g')
+    parser.add_argument("--ecap", type=float, help="set error bars cap size (default is None)",default=None)
+    parser.add_argument("--output", type=str, help="set output name (default cv_plot)",default='cv_plot')
+    parser.add_argument("--filetype", type=str, help="set output file format (default eps)",default='eps')
+    parser.add_argument("--nolabels", action="store_true", help="turn on if do not want to insert labels",default=False)
+    parser.add_argument("--show", action="store_true", help="show explorable plot preview",default=False)
+    parser.add_argument("--ebar", action="store_true", help="plot error bars if in data file",default=False)
     parser.add_argument("--grid", action="store_true", help="plot grid",default=False)
-    
     args = parser.parse_args()
     print args.fname
     fname = args.fname
@@ -47,6 +55,17 @@ if __name__ == "__main__":
     title = args.title
     grid = args.grid
     linew = args.linewidth
+    xtop = args.xtop
+    xbot = args.xbot
+    ytop = args.ytop
+    ybot = args.ybot
+    colormap = args.colormap
+    errcolor = args.ecolor
+    ebar = args.ebar
+    filename = args.output
+    filetype = args.filetype
+    ecap = args.ecap
+    
     ####################################################################################################
     #deal with input
         
@@ -68,7 +87,7 @@ if __name__ == "__main__":
         for name,i in zip(fname,xrange(len(fname))):
             data = np.genfromtxt(name)
             all_data[i] = copy.deepcopy(data.tolist())
-    
+            
     all_data = np.array(all_data)
     ######################################################################################################
     
@@ -77,7 +96,7 @@ if __name__ == "__main__":
     #####################
     
     ####SET COLOUR MAP######
-    cm = plt.get_cmap('jet')
+    cm = plt.get_cmap(colormap)
     ########################
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -86,9 +105,13 @@ if __name__ == "__main__":
     for data, label, i in zip(all_data, all_labels, xrange(len(all_data))): 
             color = cm(1.*i/5)
             ax.plot(data[:,0], data[:,1], next(linecycler), label = label, linewidth=linew)
-    
+            if np.shape(data)[1] is 3 and ebar is True:
+                ax.errorbar(data[:,0], data[:,1], yerr=data[:,2], ecolor=errcolor, capsize=ecap )
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+    ax.set_xlim((xbot,xtop))
+    ax.set_ylim((ybot,ytop))
+    
     if grid is True:
         ax.grid(True,linestyle='--',color='0.75')
     if title is not None:
@@ -98,5 +121,5 @@ if __name__ == "__main__":
     if show is True:
          plt.show()
     
-    fig.savefig('cv_plot.eps')
+    fig.savefig('{F}.{T}'.format(F=filename,T=filetype))
     
