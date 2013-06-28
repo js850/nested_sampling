@@ -103,11 +103,10 @@ if __name__ == "__main__":
                     data = new_data  
                 elif dshape[1] < 3:
                     data = np.hstack((data, np.zeros((data.shape[0], 1), dtype=data.dtype))) ##adds an error of 0 if there's no error associated
-                all_data[j] = copy.deepcopy(data.tolist())
+                all_data[j] = data
             else:
                 all_labels[j] = name
                 j += 1
-        print all_labels
     else:
         all_data = [[] for i in xrange(len(fname))]
         all_labels = np.array(["no_name" for i in xrange(len(fname))])
@@ -122,7 +121,8 @@ if __name__ == "__main__":
                 data = new_data
             elif dshape[1] < 3:
                 data = np.hstack((data, np.zeros((data.shape[0], 1), dtype=data.dtype)))
-            all_data[i] = copy.deepcopy(data.tolist())
+            data = np.array(data)
+            all_data[i] = data
             
     all_data = np.array(all_data)
     ######################################################################################################
@@ -137,7 +137,6 @@ if __name__ == "__main__":
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set_color_cycle([cm(1.*i/len(all_data)) for i in xrange(np.shape(all_data)[0])])
-    
     for data, label, i in zip(all_data, all_labels, xrange(np.shape(all_data)[0])): 
             ax.plot(data[:,0], data[:,1], next(linecycler), label = label, linewidth=linew)
             if np.shape(data)[1] is 3 and ebar is True:
