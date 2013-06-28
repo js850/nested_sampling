@@ -1,3 +1,20 @@
+#    plot_xye.py
+#    
+#    Created by Stefano Martiniani in June 2013, stefano.martiniani@gmail.com
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import argparse
 import numpy as np
 import copy
@@ -67,7 +84,7 @@ if __name__ == "__main__":
     ecap = args.ecap
     
     ####################################################################################################
-    #deal with input
+    #DEAL WITH INPUT
         
     if nolabels is False:
         all_data = [[] for i in xrange(len(fname)/2)]
@@ -103,7 +120,6 @@ if __name__ == "__main__":
     ax.set_color_cycle([cm(1.*i/len(all_data)) for i in xrange(len(all_data))])
     
     for data, label, i in zip(all_data, all_labels, xrange(len(all_data))): 
-            color = cm(1.*i/5)
             ax.plot(data[:,0], data[:,1], next(linecycler), label = label, linewidth=linew)
             if np.shape(data)[1] is 3 and ebar is True:
                 ax.errorbar(data[:,0], data[:,1], yerr=data[:,2], ecolor=errcolor, capsize=ecap )
