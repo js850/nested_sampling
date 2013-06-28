@@ -63,7 +63,7 @@ if __name__ == "__main__":
     parser.add_argument("--ebar", action="store_true", help="plot error bars if in data file",default=False)
     parser.add_argument("--grid", action="store_true", help="plot grid",default=False)
     args = parser.parse_args()
-    print args.fname
+    
     fname = args.fname
     legloc=args.legloc
     nolabels = args.nolabels
@@ -94,6 +94,15 @@ if __name__ == "__main__":
         for name,i in zip(fname,xrange(len(fname))):
             if ((i+1) % 2) is not 0:
                 data = np.genfromtxt(name)
+                dshape = np.shape(data)
+                if dshape[1] > 3:
+                    new_data = np.zeros([dshape[0],3])
+                    for i in xrange(dshape[0]):
+                        for j in xrange(3):
+                            new_data[i][j] = data[i][j]
+                    data = new_data  
+                elif dshape[1] < 3:
+                    data = np.hstack((data, np.zeros((data.shape[0], 1), dtype=data.dtype))) ##adds an error of 0 if there's no error associated
                 all_data[j] = copy.deepcopy(data.tolist())
             else:
                 all_labels[j] = name
@@ -104,6 +113,15 @@ if __name__ == "__main__":
         all_labels = np.array(["no_name" for i in xrange(len(fname))])
         for name,i in zip(fname,xrange(len(fname))):
             data = np.genfromtxt(name)
+            dshape = np.shape(data)
+            if dshape[1] > 3:
+                new_data = np.zeros([dshape[0],3])
+                for i in xrange(dshape[0]):
+                    for j in xrange(3):
+                       new_data[i][j] = data[i][j]
+                data = new_data
+            elif dshape[1] < 3:
+                data = np.hstack((data, np.zeros((data.shape[0], 1), dtype=data.dtype)))
             all_data[i] = copy.deepcopy(data.tolist())
             
     all_data = np.array(all_data)
@@ -121,7 +139,6 @@ if __name__ == "__main__":
     ax.set_color_cycle([cm(1.*i/len(all_data)) for i in xrange(np.shape(all_data)[0])])
     
     for data, label, i in zip(all_data, all_labels, xrange(np.shape(all_data)[0])): 
-            print np.shape(all_data)
             ax.plot(data[:,0], data[:,1], next(linecycler), label = label, linewidth=linew)
             if np.shape(data)[1] is 3 and ebar is True:
                 ax.errorbar(data[:,0], data[:,1], yerr=data[:,2], ecolor=errcolor, capsize=ecap )
