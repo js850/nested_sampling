@@ -97,9 +97,9 @@ if __name__ == "__main__":
                 dshape = np.shape(data)
                 if dshape[1] > 3:
                     new_data = np.zeros([dshape[0],3])
-                    for i in xrange(dshape[0]):
-                        for j in xrange(3):
-                            new_data[i][j] = data[i][j]
+                    for k in xrange(dshape[0]):
+                        for l in xrange(3):
+                            new_data[k][l] = data[k][l]
                     data = new_data  
                 elif dshape[1] < 3:
                     data = np.hstack((data, np.zeros((data.shape[0], 1), dtype=data.dtype))) ##adds an error of 0 if there's no error associated
@@ -116,9 +116,9 @@ if __name__ == "__main__":
             dshape = np.shape(data)
             if dshape[1] > 3:
                 new_data = np.zeros([dshape[0],3])
-                for i in xrange(dshape[0]):
-                    for j in xrange(3):
-                       new_data[i][j] = data[i][j]
+                for k in xrange(dshape[0]):
+                    for l in xrange(3):
+                       new_data[k][l] = data[k][l]
                 data = new_data
             elif dshape[1] < 3:
                 data = np.hstack((data, np.zeros((data.shape[0], 1), dtype=data.dtype)))
