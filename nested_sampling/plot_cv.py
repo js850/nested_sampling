@@ -42,7 +42,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="load energy intervals and compute Cv stdev", 
                                      epilog="must write file name followed by a label string, otherwise raise the flag --nolabels")
     parser.add_argument("fname", nargs="+", type=str, help="filenames with heat capacity followed by label")
-    parser.add_argument("--leg_loc", type=int, help="define location of the legend (default upper right 1):"
+    parser.add_argument("--legloc", type=int, help="define location of the legend (default upper right 1):"
                         " \"upper right=1\" \"upper left=2\" \"lower left=3\" \"lower right=4\" \"right=5\" "
                         "\"center left=6\" \"center right=7\" \"lower center=8\" \"upper center=9\" \"center=10\"",default=1)
     parser.add_argument("--xlabel", type=str, help="set x-label",default="T")
@@ -65,6 +65,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print args.fname
     fname = args.fname
+    legloc=args.legloc
     nolabels = args.nolabels
     xlabel = args.xlabel
     ylabel = args.ylabel
@@ -117,9 +118,10 @@ if __name__ == "__main__":
     ########################
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.set_color_cycle([cm(1.*i/len(all_data)) for i in xrange(len(all_data))])
+    ax.set_color_cycle([cm(1.*i/len(all_data)) for i in xrange(np.shape(all_data)[0])])
     
-    for data, label, i in zip(all_data, all_labels, xrange(len(all_data))): 
+    for data, label, i in zip(all_data, all_labels, xrange(np.shape(all_data)[0])): 
+            print np.shape(all_data)
             ax.plot(data[:,0], data[:,1], next(linecycler), label = label, linewidth=linew)
             if np.shape(data)[1] is 3 and ebar is True:
                 ax.errorbar(data[:,0], data[:,1], yerr=data[:,2], ecolor=errcolor, capsize=ecap )
@@ -133,7 +135,7 @@ if __name__ == "__main__":
     if title is not None:
         ax.set_title(title)
     if nolabels is False:
-        ax.legend(frameon=False)
+        ax.legend(frameon=False,loc=legloc)
     if show is True:
          plt.show()
     
