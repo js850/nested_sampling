@@ -24,11 +24,6 @@ from matplotlib import rc
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-#####################LINE STYLE CYCLER####################
-lines = ["-","--","-.",":"]
-linecycler = cycle(lines)
-##########################################################
-
 #######################SET LATEX OPTIONS###################
 rc('text', usetex=True)
 rc('font',**{'family':'serif','serif':['Computer Modern']})
@@ -62,6 +57,7 @@ if __name__ == "__main__":
     parser.add_argument("--show", action="store_true", help="show explorable plot preview",default=False)
     parser.add_argument("--ebar", action="store_true", help="plot error bars if in data file",default=False)
     parser.add_argument("--grid", action="store_true", help="plot grid",default=False)
+    parser.add_argument("--lines", action="store_true", help="plot all straight lines",default=False)
     args = parser.parse_args()
     
     fname = args.fname
@@ -83,6 +79,14 @@ if __name__ == "__main__":
     filename = args.output
     filetype = args.filetype
     ecap = args.ecap
+    slines = args.lines
+    #####################LINE STYLE CYCLER####################
+    if slines is False
+        lines = ["-","--","-.",":"]
+    else:
+        lines = ["-"]
+    linecycler = cycle(lines)
+    ##########################################################
     
     ####################################################################################################
     #DEAL WITH INPUT
