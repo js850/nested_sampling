@@ -67,7 +67,7 @@ class HarParticle(BaseSystem):
             self.centre = np.array(centre)
         self.Eground = Eground
         self.Emax_init = Emax_init
-        self.kappa_sqrt = np.sqrt(self.kappa)
+        self.kappa_sqrt = linalg.sqrtm(self.kappa) #np.sqrt(self.kappa)
         
         print "Emax_init", self.Emax_init
             
