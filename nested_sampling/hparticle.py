@@ -5,7 +5,7 @@ import numpy as np
 from pele.potentials import BasePotential
 from pele.systems import BaseSystem
 from pele.optimize import Result
-
+from scipy import linalg
 from bh_sampling import vector_random_uniform_hypersphere
 
 __all__ =["HarPotential","HarParticle","HarRunner"]
@@ -18,18 +18,20 @@ class HarPotential(BasePotential):
     ----------
     centre: list of int
         centre of harmonic well
-    kappa: list of float
+    kappa: nxn matrix of floats
         spring constants
     
     """
     def __init__(self, centre, kappa):
         self.centre = np.asfarray(centre)
-        self.kappa = np.asfarray(kappa)
+        self.kappa = np.asfarray(kappa) #kappa must be a nxn (diagonal) tensor where n is the number of dimension
                 
     def getEnergy(self, coords):
         coords = np.asfarray(coords)
         dist_vec = coords - self.centre
-        return 0.5 * dist_vec.dot(self.kappa * dist_vec)
+        F = np.dot(self.kappa, dist_vec)
+        return 0.5 * np.dot(F,F)
+        #return 0.5 * dist_vec.dot(self.kappa * dist_vec) STEFANO 29 JUNE
 #        E_vec = 0.5 * self.kappa * dist_vec * dist_vec      
 #        E = 0.
 #        for e in E_vec:
@@ -52,13 +54,13 @@ class HarParticle(BaseSystem):
     
     def __init__(self, ndim, centre=None, kappa=None, Eground=0., Emax_init=10.):
         self.ndim = ndim
-        #kappa is an ndimensional array containing n spring constants
+        #kappa is an n x n dimensional tensor  containing n spring constants
         if kappa is None:
-            self.kappa = np.ones(self.ndim)
+            self.kappa = np.diag(np.ones(self.ndim)) #np.ones(self.ndim) STEFANO 29 JUNE, create diagonal matrix of ones
         else:
             self.kappa = np.asfarray(kappa)
-        assert(self.kappa.size == ndim)
-        # use numpy vectors for coordinates, centre must be a numpy vector
+        assert(np.sqrt(self.kappa.size) == ndim) #STEFANO 29 JUNE
+         # use numpy vectors for coordinates, centre must be a numpy vector
         if centre is None:
             self.centre = np.zeros(self.ndim)
         else:
@@ -96,7 +98,7 @@ class HarParticle(BaseSystem):
         radius = np.sqrt(2. * (float(Emax) - self.Eground))
 
         coords = self.vector_random_uniform_hypersphere() * radius
-        coords /= self.kappa_sqrt
+        coords = np.dot(coords,linalg.inv(self.kappa_sqrt)) #/= self.kappa_sqrt
         coords += self.centre
         assert(self.get_config_tests_in(coords, radius))
         return coords

@@ -81,7 +81,7 @@ if __name__ == "__main__":
     ecap = args.ecap
     slines = args.lines
     #####################LINE STYLE CYCLER####################
-    if slines is False
+    if slines is False:
         lines = ["-","--","-.",":"]
     else:
         lines = ["-"]
