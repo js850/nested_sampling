@@ -24,7 +24,7 @@ class HarPotential(BasePotential):
     """
     def __init__(self, centre, kappa):
         self.centre = np.asfarray(centre)
-        self.kappa = kappa #np.asfarray(kappa) #kappa must be a nxn (diagonal) tensor where n is the number of dimension
+        self.kappa = np.asfarray(kappa) #kappa must be a nxn (diagonal) tensor where n is the number of dimension
                 
     def getEnergy(self, coords):
         coords = np.asfarray(coords)
@@ -58,7 +58,7 @@ class HarParticle(BaseSystem):
         if kappa is None:
             self.kappa = np.diag(np.ones(self.ndim)) #np.ones(self.ndim) STEFANO 29 JUNE, create diagonal matrix of ones
         else:
-            self.kappa = kappa #np.asfarray(kappa)
+            self.kappa = np.asfarray(kappa)
         assert(np.sqrt(self.kappa.size) == ndim) #STEFANO 29 JUNE
          # use numpy vectors for coordinates, centre must be a numpy vector
         if centre is None:
