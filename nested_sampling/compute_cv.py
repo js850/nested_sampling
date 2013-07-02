@@ -154,7 +154,7 @@ if __name__ == "__main__":
     
     #make nd-arrays C contiguous 
     energies = np.array(energies, order='C')
-    
+        
     if args.rect is 1:
         print "rectangular"
         lZ, Cv, U, U2 = compute_Z(energies, T, args.K*len(args.fname), P=P, ndof=args.ndof, live=args.live)
@@ -170,7 +170,7 @@ if __name__ == "__main__":
         with open("cv", "w") as fout:
             fout.write("#T Cv\n")
             for vals in zip(T, Cv):
-                fout.write("%g %g\n" % vals)
+                fout.write("%.30f %.30f\n" % vals)
                 
     import matplotlib
     matplotlib.use('PDF')

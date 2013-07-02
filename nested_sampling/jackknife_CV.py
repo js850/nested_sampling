@@ -34,7 +34,8 @@ class Jackknife_CV(object):
         CvSingle = self.Cv_singles(Esplit)
         print 'Calculating Cv Jacknife average (from the combination of subsets)'
         CvJack = self.jack_Cv_averages(EJack)
-        return self.jack_Cv_stdev(CvJack), CvSingle
+        CvMom1 = self.jack_Cv_moments(CvJack)[0]
+        return self.jack_Cv_stdev(CvJack), CvSingle, CvMom1
     
     def split_energies_randomly(self):
         """
@@ -132,7 +133,7 @@ class Jackknife_CV(object):
         sigmasquare_jack = CvMom2 - np.square(CvMom1)
         sigma = np.sqrt(self.nsubsets-1)*np.sqrt(sigmasquare_jack) 
         return sigma
-            
+               
 def run_jackknife(energies, nsubsets, K, Tmin, Tmax, nT, P, ndof, block, rect, imp, live):
     """
     returns the stdev calculated by jackknifing
@@ -214,11 +215,17 @@ if __name__ == "__main__":
         print "trapezoidal"
         Cv = compute_cv_c(energies_Cv, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof), args.imp, args.live)
     
-    Cv_stdev, Cv_singles = run_jackknife(energies, args.N, (args.K*len(args.fname)), Tmin, Tmax, nT, P, args.ndof, args.B, args.rect, args.imp, args.live)
+    Cv_stdev, Cv_singles, CvMom1 = run_jackknife(energies, args.N, (args.K*len(args.fname)), Tmin, Tmax, nT, P, args.ndof, args.B, args.rect, args.imp, args.live)
     
     with open('cv_std_K{K}_Nsub{N}_d{ndof}_B{B}.dat'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B), "w") as fout:
         fout.write("#T Cv stdev\n")
         for vals in zip(T, Cv, Cv_stdev):
+            fout.write("%g %g %g\n" % vals)
+    
+    #CvMom1 is also the jackknife estimate
+    with open('cv_jack_est_K{K}_Nsub{N}_d{ndof}_B{B}.dat'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B), "w") as fout:
+        fout.write("#T CvMom1 stdev\n")
+        for vals in zip(T, CvMom1, Cv_stdev):
             fout.write("%g %g %g\n" % vals)
     
     with open('cv_singles_K{K}_Nsub{N}_d{ndof}_B{B}.dat'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B), "w") as fout:
@@ -226,6 +233,13 @@ if __name__ == "__main__":
             fout.write("#T Cv\n")
             for vals in zip(T, Cv_singles[i]):
                 fout.write("%g %g \n" % vals)
+    
+    Cv_best = args.N * Cv - (args.N -1 ) * CvMom1 #expression for the elimination of the leading piece of bias in the mean
+    
+    with open('cv_best_K{K}_Nsub{N}_d{ndof}_B{B}.dat'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B), "w") as fout:
+        fout.write("#T CvBest stdev\n")
+        for vals in zip(T, Cv_best, Cv_stdev):
+            fout.write("%g %g %g\n" % vals)            
     
     #####################
     ####### PLOT ########
@@ -245,6 +259,20 @@ if __name__ == "__main__":
     ax.set_xlabel("T")
     ax.set_ylabel("Cv")
     fig.savefig('cv_std_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.errorbar(T, CvMom1, yerr=Cv_stdev,ecolor='g', capsize=None)
+    ax.set_xlabel("T")
+    ax.set_ylabel("Cv")
+    fig.savefig('cv_jack_est_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.errorbar(T, Cv_best, yerr=Cv_stdev,ecolor='g', capsize=None)
+    ax.set_xlabel("T")
+    ax.set_ylabel("Cv")
+    fig.savefig('cv_best_K{K}_Nsub{N}_d{ndof}_B{B}.pdf'.format(K = args.K,N=args.N,ndof=args.ndof,B=args.B))
     
     plt.figure()
     for i in xrange(args.N):

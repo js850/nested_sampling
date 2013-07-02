@@ -49,7 +49,7 @@ if __name__ == "__main__":
     parser.add_argument("--title", type=str, help="set title",default=None)
     parser.add_argument("--linewidth", type=float, help="set line width (default 1.8)",default=1.8)
     parser.add_argument("--colormap", type=str, help="set colormap (default Dark2)",default='Dark2')
-    parser.add_argument("--ecolor", type=str, help="set error bars color (default light gray)",default='g')
+    parser.add_argument("--ecolor", type=str, help="set error bars color (default light gray)",default='0.75')
     parser.add_argument("--ecap", type=float, help="set error bars cap size (default is None)",default=None)
     parser.add_argument("--output", type=str, help="set output name (default cv_plot)",default='cv_plot')
     parser.add_argument("--filetype", type=str, help="set output file format (default eps)",default='eps')

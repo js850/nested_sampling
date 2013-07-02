@@ -141,15 +141,15 @@ def test():
     hp = HarParticle(n)#, centre=[0.]*n, kappa=[1.]*n)
     pot = hp.get_potential()
     
-    coords = np.array([hp.get_random_configuration_Emax(10.) for i in range(1000)])
+    coords = np.array([hp.get_random_configuration_Emax(10.) for i in range(5000)])
     energies = [pot.getEnergy(x) for x in coords]
     print coords
     print "max energy", np.max(energies)
 #    plt.plot(vals, 'o')
     plt.hist(coords[:,0], bins=50)
-    plt.savefig(fig1.pdf)
+    plt.savefig('fig1.pdf')
     plt.hist(energies, bins=50)
-    plt.savefig(fig2.pdf)
+    plt.savefig('fig2.pdf')
     
 if __name__ == "__main__":
     test()
