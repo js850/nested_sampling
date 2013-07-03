@@ -49,7 +49,7 @@ if __name__ == "__main__":
     parser.add_argument("--title", type=str, help="set title",default=None)
     parser.add_argument("--linewidth", type=float, help="set line width (default 1.8)",default=1.8)
     parser.add_argument("--colormap", type=str, help="set colormap (default Dark2)",default='Dark2')
-    parser.add_argument("--ecolor", type=str, help="set error bars color (default light gray)",default='0.75')
+    parser.add_argument("--ecolor", type=str, help="set error bars color (default light gray)",default='0.8')
     parser.add_argument("--ecap", type=float, help="set error bars cap size (default is None)",default=None)
     parser.add_argument("--output", type=str, help="set output name (default cv_plot)",default='cv_plot')
     parser.add_argument("--filetype", type=str, help="set output file format (default eps)",default='eps')
@@ -142,9 +142,14 @@ if __name__ == "__main__":
     ax = fig.add_subplot(111)
     ax.set_color_cycle([cm(1.*i/len(all_data)) for i in xrange(np.shape(all_data)[0])])
     for data, label, i in zip(all_data, all_labels, xrange(np.shape(all_data)[0])): 
-            ax.plot(data[:,0], data[:,1], next(linecycler), label = label, linewidth=linew)
+            if np.shape(data)[1] is 2 or ebar is False:
+                ax.plot(data[:,0], data[:,1], next(linecycler), label = label, linewidth=linew)
             if np.shape(data)[1] is 3 and ebar is True:
-                ax.errorbar(data[:,0], data[:,1], yerr=data[:,2], ecolor=errcolor, capsize=ecap )
+                (line, caps, _) = ax.errorbar(data[:,0], data[:,1], yerr=data[:,2], ls=next(linecycler), ecolor=errcolor, capsize=ecap, label = label, linewidth=linew)
+                colour = line.get_color()
+                for cap in caps:
+                    cap.set_color(colour)
+                    cap.set_markeredgewidth(0.05)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_xlim((xbot,xtop))
