@@ -192,9 +192,9 @@ def main():
                              label=label, minima=minima, mciter=mciter, 
                              use_compiled=args.not_compiled_mc, nproc=nproc, triv_paral = triv_paral, minprob = minprob)
 
-    with open(label + ".energies", "w") as fout:
-        fout.write( "\n".join([ str(e) for e in ns.max_energies]) )
-        fout.write("\n")
+#    with open(label + ".energies", "w") as fout:
+#        fout.write( "\n".join([ str(e) for e in ns.max_energies]) )
+#        fout.write("\n")
             
 #    if True:
 #        import pylab as pl
