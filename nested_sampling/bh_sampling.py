@@ -374,9 +374,11 @@ class BHSampler(object):
         V = (Emax - m.energy)^k / (prod_freq * O_k)
         
         """
-        indices = np.where(self.energyvec < Emax)[0]
-        minima2 = [self.minima[i] for i in indices]
-        lweights = (float(self.k)/2.) * np.log(Emax - self.energyvec[indices]) + self.lVol_prefactor_vec[indices]
+        i_max = np.searchsorted(self.energyvec, Emax)
+        #indices = np.where(self.energyvec < Emax)[0]
+        #minima2 = [self.minima[i] for i in indices]
+        minima2 = self.minima[:i_max]
+        lweights = (float(self.k)/2.) * np.log(Emax - self.energyvec[:i_max]) + self.lVol_prefactor_vec[:i_max]
         weights = np.exp(lweights - np.max(lweights))
         return minima2, weights
     
