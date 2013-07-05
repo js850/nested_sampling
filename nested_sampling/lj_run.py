@@ -187,7 +187,7 @@ def main():
         get_thermodynamic_information(system, db)
     # exit(1)
     
-    np.sort(minima,order='energy')
+    np.sort(minima.energy)
     
     # run nested sampling
     ns = run_nested_sampling_lj(system, nreplicas=nreplicas, 
