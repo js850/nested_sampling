@@ -181,12 +181,14 @@ def main():
             minima = minima[:nminima]
     else:
         minima = None
-
+    
     # get thermodynamic information from database
     if (minima is not None) and (args.get_thermodynamic_properties is True):
         get_thermodynamic_information(system, db)
     # exit(1)
-
+    
+    np.sort(minima,order='energy')
+    
     # run nested sampling
     ns = run_nested_sampling_lj(system, nreplicas=nreplicas, 
                              label=label, minima=minima, mciter=mciter, 
