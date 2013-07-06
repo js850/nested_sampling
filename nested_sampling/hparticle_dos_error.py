@@ -23,7 +23,8 @@ def run_hparticle_ea(K,ndof,P,E_init=1000,E_fin=0.000001,ranerr=False):
     print 'sig_beta',sig_beta
     while E > E_fin:
         if ranerr == True:
-            E = float(E) * ((np.random.normal(0,sig_beta) + alpha)**expo)
+            alpha = np.random.beta(K-P+1,P)
+            E = float(E) * ((alpha)**expo)
         else:
             E = float(E) * (alpha**expo)
         E_list.append(E)
@@ -48,3 +49,4 @@ if __name__ == "__main__":
         fout.write("#E\n")
         for vals in E_list:
             fout.write("%g\n" % vals)
+            

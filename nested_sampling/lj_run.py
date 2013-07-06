@@ -187,6 +187,7 @@ def main():
         get_thermodynamic_information(system, db)
     # exit(1)
     
+    #make sure that minima are sorted because bh_sampling.compute_weights uses sortedsearch
     minima = sorted(minima, key=lambda m:m.energy)
     
     # run nested sampling

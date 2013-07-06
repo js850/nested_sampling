@@ -15,6 +15,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#from __future__ import division
 import argparse
 import numpy as np
 import copy
@@ -58,6 +59,9 @@ if __name__ == "__main__":
     parser.add_argument("--ebar", action="store_true", help="plot error bars if in data file",default=False)
     parser.add_argument("--grid", action="store_true", help="plot grid",default=False)
     parser.add_argument("--lines", action="store_true", help="plot all straight lines",default=False)
+    parser.add_argument("--absinvgrad", action="store_true", help="returns the normalised abs(1/grad(y)), allows to identify stationary points",default=False)
+    parser.add_argument("--xlog", action="store_true", help="set x scale to log scale",default=False)
+    parser.add_argument("--ylog", action="store_true", help="set y scale to log scale",default=False)
     args = parser.parse_args()
     
     fname = args.fname
@@ -80,6 +84,10 @@ if __name__ == "__main__":
     filetype = args.filetype
     ecap = args.ecap
     slines = args.lines
+    absinvgrad = args.absinvgrad
+    xlog = args.xlog
+    ylog= args.ylog
+    
     #####################LINE STYLE CYCLER####################
     if slines is False:
         lines = ["-","--","-.",":"]
@@ -131,10 +139,23 @@ if __name__ == "__main__":
     all_data = np.array(all_data)
     ######################################################################################################
     
+    ###############peaks analysis######################################
+    if absinvgrad is True:
+        for data, i in zip(all_data, xrange(np.shape(all_data)[0])):
+            data[:,1] = 1./np.abs(np.gradient(data[:,1]))
+            for i in xrange(len(data[:,1])):
+                if np.isinf(data[i,1]):
+                    data[i,1] = -1
+            data[:,1] /= float(np.amax(data[:,1]))
+            for i in xrange(len(data[:,1])):
+                if data[i,1] < 0:
+                    data[i,1] = 1
+    ####################################################################
+    
     #####################
     ####### PLOT ########
     #####################
-    
+        
     ####SET COLOUR MAP######
     cm = plt.get_cmap(colormap)
     ########################
@@ -143,7 +164,7 @@ if __name__ == "__main__":
     ax.set_color_cycle([cm(1.*i/len(all_data)) for i in xrange(np.shape(all_data)[0])])
     for data, label, i in zip(all_data, all_labels, xrange(np.shape(all_data)[0])): 
             if np.shape(data)[1] is 2 or ebar is False:
-                ax.plot(data[:,0], data[:,1], next(linecycler), label = label, linewidth=linew)
+                ax.plot(data[:,0], data[:,1], ls=next(linecycler), label = label, linewidth=linew)
             if np.shape(data)[1] is 3 and ebar is True:
                 (line, caps, _) = ax.errorbar(data[:,0], data[:,1], yerr=data[:,2], ls=next(linecycler), ecolor=errcolor, capsize=ecap, label = label, linewidth=linew)
                 colour = line.get_color()
@@ -155,6 +176,10 @@ if __name__ == "__main__":
     ax.set_xlim((xbot,xtop))
     ax.set_ylim((ybot,ytop))
     
+    if xlog is True: 
+        ax.set_xscale('log')
+    if ylog is True:
+        ax.set_yscale('log')
     if grid is True:
         ax.grid(True,linestyle='--',color='0.75')
     if title is not None:

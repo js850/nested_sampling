@@ -374,7 +374,7 @@ class BHSampler(object):
         V = (Emax - m.energy)^k / (prod_freq * O_k)
         
         """
-        i_max = np.searchsorted(self.energyvec, Emax,side='right')
+        i_max = np.searchsorted(self.energyvec, Emax, side='right')
         #indices = np.where(self.energyvec < Emax)[0]
         #minima2 = [self.minima[i] for i in indices]
         minima2 = self.minima[:i_max]
