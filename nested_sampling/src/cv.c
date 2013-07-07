@@ -28,7 +28,7 @@ double max_array(double* a, int N)
 double X_imp(int i, double K, double P)
 {
   double X;
-  X = (K - ((i+1)%(int)P) )/( K - ((i+1)%(int)P) + 1);
+  X = (K - (i%(int)P) )/( K - (i%(int)P) + 1);
   return X;
 }
 
@@ -81,7 +81,7 @@ void compute_dos_imp(double* gl, int N, double P, double K, int live)
   double X;
   double Xm = X_imp(0,K,P); //this is X1
   double Xf, Xb;
-  Xb = 2-X_imp(0,K,P); // reflecting boundary condition, this is X0
+  Xb = 2-Xm; // reflecting boundary condition, this is X0
   Xf = Xm * X_imp(1,K,P); 
   gl[0] = 0.5 * (Xb - Xf);
   //calculate density of states for stored energies, don't do it because of numerical instability
