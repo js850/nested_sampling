@@ -159,7 +159,21 @@ def test():
     plt.savefig('fig1.pdf')
     plt.hist(energies, bins=50)
     plt.savefig('fig2.pdf')
+
+def test2():
+    from nested_sampling import NestedSampling, run_nested_sampling
+    ndof = 6
+    K = 10
+    nproc = 1
     
+    system = HarParticle(ndof, Emax_init=1000.)
+    mcrunner = HarRunner(system)
+    ns = NestedSampling(system, K, mcrunner, nproc=nproc, 
+                        verbose=True)
+    print "harmonic particle ndof", ndof
+    run_nested_sampling(ns, label="hparticle", etol=1e-5)
+
+
 if __name__ == "__main__":
-    test()
-#    test1()
+#    test()
+    test2()
