@@ -27,6 +27,10 @@ add_library(cv_trapezoidal SHARED cv_trapezoidal.c cv.c ${PYTHON_LIBS})
 target_link_libraries(cv_trapezoidal -L/usr/lib -lgsl -lgslcblas -lm)
 set_target_properties(cv_trapezoidal PROPERTIES PREFIX "")
 
+add_library(minima_sampling SHARED weighted_pick.c ${PYTHON_LIBS})
+target_link_libraries(minima_sampling -L/usr/lib -lgsl -lgslcblas -lm)
+set_target_properties(minima_sampling PROPERTIES PREFIX "")
+
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 #add_executable(LJ_ns_plot LJ_ns_plot.cpp)
 #install (TARGETS LJ_ns_plot DESTINATION bin)

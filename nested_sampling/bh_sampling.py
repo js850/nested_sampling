@@ -9,6 +9,7 @@ from scipy.misc import factorial
 
 from database_eigenvecs import HessianEigs
 from nested_sampling import NestedSampling, Replica
+from src.minima_sampling import weighted_pick_cython
 
 from pele.utils.rotations import vec_random_ndim
 from pele.utils.hessian import sort_eigs, get_eig
@@ -171,7 +172,7 @@ def sample_minimum(minima, Emax, k):
     
     # select a minimum uniformly given `weights`
     # print "weights", weights[:10]
-    index = weighted_pick(weights)
+    index = weighted_pick_cython(weights)
     # print index, len(weights), len(minima)
     m = minima2[index]
     return m
@@ -406,7 +407,7 @@ class BHSampler(object):
         minima2, weights = self.compute_weights(Emax)
         
         # select a minimum uniformly given `weights`
-        index = weighted_pick(weights)
+        index = weighted_pick_cython(weights)
         m = minima2[index]
         return m
 
@@ -477,6 +478,14 @@ class NestedSamplingBS(NestedSampling):
             except ConfigTestError:
                 pass
 
+    def onset_prob_func(self, a, b, c, Emax):
+        if (b * (dE + c)) > 100:
+            onset_prob = 0
+        else:
+            dE = float(self.minima[-1].energy) - Emax
+            onset_prob = a / ( 1. + np.exp(-b * (dE + c)) )
+        return onset_prob
+    
     def get_starting_configuration(self, Emax):
         """this function overloads the function in NestedSampling"""
         # choose a replica randomly
@@ -487,11 +496,7 @@ class NestedSamplingBS(NestedSampling):
         a = float(self.minprob)
         b = 1.
         c = 2.5
-        if Emax > 0: ##this is a reasonable assumption for LJ clusters but not for general systems but necessary to avoid overfloat
-            onset_prob = 0
-        else:
-            dE = float(self.minima[-1].energy) - Emax
-            onset_prob = a / ( 1. + np.exp(-b * (dE + c)) )
+        onset_prob = onset_prob_func(a, b, c, Emax)
         prob = onset_prob / float(self.nreplicas)
         for i in range(len(configs)):
             if np.random.uniform(0,1) < prob:

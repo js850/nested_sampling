@@ -27,11 +27,11 @@ class SphericalContainerNew(SphericalContainer):
 
 class LJClusterNew(LJCluster):
     """same as LJCluster, but attach some additional information"""
-    def __init__(self, natoms):
+    def __init__(self, natoms, bradius):
         super(LJClusterNew, self).__init__(natoms)
         self.nzero_modes = 6
         self.k = 3 * natoms - self.nzero_modes
-        self.radius = 2.5 # specific to lj31
+        self.radius = bradius # 2.5 specific to lj31, 3 specific to lj38
     
 #    def get_metric_tensor(self):
 #        return None
@@ -139,6 +139,7 @@ def main():
     parser.add_argument("-T", "--get-thermodynamic-properties", action="store_true", help="ricalculates the eigenvectors of the hessian and writes them to the database",default=False)
     parser.add_argument("-a", "--minprob", type=float, help="probability of sampling from minima as a/K, default a=1",default=1)
     parser.add_argument("-S", "--system", type=int, help="define system type: 1 is LJ \n2 is HarParticle \n3 is Ising",default=1)
+    parser.add_argument("-r", "--bradius", type=float, help="define the box radius (default 2.5)",default=2.5)
     args = parser.parse_args()
     print args
     
@@ -149,9 +150,10 @@ def main():
     nreplicas = args.nreplicas
     mciter = args.mciter
     nminima = args.nminima
+    bradius = args.bradius
     
     if args.system == 1:
-        system = LJClusterNew(natoms)
+        system = LJClusterNew(natoms, bradius)
         label = "lj%d" % (natoms)
     elif args.system ==  2:
         ndim = 3
