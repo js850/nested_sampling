@@ -22,7 +22,7 @@ setup(
     #cmdclass = {'build_ext': build_ext},
     ext_modules = 
         [
-            Extension("minima_sampling", ["weighted_pick.c"],
+            Extension("weighted_pick", ["weighted_pick.c"],
                       extra_compile_args = ['-Wextra','-pedantic','-funroll-loops','-O3']                
                        ),
             Extension("runmc", ["runmc.c", "mc.c", "lj.c"],
@@ -41,4 +41,4 @@ setup(
                       libraries=['gsl', 'gslcblas', 'm']
                         ),
         ]
-)
+)     

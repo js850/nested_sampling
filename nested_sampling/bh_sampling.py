@@ -9,7 +9,7 @@ from scipy.misc import factorial
 
 from database_eigenvecs import HessianEigs
 from nested_sampling import NestedSampling, Replica
-from src.minima_sampling import weighted_pick_cython
+from src.weighted_pick import weighted_pick_cython
 
 from pele.utils.rotations import vec_random_ndim
 from pele.utils.hessian import sort_eigs, get_eig
