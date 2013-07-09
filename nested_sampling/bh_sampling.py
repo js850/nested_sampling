@@ -496,7 +496,7 @@ class NestedSamplingBS(NestedSampling):
         a = float(self.minprob)
         b = 1.
         c = 2.5
-        onset_prob = onset_prob_func(a, b, c, Emax)
+        onset_prob = self.onset_prob_func(a, b, c, Emax)
         prob = onset_prob / float(self.nreplicas)
         for i in range(len(configs)):
             if np.random.uniform(0,1) < prob:
