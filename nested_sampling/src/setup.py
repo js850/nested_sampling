@@ -22,9 +22,22 @@ setup(
     #cmdclass = {'build_ext': build_ext},
     ext_modules = 
         [
-            Extension("minima_sampling", ["weighted_pick.c"]),
+            Extension("minima_sampling", ["weighted_pick.c"],
+                      extra_compile_args = ['-Wextra','-pedantic','-funroll-loops','-O3']                
+                       ),
             Extension("runmc", ["runmc.c", "mc.c", "lj.c"],
                       include_dirs=gslpy_include,
+                      extra_compile_args = ['-Wextra','-pedantic','-funroll-loops','-O3'],
+                      libraries=['gsl', 'gslcblas', 'm']
+                        ),
+            Extension("run_ising_mc", ["run_ising_mc.c", "mcising.c"],
+                      include_dirs=gslpy_include,
+                      extra_compile_args = ['-Wextra','-pedantic','-funroll-loops','-O3',],
+                      libraries=['gsl', 'gslcblas', 'm']
+                        ), 
+            Extension("cv_trapezoidal", ["cv_trapezoidal.c", "cv.c", "lj.c"],
+                      include_dirs=gslpy_include,
+                      extra_compile_args = ['-Wextra','-pedantic','-funroll-loops','-O3',],
                       libraries=['gsl', 'gslcblas', 'm']
                         ),
         ]
