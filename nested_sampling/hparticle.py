@@ -2,15 +2,24 @@
 
 import numpy as np
 
-from pele.potentials import BasePotential
+
 from pele.systems import BaseSystem
-from pele.optimize import Result
+from scipy.optimize import Result
 from scipy import linalg
-from bh_sampling import vector_random_uniform_hypersphere
+from pele.utils.rotations import vec_random_ndim
 
 __all__ =["HarPotential","HarParticle","HarRunner"]
 
-class HarPotential(BasePotential):
+def vector_random_uniform_hypersphere(k):
+    """return a vector sampled uniformly in a hypersphere of dimension k"""
+    u = vec_random_ndim(k)
+    #draw the magnitude of the vector from a power law density:
+    #draws samples in [0, 1] from a power distribution with positive exponent k - 1.
+    p = np.random.power(k)
+    return p * u
+
+
+class HarPotential():
     """
     Defines an harmonic potential, returns energy depending on coordinates
     
