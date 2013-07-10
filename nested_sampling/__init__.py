@@ -12,8 +12,8 @@
 """
 
 from scipy.optimize import Result
-from mc_walker import MonteCarloChain, MCRunner
-from _nested_sampling import NestedSampling, MCRunner
+from mc_walker import MonteCarloWalker
+from _nested_sampling import NestedSampling
 from nested_sampling_runner import run_nested_sampling
 
 from harmonic import Harmonic

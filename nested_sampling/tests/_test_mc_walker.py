@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from nested_sampling import MonteCarloChain
+from nested_sampling import MonteCarloWalker
 from nested_sampling.harmonic import Harmonic
 
 class TestMCWalker(unittest.TestCase):
@@ -12,7 +12,7 @@ class TestMCWalker(unittest.TestCase):
         self.energy = self.harmonic.getEnergy(self.x0)
         
     
-        self.mcwalker = MonteCarloChain(self.harmonic)
+        self.mcwalker = MonteCarloWalker(self.harmonic)
         self.stepsize = 0.1
         self.mciter = 100
         self.Emax = 10.

@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from nested_sampling import NestedSampling, MonteCarloChain, Harmonic
+from nested_sampling import NestedSampling, MonteCarloWalker, Harmonic
 
 class TestNS(unittest.TestCase):
     def setUp(self):
@@ -14,7 +14,7 @@ class TestNS(unittest.TestCase):
         self.stepsize = 0.1
         self.nproc = nproc
         
-        self.mc_runner = MonteCarloChain(self.harmonic)
+        self.mc_runner = MonteCarloWalker(self.harmonic)
 
         self.ns = NestedSampling(self.harmonic, self.nreplicas, self.mc_runner, 
                                  mciter=40, stepsize=0.1, nproc=nproc, verbose=False)

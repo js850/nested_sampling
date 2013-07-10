@@ -8,13 +8,13 @@ def random_displace(x, stepsize):
     x += np.random.uniform(low=-stepsize, high=stepsize, size=x.shape)
     return x
 
-class MonteCarloChain(object):
-    """Class for doing a Monte Carlo chain
+class MonteCarloWalker(object):
+    """Class for doing a Monte Carlo chain walk
     
 
     Parameters
     -----------
-    potential : pele Potentials
+    potential :
         attribute of system with member function getEnergy (in essence a
         particular potential energy function)
     x : array
@@ -22,10 +22,6 @@ class MonteCarloChain(object):
     takestep : callable takestep object
         take a random montecarlo step, imported from pele: takestep(x) makes
         a move from x
-    Emax : float
-        energy upperbound
-    energy : pele LJCluster
-        energy of a given configuration
     accept_test : list of callables
         it's an array of pointers to functions. The dereferenced functions
         operate a set of tests on the energy/configuration.
@@ -55,10 +51,10 @@ class MonteCarloChain(object):
     --------
     NestedSampling
     """
-    def __init__(self, potential, takestep=random_displace, accept_tests=None, events=None):
+    def __init__(self, potential, takestep=random_displace, accept_test=None, events=None):
         self.potential = potential
         self.takestep = takestep
-        self.accept_tests = accept_tests
+        self.accept_test = accept_test
         self.events = events
             
     def __call__(self, x0, mciter, stepsize, Emax, energy, seed=None):
@@ -68,8 +64,8 @@ class MonteCarloChain(object):
 
         # make sure we're not starting with a bad configuration
         assert energy <= Emax
-        if self.accept_tests is not None:
-            if not self.accept_tests(self.x, 0.):
+        if self.accept_test is not None:
+            if not self.accept_test(self.x, 0.):
                 raise Exception("initial configuration for monte carlo chain failed configuration test")
         
         naccept = 0
@@ -86,8 +82,8 @@ class MonteCarloChain(object):
             accept = e < Emax
             
             # perform configuration tests if they exist
-            if accept and self.accept_tests is not None:
-                accept = self.accept_tests(xnew, e)
+            if accept and self.accept_test is not None:
+                accept = self.accept_test(xnew, e)
     
             if accept:
                 x = xnew
@@ -110,54 +106,7 @@ class MonteCarloChain(object):
 
 
         
-    def test_configuration(self, x, e):
-        if self.accept_tests is not None:
-            for test in self.accept_tests:
-                if not test(energy=e, coords=x):
-                    self.nreject_config += 1
-#                    print "rejecting config"    
-                    return False
-        return True
-
-    def step(self):
-        """
-        Do one iteration in the Monte Carlo chain
-
-        Notes
-        -----
-        copy current configuration x to xnew and then perform a trial move on
-        xnew. Accept if the configuration of the new energy is less than Emax
-        and if accept_tests are satisfied. If true update x to xnew. Finally,
-        optionally applies all events functions to x.  
-        """
-        xnew = self.x.copy()
-        
-        # displace configuration
-        self.takestep(xnew)
-        
-        # get energy
-        e = self.potential.getEnergy(xnew)
-        
-#        print e, self.Emax
-        accept = e < self.Emax
-
-        if accept:
-            accept = self.test_configuration(xnew, e)
-#            print "accepting", self.naccept
-
-        if accept:
-            self.x = xnew
-            self.energy = e
-            self.naccept += 1
-        
-        if self.events is not None:
-            for event in self.events:
-                event(coords=self.x, x=self.x, energy=self.energy, accept=accept)
-
-        self.nsteps += 1
-
-
-class MCRunner(mp.Process):
+class MCWalkerParallelWrapper(mp.Process):
     def __init__(self, conn, mc_runner):
         mp.Process.__init__(self)
         self.conn = conn

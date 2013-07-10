@@ -8,7 +8,7 @@ from itertools import izip
 
 #this import fixes some bugs in how multiprocessing deals with exceptions
 import pele.utils.fix_multiprocessing
-from mc_walker import MCRunner
+from mc_walker import MCWalkerParallelWrapper
 
 
 class Replica(object):
@@ -44,7 +44,7 @@ class NestedSampling(object):
         is the particular system of interest, say LJCluster
     nreplicas : integer
         number of replicas
-    mc_runner : callable
+    mc_walker : callable
         does Markov Chain walk to create a new configuration from an old configuration.
         It should return an object with attributes x, energy, nsteps, naccept, etc.
     mciter : integer
@@ -63,7 +63,7 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, system, nreplicas, mc_runner, mciter=100, 
+    def __init__(self, system, nreplicas, mc_walker, mciter=100, 
                   stepsize=None, nproc=1, verbose=True,
                   max_stepsize=0.5):
         self.system = system
@@ -71,7 +71,7 @@ class NestedSampling(object):
         self.nproc = nproc
         self.verbose = verbose
         self.nreplicas = nreplicas
-        self.mc_runner = mc_runner
+        self.mc_walker = mc_walker
         self.stepsize = stepsize
         self.max_stepsize = max_stepsize
 
@@ -92,7 +92,7 @@ class NestedSampling(object):
             self.workerlist = []
             for i in range(self.nproc):
                 parent_conn, child_conn = mp.Pipe()
-                worker = MCRunner(child_conn, self.mc_runner)
+                worker = MCWalkerParallelWrapper(child_conn, self.mc_walker)
                 worker.daemon = True
                 self.connlist.append(parent_conn)
                 self.workerlist.append(worker)
@@ -128,7 +128,7 @@ class NestedSampling(object):
         seed = np.random.randint(0, sys.maxint)
         
         # do the monte carlo walk
-        result = self.mc_runner(r.x, self.mciter, self.stepsize, Emax, r.energy, seed)
+        result = self.mc_walker(r.x, self.mciter, self.stepsize, Emax, r.energy, seed)
 
         # update the replica
         r.x = result.x
@@ -286,37 +286,3 @@ class NestedSampling(object):
         for replica in reversed(self.replicas):
             self.max_energies.append(replica.energy)
 
-
-if __name__ == "__main__":
-    from lj_run import LJClusterNew
-    from pele.takestep import RandomDisplacement
-    natoms = 6
-    nreplicas = 10
-    mciter = 1000
-    system = LJClusterNew(natoms)
-    
-    takestep = RandomDisplacement(stepsize=0.5)
-    mcrunner = MonteCarloChain(system.get_potential(), takestep, 
-                               system.get_config_tests())
-    
-    ns = NestedSampling(system, nreplicas, mcrunner, mciter=mciter)
-    for i in range(nreplicas * 300):
-        ediff = ns.replicas[-1].energy - ns.replicas[0].energy
-        if ediff < .01: break  
-        ns.one_iteration()
-    print ns.max_energies
-    print "min replica energy", ns.replicas[0].energy
-    print "max replica energy", ns.replicas[-1].energy
-    
-    with open("max_energies", "w") as fout:
-        fout.write( "\n".join([ str(e) for e in ns.max_energies]) )
-        fout.write("\n")
-        
-    
-    if True:
-        import pylab as pl
-        e = np.array(ns.max_energies)
-        pl.plot(e)
-        pl.show()
-
-    
