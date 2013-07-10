@@ -12,14 +12,16 @@ from mc_walker import MCWalkerParallelWrapper
 
 
 class Replica(object):
-    """ Replica is simply a pair of types coordinates (x) and energy
+    """object to represent the state of a system
     
     also attached is some additional information
     
     Parameters
     ----------
     x : array
+        the structural coordinates
     energy : float
+        the energy of the structure
     niter : int
         the number of MC iterations this structure has already been through
     from_random : bool
@@ -32,6 +34,7 @@ class Replica(object):
         self.from_random = True
 
     def copy(self):
+        """return a complete copy of self"""
         return copy.deepcopy(self)
 
 
@@ -49,9 +52,6 @@ class NestedSampling(object):
         It should return an object with attributes x, energy, nsteps, naccept, etc.
     mciter : integer
         number of steps in Markov Chain (sampling)
-    accept_test : list of callables
-        it's an array of pointers to functions. The dereferenced functions
-        operate a set of tests on the energy/configuration.
     nproc : int
         number of processors to use for parallel nested sampling
     
