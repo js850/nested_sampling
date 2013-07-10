@@ -1,8 +1,8 @@
 import argparse
 
-from hparticle import HarParticle, HarRunner
-from nested_sampling.nested_sampling_runner import run_nested_sampling
-from nested_sampling import NestedSampling
+from nested_sampling.models.harmonic import Harmonic
+from nested_sampling.models.harmonic_nowalk import HarmonicSampler
+from nested_sampling import NestedSampling, run_nested_sampling
 
 
 def main():
@@ -12,15 +12,14 @@ def main():
     parser.add_argument("-K", "--nreplicas", type=int, help="number of replicas", default=300)
     parser.add_argument("-A", "--ndof", type=int, help="number of degrees of freedom", default=4)
     parser.add_argument("-P", "--nproc", type=int, help="number of processors", default=1)
-    parser.add_argument("--trivparal", action='store_true', help="set whether to do trivial parallelisation",default=False)
     parser.add_argument("-q", action="store_true", help="turn off verbose printing of information at every step")
     args = parser.parse_args()
 
 
-    system = HarParticle(args.ndof, Emax_init=1000.)
-    mcrunner = HarRunner(system)
+    system = Harmonic(args.ndof)
+    mcrunner = HarmonicSampler(system, args.ndof)
     ns = NestedSampling(system, args.nreplicas, mcrunner, nproc=args.nproc, 
-                        triv_paral=args.trivparal, verbose=not args.q)
+                        verbose=not args.q)
     print "harmonic particle ndof", args.ndof
     run_nested_sampling(ns, label="hparticle", etol=1e-5)
     

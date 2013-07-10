@@ -138,7 +138,7 @@ class NestedSampling(object):
         # print some data
         if self.verbose:
             # print some data
-            dist = np.linalg.norm(result.x - rsave.x0)
+            dist = np.linalg.norm(result.x - rsave.x)
             print "step:", self.iter_number, "%accept", float(result.naccept) / result.nsteps, \
                 "Enew", result.energy, "Eold", rsave.energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
                 "stepsize", self.stepsize, "distance", dist #, "%reject_config", float(result.nreject_config) / result.nsteps, result.nsteps - result.naccept 
