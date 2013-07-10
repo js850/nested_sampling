@@ -16,4 +16,4 @@ from mc_walker import MonteCarloWalker
 from _nested_sampling import NestedSampling
 from nested_sampling_runner import run_nested_sampling
 
-from harmonic import Harmonic
+from models.harmonic import Harmonic

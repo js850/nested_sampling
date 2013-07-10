@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from nested_sampling.harmonic import Harmonic
+from nested_sampling import Harmonic
 
 class TestHarmonic(unittest.TestCase):
     def setUp(self):
