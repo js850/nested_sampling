@@ -67,7 +67,7 @@ class NestedSampling(object):
         list of objects of type Replica
         """
     def __init__(self, system, nreplicas, mc_runner, mciter=100, 
-                 stepsize=None, nproc=1, triv_paral=True, verbose=True):
+                 stepsize=None, nproc=1, triv_paral=False, verbose=True):
         self.system = system
         self.mciter = mciter
         self.nproc = nproc
@@ -186,8 +186,7 @@ class NestedSampling(object):
         creates a random configuration, evaluates its energy and creates the corresponding Replica object
         """
         x = self.system.get_random_configuration()
-        pot = self.system.get_potential()
-        e = pot.getEnergy(x)
+        e = self.system.getEnergy(x)
 #        if self.verbose: print "pot=", e
         return Replica(x, e)
     
