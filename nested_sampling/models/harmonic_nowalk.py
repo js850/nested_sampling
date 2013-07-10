@@ -2,8 +2,6 @@
 
 import numpy as np
 
-
-from pele.systems import BaseSystem
 from scipy.optimize import Result
 from scipy import linalg
 

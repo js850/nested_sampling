@@ -1,5 +1,5 @@
 import numpy as np
-from utils.rotations import vec_random_ndim
+from nested_sampling.utils.rotations import vec_random_ndim
 
 def vector_random_uniform_hypersphere(k):
     """return a vector sampled uniformly in a hypersphere of dimension k"""
