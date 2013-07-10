@@ -5,9 +5,8 @@ import sys
 import multiprocessing as mp
 import copy
 from itertools import izip
-
 #this import fixes some bugs in how multiprocessing deals with exceptions
-import pele.utils.fix_multiprocessing
+import utils.fix_multiprocessing
 from mc_walker import MCWalkerParallelWrapper
 
 
