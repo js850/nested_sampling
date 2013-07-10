@@ -5,6 +5,9 @@ from nested_sampling import MonteCarloWalker, Harmonic
 
 class TestMCWalker(unittest.TestCase):
     def setUp(self):
+        self.prepare()
+        self.runwalker()
+    def prepare(self):
         self.ndim = 6
         self.harmonic = Harmonic(self.ndim)
         self.x0 = np.zeros(self.ndim)
@@ -16,7 +19,6 @@ class TestMCWalker(unittest.TestCase):
         self.mciter = 100
         self.Emax = 10.
         self.seed = None
-        self.runwalker()
     
     def runwalker(self):    
         self.res = self.mcwalker(self.x0, self.mciter, self.stepsize, 
@@ -26,6 +28,7 @@ class TestMCWalker(unittest.TestCase):
         self.assert_(np.all(self.x0 != self.res.x))
     def test2(self):
         self.assert_(self.energy != self.res.energy)
+        self.assert_(self.res.energy < self.Emax)
     def test3(self):
         self.assert_(self.res.naccept > 0)
     def test4(self):
