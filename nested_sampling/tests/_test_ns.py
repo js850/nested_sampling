@@ -11,15 +11,18 @@ class TestNS(unittest.TestCase):
         self.ndim = 3
         self.harmonic = Harmonic(self.ndim)
         self.nreplicas = 10
+        self.stepsize = 0.1
+        self.nproc = nproc
         
         self.mc_runner = MonteCarloChain(self.harmonic)
 
         self.ns = NestedSampling(self.harmonic, self.nreplicas, self.mc_runner, 
-                                 mciter=40, stepsize=0.1, triv_paral=False, nproc=nproc, verbose=False)
+                                 mciter=40, stepsize=0.1, nproc=nproc, verbose=False)
         
         self.Emax0 = self.ns.replicas[-1].energy
         
-        for i in xrange(100):
+        self.niter = 100
+        for i in xrange(self.niter):
             self.ns.one_iteration()
         self.Emax = self.ns.replicas[-1].energy
         self.Emin = self.ns.replicas[0].energy
@@ -29,6 +32,8 @@ class TestNS(unittest.TestCase):
         self.assert_(self.Emax < self.Emax0)
         self.assert_(self.Emin < self.Emax)
         self.assert_(self.Emin >= 0)
+        self.assert_(self.ns.stepsize != self.stepsize)
+        self.assertEqual(len(self.ns.max_energies), self.niter * self.nproc)
 
 class testNSPar(TestNS):
     def setUp(self):

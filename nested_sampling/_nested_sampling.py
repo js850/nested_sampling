@@ -30,13 +30,10 @@ class Replica(object):
         self.energy = float(energy)
         self.niter = niter
         self.from_random = True
+
     def copy(self):
         return copy.deepcopy(self)
 
-#def mc_runner_wrapper(x_tuple):
-#    mc_runner = x_tuple[0]
-#    x0, mciter, stepsize, Emax, seed = x_tuple[1:]
-#    return mc_runner(x0, mciter, stepsize, Emax, seed) 
 
 class NestedSampling(object):
     """the main class for implementing nested sampling
@@ -67,17 +64,19 @@ class NestedSampling(object):
         list of objects of type Replica
         """
     def __init__(self, system, nreplicas, mc_runner, mciter=100, 
-                 stepsize=None, nproc=1, triv_paral=False, verbose=True):
+                  stepsize=None, nproc=1, verbose=True,
+                  max_stepsize=0.5):
         self.system = system
         self.mciter = mciter
         self.nproc = nproc
         self.verbose = verbose
-        self.triv_paral = triv_paral
         self.nreplicas = nreplicas
         self.mc_runner = mc_runner
         self.stepsize = stepsize
+        self.max_stepsize = max_stepsize
 
         self.max_energies = []
+        self.store_all_energies = True
         
         self.setup_replicas(nreplicas)
     
@@ -87,21 +86,66 @@ class NestedSampling(object):
         print "mciter", self.mciter
         sys.stdout.flush()
 
-        #initialize the pool
+        #initialize the parallel workers to do the Monte Carlo Walk
         if self.nproc > 1:
-#            self.pool = mp.Pool(processes=self.nproc)
             self.connlist = []
             self.workerlist = []
             for i in range(self.nproc):
                 parent_conn, child_conn = mp.Pipe()
                 worker = MCRunner(child_conn, self.mc_runner)
+                worker.daemon = True
                 self.connlist.append(parent_conn)
                 self.workerlist.append(worker)
                 worker.start()
 
+    def _do_monte_carlo_chain_parallel(self, configs, Emax):
+        # pass the workers the starting configurations for the MC walk
+        for conn, r in izip(self.connlist, configs):
+            seed = np.random.randint(0, sys.maxint)
+            message = ("do mc", r.x, self.mciter, self.stepsize, Emax, r.energy, seed)
+            conn.send(message)
+
+        # receive the results back from the workers
+        results = [conn.recv() for conn in self.connlist]
+        
+        # update the replicas
+        for r, mc in izip(configs, results):
+            r.x = mc.x
+            r.energy = mc.energy
+            r.niter += mc.nsteps
+        configs
+
+        # print some data
+        if self.verbose:
+            accrat = float(sum(mc.naccept for mc in results))/ sum(mc.nsteps for mc in results)
+            print "step:", self.iter_number, "%accept", accrat, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                "stepsize", self.stepsize
+
+        return configs, results
+
+    def _do_monte_carlo_chain(self, r, Emax):
+        rsave = r.copy()
+        seed = np.random.randint(0, sys.maxint)
+        
+        # do the monte carlo walk
+        result = self.mc_runner(r.x, self.mciter, self.stepsize, Emax, r.energy, seed)
+
+        # update the replica
+        r.x = result.x
+        r.energy = result.energy
+        r.niter += result.nsteps
     
-    
-    def do_monte_carlo_chain(self, configs, Emax, **kwargs):
+        # print some data
+        if self.verbose:
+            # print some data
+            dist = np.linalg.norm(result.x - rsave.x0)
+            print "step:", self.iter_number, "%accept", float(result.naccept) / result.nsteps, \
+                "Enew", result.energy, "Eold", rsave.energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                "stepsize", self.stepsize, "distance", dist #, "%reject_config", float(result.nreject_config) / result.nsteps, result.nsteps - result.naccept 
+
+        return r, result
+
+    def do_monte_carlo_chain(self, configs, Emax):
         """
         from an initial configuration do a monte carlo chain with niter iterations, 
         
@@ -109,76 +153,25 @@ class NestedSampling(object):
         Re-iterates for mciter steps.  After each step update stepize to meet
         target_ratio. 
         """
+        assert len(configs) == self.nproc
+
         if self.nproc > 1:
-
-            try:
-                # pass the workers the starting configurations for the MC walk
-                for conn, r in izip(self.connlist, configs):
-                    seed = np.random.randint(0, sys.maxint)
-                    message = ("do mc", r.x, self.mciter, self.stepsize, Emax, r.energy, seed)
-                    conn.send(message)
-                # recieve the results back from the workers
-                mclist = [conn.recv() for conn in self.connlist]
-            except:
-                #this is bad, it shouldn't be done here
-                print "exception caught during parallel MC iteration.  Terminating child processes"
-                for worker in self.workerlist:
-                    worker.terminate()
-                    worker.join()
-                print "done terminating child processes"
-                raise
-            
-            for r, mc in izip(configs, mclist):
-                r.x = mc.x
-                r.energy = mc.energy
-                r.niter += mc.nsteps
-            rnewlist = configs
-
-            if self.verbose:
-                # print some data
-                accrat = float(sum(mc.naccept for mc in mclist))/ sum(mc.nsteps for mc in mclist)
-                print "step:", self.iter_number, "%accept", accrat, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                    "stepsize", self.stepsize
-
+            rnewlist, results = self._do_monte_carlo_chain_parallel(configs, Emax)
 
         else:
-            rold = configs[0]
-            x0, energy = rold.x.copy(), rold.energy
-            x0save = x0.copy()
-            attempts = 0
-            success = 0
-            while (success < 1) and (attempts < self.nreplicas):
-                if attempts > 0:
-                    print "warning: redoing monte carlo walk"
-                seed = np.random.randint(0, sys.maxint)
-                mc = self.mc_runner(x0, self.mciter, self.stepsize, Emax, energy, seed)
-                attempts += 1
-                success = mc.naccept
-            rnew = rold
-            rnew.x = mc.x
-            rnew.energy = mc.energy
-            #print "do_montecarlo_chain rold.energy", rold.energy
-            #print "do_montecarlo_chain mc.energy", mc.energy
-            rnew.niter += mc.nsteps
+            rnew, result = self._do_monte_carlo_chain(configs[0], Emax)
             rnewlist = [rnew]
-            mclist = [mc]
-        
-            if self.verbose:
-                # print some data
-                dist = np.linalg.norm(mc.x - x0save)
-                print "step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
-                    "Enew", mc.energy, "Eold", energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                    "stepsize", self.stepsize, "distance", dist #, "%reject_config", float(mc.nreject_config) / mc.nsteps, mc.nsteps - mc.naccept 
-        
-        for mc, r in izip(mclist, configs):
-            if mc.naccept == 0:
+            results = [result]
+
+        for result, r in izip(results, configs):
+            if result.naccept == 0:
                 sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
                 sys.stdout.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
-                print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(mc.naccept) / mc.nsteps, \
-                    "Enew", mc.energy, "Eold", r.energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(result.naccept) / result.nsteps, \
+                    "Enew", result.energy, "Eold", r.energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
                     "stepsize", self.stepsize #, "distance", dist removed because dist is undefined for multiple processors
 
-        self.adjust_step_size(mclist)
+        self.adjust_step_size(results)
         return rnewlist
     
     def create_replica(self):
@@ -187,7 +180,6 @@ class NestedSampling(object):
         """
         x = self.system.get_random_configuration()
         e = self.system.getEnergy(x)
-#        if self.verbose: print "pot=", e
         return Replica(x, e)
     
     def sort_replicas(self):
@@ -219,120 +211,71 @@ class NestedSampling(object):
         """
         if self.stepsize is None: return
         f = 0.8
-        target_ratio = 0.7
-        max_stepsize = 0.5 # these should to be passed
-        ratio = float(sum(m.naccept for m in mc))/ sum(m.nsteps for m in mc)  
+        target_ratio = 0.5
+        max_stepsize = self.max_stepsize # these should to be passed
+        ratio = float(sum(m.naccept for m in mc)) / sum(m.nsteps for m in mc)  
         
         if ratio < target_ratio:
             # reduce step size
             self.stepsize *= f
         else:
+            # increase stepsize
             self.stepsize /= f
         if self.stepsize > max_stepsize:
             self.stepsize = max_stepsize
         
-    def pop_replica(self):
+    def pop_replicas(self):
         """
-        remove the replica with the largest energy (last item in the list) and store it in the max_energies array. 
-        
-        This is then used for integration.
+        remove the replicas with the largest energy and store them in the max_energies array 
         """
-        # pull out the replica with the largest energy
-        rmax = self.replicas.pop()
-        # print "Epop:", rmax.energy, "n_replicas", len(self.replicas)
+        # pull out the replicas with the largest energy
+        for i in xrange(self.nproc):
+            r = self.replicas.pop()
+            if i == 0 or self.store_all_energies:
+                self.max_energies.append(r.energy)
         
-        # add store it for later analysis
-        self.max_energies.append(rmax.energy)
-        return rmax
-    
-    def pop_replica_par(self, rtuple):
-        """
-        removes the other processes for parallel implementation
-        
-        remove nproc-1 replicas.  the one with the highest energy has already been
-        removed.  
-        
-        non trivial
-        -----------
-        remove the nproc-1 highest energy replicas
-        
-        Trivial
-        -------
-        randomly remove nproc - 1 replicas stored in rtuple[1]
-        for trivial parallelization we m
-        
-        """
-        #remove other nproc-1 replica
-        if self.triv_paral is True:
-            indices = copy.copy(rtuple[1])
-            # we need to remove one replica randomly from indices.  This will be the replica
-            # that is duplicated before doing the monte carlo walk.    
-            try:
-                # if one of the indices is the highest energy one, then remove this one
-                indices.remove(self.nreplicas-1) # this one has already been removed
-            except ValueError:
-                # indices is already randomly arranged, so removing the first one is fine
-                indices = indices[1:]
-            indices.sort(reverse=True)
-            # sort the indices so the correct indices are removed
-            # even though the list is being modified
-            for i in indices:
-                if i == self.nreplicas - 1: 
-                    continue # this is already popped
-                self.replicas.pop(i)
-        else:
-            length = self.nproc-1
-            for i in xrange(length):
-                self.replicas.pop()
-#        print len(self.replicas), len(indices)
-#        if len(self.replicas) != self.nreplicas - self.nproc:
-#            raise Exception("wrong number of replicas %d" % (len(self.replicas)))
-
-    def get_starting_configuration_from_replicas(self):
+    def get_starting_configurations_from_replicas(self):
+        """use existing replicas as starting configurations"""
         # choose a replica randomly
-        if self.nproc > 1 and self.triv_paral is False:
-            rlist_int = random.sample(xrange(len(self.replicas)-self.nproc+1), self.nproc)
-        else:
-            rlist_int = random.sample(xrange(len(self.replicas)), self.nproc)
-        configlist = [copy.deepcopy(self.replicas[i]) for i in rlist_int]
-        return configlist,rlist_int
+        assert len(self.replicas) == (self.nreplicas - self.nproc)
+        rlist = random.sample(self.replicas, self.nproc)
+        
+        # make a copy of the replicas so we don't modify the old ones
+        rlist = [r.copy() for r in rlist]
+        return rlist
 
-    def get_starting_configuration(self, Emax):
-        return self.get_starting_configuration_from_replicas()
+    def get_starting_configurations(self, Emax):
+        """return nproc replicas to be used as starting configurations"""
+        return self.get_starting_configurations_from_replicas()
     
-    def add_new_replica(self, rnew):
-#        rnew = Replica(x, energy)
-        self.replicas.append(rnew)
-        return rnew
+    def add_new_replicas(self, rlist):
+        """add new replicas the the list and keep the list sorted"""
+        for r in rlist:
+            self.replicas.append(r)
+        self.sort_replicas()
+    
+    def _get_new_Emax(self):
+        return self.replicas[-self.nproc].energy
     
     def one_iteration(self):
-        if self.nproc > 1 and self.triv_paral is False:
-            Emax = self.replicas[-self.nproc].energy
-        else:
-            Emax = self.replicas[-1].energy
-       
-        rtuple = self.get_starting_configuration(Emax)
-        configs = rtuple[0]
-        
-        for i in xrange(self.nproc):
-            self.pop_replica()
-                    
-        if self.nproc > 1 and self.triv_paral is True:  #this is a dirty fix because pop_replica_par is also written for burkoff
-            self.pop_replica_par(rtuple)                #consider adding a flag to decide between burkoff and improved burkoff
-        
-#        if self.verbose: print "one_iteration Emax", Emax
-        rlist = self.do_monte_carlo_chain(configs, Emax)
+        """do one iteration of the nested sampling algorithm"""
+        Emax = self._get_new_Emax()
 
-        for r in rlist:
-            self.add_new_replica(r)
+        self.pop_replicas()
+        
+        rlist = self.get_starting_configurations(Emax)
+                    
+        rlist = self.do_monte_carlo_chain(rlist, Emax)
+
+        self.add_new_replicas(rlist)
             
-        self.iter_number += 1        
-        self.sort_replicas()
+        self.iter_number += 1    
         
         if self.nreplicas != len(self.replicas):
             raise Exception("number of replicas (%d) is not correct (%d)" % (len(self.replicas), self.nreplicas))
 
     def finish(self):
+        """do any clean up that needs to be done at the end of the simulation"""
         if self.nproc > 1:
             for conn, worker in izip(self.connlist, self.workerlist):
                 conn.send("kill")
@@ -342,9 +285,6 @@ class NestedSampling(object):
         print "copying live replicas"
         for replica in reversed(self.replicas):
             self.max_energies.append(replica.energy)
-        print "terminated copying live replica"
-#            self.pool.close()
-#            self.pool.join()
 
 
 if __name__ == "__main__":
