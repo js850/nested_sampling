@@ -2,7 +2,7 @@ import multiprocessing as mp
 
 import numpy as np
 
-from nested_sampling import Result
+from nested_sampling.utils.result import Result
 
 def random_displace(x, stepsize):
     x += np.random.uniform(low=-stepsize, high=stepsize, size=x.shape)

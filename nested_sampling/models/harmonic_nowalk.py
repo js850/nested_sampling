@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from scipy.optimize import Result
+from nested_sampling.utils.result import Result
 from scipy import linalg
 
 from harmonic import vector_random_uniform_hypersphere
