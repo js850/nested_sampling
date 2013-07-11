@@ -2,7 +2,8 @@ import argparse
 
 from nested_sampling.models.harmonic import Harmonic
 from nested_sampling.models.harmonic_nowalk import HarmonicSampler
-from nested_sampling import NestedSampling, run_nested_sampling
+from nested_sampling._nested_sampling import NestedSampling
+from nested_sampling.nested_sampling_runner import run_nested_sampling
 
 
 def main():
