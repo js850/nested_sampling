@@ -1,5 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
+#THIS FILE HAS BEEN ADAPTED FROM optmize.py OF SCIPY 0.12
+
 __all__ =['Result']
 
 class Result(dict):
