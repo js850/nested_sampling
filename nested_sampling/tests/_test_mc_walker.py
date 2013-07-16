@@ -14,14 +14,14 @@ class TestMCWalker(unittest.TestCase):
         self.energy = self.harmonic.get_energy(self.x0)
         
     
-        self.mcwalker = MonteCarloWalker(self.harmonic)
-        self.stepsize = 0.1
         self.mciter = 100
+        self.mcwalker = MonteCarloWalker(self.harmonic, mciter=self.mciter)
+        self.stepsize = 0.1
         self.Emax = 10.
         self.seed = None
     
     def runwalker(self):    
-        self.res = self.mcwalker(self.x0, self.mciter, self.stepsize, 
+        self.res = self.mcwalker(self.x0, self.stepsize, 
                                  self.Emax, self.energy, seed=self.seed)
         
     def test1(self):

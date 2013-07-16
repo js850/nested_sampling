@@ -51,16 +51,18 @@ class MonteCarloWalker(object):
     --------
     NestedSampling
     """
-    def __init__(self, potential, takestep=random_displace, accept_test=None, events=None):
+    def __init__(self, potential, takestep=random_displace, accept_test=None, 
+                  events=None, mciter=100):
         self.potential = potential
         self.takestep = takestep
         self.accept_test = accept_test
         self.events = events
+        self.mciter = mciter
             
-    def __call__(self, x0, mciter, stepsize, Emax, energy, seed=None):
-        return self.run(x0, mciter, stepsize, Emax, energy, seed=seed)
+    def __call__(self, x0, stepsize, Emax, energy, seed=None):
+        return self.run(x0, stepsize, Emax, energy, seed=seed)
     
-    def run(self, x0, mciter, stepsize, Emax, energy, seed=None):        
+    def run(self, x0, stepsize, Emax, energy, seed=None):        
 
         # make sure we're not starting with a bad configuration
         assert energy <= Emax
@@ -70,7 +72,7 @@ class MonteCarloWalker(object):
         
         naccept = 0
         x = x0.copy()
-        for i in xrange(mciter):
+        for i in xrange(self.mciter):
             xnew = x.copy()
             
             # displace configuration
@@ -100,7 +102,7 @@ class MonteCarloWalker(object):
         res.x = x
         res.Emax = Emax
         res.energy = energy
-        res.nsteps = mciter
+        res.nsteps = self.mciter
         res.naccept = naccept
         return res
 
@@ -114,8 +116,8 @@ class MCWalkerParallelWrapper(mp.Process):
         self.conn = conn
         self.mc_runner = mc_runner
 
-    def do_MC(self, x0, mciter, stepsize, Emax, energy, seed):
-        return self.mc_runner(x0, mciter, stepsize, Emax, energy, seed) 
+    def do_MC(self, x0, stepsize, Emax, energy, seed):
+        return self.mc_runner(x0, stepsize, Emax, energy, seed) 
      
     def run(self):
         while 1:
@@ -123,8 +125,8 @@ class MCWalkerParallelWrapper(mp.Process):
             if message == "kill":
                 return
             elif message[0] == "do mc":
-                x0, mciter, stepsize, Emax, energy, seed = message[1:]
-                res = self.do_MC(x0, mciter, stepsize, Emax, energy, seed)
+                x0, stepsize, Emax, energy, seed = message[1:]
+                res = self.do_MC(x0, stepsize, Emax, energy, seed)
                 self.conn.send(res)
             else:
                 print "error: unknown message: %s\n%s" % (self.name, message)

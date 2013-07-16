@@ -53,8 +53,6 @@ class NestedSampling(object):
     mc_walker : callable
         does Markov Chain walk to create a new configuration from an old configuration.
         It should return an object with attributes x, energy, nsteps, naccept, etc.
-    mciter : integer
-        number of steps in Markov Chain (sampling)
     nproc : int
         number of processors to use for parallel nested sampling
     
@@ -66,11 +64,10 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, system, nreplicas, mc_walker, mciter=100, 
+    def __init__(self, system, nreplicas, mc_walker, 
                   stepsize=None, nproc=1, verbose=True,
                   max_stepsize=0.5):
         self.system = system
-        self.mciter = mciter
         self.nproc = nproc
         self.verbose = verbose
         self.nreplicas = nreplicas
@@ -86,7 +83,6 @@ class NestedSampling(object):
         self.iter_number = 0
         
         print "nreplicas", len(self.replicas)
-        print "mciter", self.mciter
         sys.stdout.flush()
 
         #initialize the parallel workers to do the Monte Carlo Walk
@@ -105,7 +101,7 @@ class NestedSampling(object):
         # pass the workers the starting configurations for the MC walk
         for conn, r in izip(self.connlist, configs):
             seed = np.random.randint(0, sys.maxint)
-            message = ("do mc", r.x, self.mciter, self.stepsize, Emax, r.energy, seed)
+            message = ("do mc", r.x, self.stepsize, Emax, r.energy, seed)
             conn.send(message)
 
         # receive the results back from the workers
@@ -131,7 +127,7 @@ class NestedSampling(object):
         seed = np.random.randint(0, sys.maxint)
         
         # do the monte carlo walk
-        result = self.mc_walker(r.x, self.mciter, self.stepsize, Emax, r.energy, seed)
+        result = self.mc_walker(r.x, self.stepsize, Emax, r.energy, seed)
 
         # update the replica
         r.x = result.x
@@ -153,7 +149,7 @@ class NestedSampling(object):
         from an initial configuration do a monte carlo chain with niter iterations, 
         
         the step will be accepted subject only to a maximum energy criterion.
-        Re-iterates for mciter steps.  After each step update stepize to meet
+        After each step update stepize to meet
         target_ratio. 
         """
         assert len(configs) == self.nproc

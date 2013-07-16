@@ -32,7 +32,7 @@ class HarmonicSampler(object):
         self.potential = potential
         self.ndim = ndim
     
-    def __call__(self, x0, mciter, stepsize, Emax, energy, seed=None):
+    def __call__(self, x0, stepsize, Emax, energy, seed=None):
         return self.get_random_configuration(Emax)  
             
     def get_random_configuration(self, Emax):

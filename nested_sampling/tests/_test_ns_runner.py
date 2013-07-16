@@ -13,10 +13,10 @@ class TestNS(unittest.TestCase):
         self.stepsize = 0.1
         self.nproc = nproc
         
-        self.mc_runner = MonteCarloWalker(self.harmonic)
+        self.mc_runner = MonteCarloWalker(self.harmonic, mciter=40)
 
         self.ns = NestedSampling(self.harmonic, self.nreplicas, self.mc_runner, 
-                                 mciter=40, stepsize=0.1, nproc=nproc, verbose=False)
+                                 stepsize=0.1, nproc=nproc, verbose=False)
 
 
         self.etol = 0.01
