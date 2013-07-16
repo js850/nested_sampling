@@ -82,14 +82,15 @@ class NestedSampling(object):
     
         self.iter_number = 0
         
-        print "nreplicas", len(self.replicas)
-        sys.stdout.flush()
+        if self.verbose:
+            print "nreplicas", len(self.replicas)
+            sys.stdout.flush()
 
         #initialize the parallel workers to do the Monte Carlo Walk
         if self.nproc > 1:
             self.connlist = []
             self.workerlist = []
-            for i in range(self.nproc):
+            for i in xrange(self.nproc):
                 parent_conn, child_conn = mp.Pipe()
                 worker = MCWalkerParallelWrapper(child_conn, self.mc_walker)
                 worker.daemon = True
@@ -98,6 +99,7 @@ class NestedSampling(object):
                 worker.start()
 
     def _do_monte_carlo_chain_parallel(self, configs, Emax):
+        """run all the monte carlo walkers in parallel"""
         # pass the workers the starting configurations for the MC walk
         for conn, r in izip(self.connlist, configs):
             seed = np.random.randint(0, sys.maxint)
@@ -123,6 +125,8 @@ class NestedSampling(object):
         return configs, results
 
     def _do_monte_carlo_chain(self, r, Emax):
+        """do the monte carlo walk"""
+        assert self.nproc == 1
         rsave = r.copy()
         seed = np.random.randint(0, sys.maxint)
         
@@ -146,11 +150,10 @@ class NestedSampling(object):
 
     def do_monte_carlo_chain(self, configs, Emax):
         """
-        from an initial configuration do a monte carlo chain with niter iterations, 
+        from an initial configuration do a monte carlo walk 
         
-        the step will be accepted subject only to a maximum energy criterion.
-        After each step update stepize to meet
-        target_ratio. 
+        the steps will be accepted subject only to a maximum energy criterion.
+        At the end of the walk, update stepize to meet the target_ratio. 
         """
         assert len(configs) == self.nproc
 
@@ -175,7 +178,7 @@ class NestedSampling(object):
     
     def create_replica(self):
         """
-        creates a random configuration, evaluates its energy and creates the corresponding Replica object
+        create a random configuration, evaluate its energy and return the corresponding Replica object
         """
         x = self.system.get_random_configuration()
         e = self.system.get_energy(x)
@@ -196,7 +199,7 @@ class NestedSampling(object):
         print "min replica energy", self.replicas[0].energy
         print "max replica energy", self.replicas[-1].energy
     
-    def adjust_step_size(self, mc):
+    def adjust_step_size(self, results):
         """
         Adjust the stepsize to keep the acceptance ratio at a good value
 
@@ -212,7 +215,9 @@ class NestedSampling(object):
         f = 0.8
         target_ratio = 0.5
         max_stepsize = self.max_stepsize # these should to be passed
-        ratio = float(sum(m.naccept for m in mc)) / sum(m.nsteps for m in mc)  
+        naccept = sum(m.naccept for m in results)
+        nsteps = sum(m.nsteps for m in results)
+        ratio = float(naccept) / nsteps  
         
         if ratio < target_ratio:
             # reduce step size
@@ -225,7 +230,7 @@ class NestedSampling(object):
         
     def pop_replicas(self):
         """
-        remove the replicas with the largest energy and store them in the max_energies array 
+        remove the replicas with the largest energies and store them in the max_energies array 
         """
         # pull out the replicas with the largest energy
         for i in xrange(self.nproc):
@@ -258,14 +263,19 @@ class NestedSampling(object):
     
     def one_iteration(self):
         """do one iteration of the nested sampling algorithm"""
+        # get the new Emax
         Emax = self._get_new_Emax()
 
+        # remove the npar replicas with the highest energy
         self.pop_replicas()
         
+        # get starting configurations for the monte carlo walk
         rlist = self.get_starting_configurations(Emax)
-                    
+        
+        # do the monte carlo walk
         rlist = self.do_monte_carlo_chain(rlist, Emax)
 
+        # add the new replicas and keep the list sorted
         self.add_new_replicas(rlist)
             
         self.iter_number += 1    
