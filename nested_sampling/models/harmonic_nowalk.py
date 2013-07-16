@@ -41,7 +41,7 @@ class HarmonicSampler(object):
         res.nsteps = 100
         res.naccept = 50
         res.x = get_random_configuration_Emax(self.ndim, Emax)
-        res.energy = self.potential.getEnergy(res.x)
+        res.energy = self.potential.get_energy(res.x)
         return res
 
 #
@@ -64,7 +64,7 @@ def test2():
     hp = HarmonicSampler(pot, n)
     
     coords = np.array([get_random_configuration_Emax(n, 10.) for i in range(5000)])
-    energies = [pot.getEnergy(x) for x in coords]
+    energies = [pot.get_energy(x) for x in coords]
     print coords
     print "max energy", np.max(energies)
 #    plt.plot(vals, 'o')

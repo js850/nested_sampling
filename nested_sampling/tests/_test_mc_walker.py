@@ -11,7 +11,7 @@ class TestMCWalker(unittest.TestCase):
         self.ndim = 6
         self.harmonic = Harmonic(self.ndim)
         self.x0 = np.zeros(self.ndim)
-        self.energy = self.harmonic.getEnergy(self.x0)
+        self.energy = self.harmonic.get_energy(self.x0)
         
     
         self.mcwalker = MonteCarloWalker(self.harmonic)

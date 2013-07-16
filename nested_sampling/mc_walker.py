@@ -15,7 +15,7 @@ class MonteCarloWalker(object):
     Parameters
     -----------
     potential :
-        attribute of system with member function getEnergy (in essence a
+        attribute of system with member function get_energy (in essence a
         particular potential energy function)
     x : array
         are the coordinates
@@ -77,7 +77,7 @@ class MonteCarloWalker(object):
             self.takestep(xnew, stepsize)
             
             # get energy
-            e = self.potential.getEnergy(xnew)
+            e = self.potential.get_energy(xnew)
             
             accept = e < Emax
             

@@ -15,7 +15,7 @@ class Harmonic(object):
     def __init__(self, ndim):
         self.ndim = ndim
     
-    def getEnergy(self, x):
+    def get_energy(self, x):
         assert len(x) == self.ndim
         return 0.5 * x.dot(x)
     

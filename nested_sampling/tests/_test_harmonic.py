@@ -10,13 +10,13 @@ class TestHarmonic(unittest.TestCase):
     
     def test_energy(self):
         x = np.zeros(self.ndim)
-        e = self.harmonic.getEnergy(x)
+        e = self.harmonic.get_energy(x)
         self.assertAlmostEqual(e, 0., 7)
     
     def test_e2(self):
         x = np.ones(self.ndim)
         x *= 1. / np.linalg.norm(x)
-        e = self.harmonic.getEnergy(x)
+        e = self.harmonic.get_energy(x)
         self.assertAlmostEqual(e, 0.5, 7)
     
     def test_random_config(self):

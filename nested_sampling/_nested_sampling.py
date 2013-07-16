@@ -42,8 +42,12 @@ class NestedSampling(object):
 
     Parameters
     ----------
-    system : pele System
-        is the particular system of interest, say LJCluster
+    system : object
+        defines the system of interest.  must have the following functions as
+        attributes
+        
+            system.get_random_configuration()
+            system.get_energy()
     nreplicas : integer
         number of replicas
     mc_walker : callable
@@ -178,7 +182,7 @@ class NestedSampling(object):
         creates a random configuration, evaluates its energy and creates the corresponding Replica object
         """
         x = self.system.get_random_configuration()
-        e = self.system.getEnergy(x)
+        e = self.system.get_energy(x)
         return Replica(x, e)
     
     def sort_replicas(self):
