@@ -8,8 +8,6 @@ from nested_sampling.nested_sampling_runner import run_nested_sampling
 
 def main():
     parser = argparse.ArgumentParser(description="do nested sampling on a p[article in a n-dimensional Harmonic well")
-#    parser.add_argument("--db", type=str, nargs=1, help="database filename",
-#                        default="otp.db")
     parser.add_argument("-K", "--nreplicas", type=int, help="number of replicas", default=300)
     parser.add_argument("-A", "--ndof", type=int, help="number of degrees of freedom", default=4)
     parser.add_argument("-P", "--nproc", type=int, help="number of processors", default=1)
