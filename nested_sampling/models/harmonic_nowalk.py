@@ -3,12 +3,24 @@
 import numpy as np
 
 from nested_sampling.utils.result import Result
-
 from harmonic import vector_random_uniform_hypersphere
 
-   
 def get_random_configuration_Emax(ndim, Emax, Eground=None, kappa_sqrt=None, x0=None):
-    """return a random configuration for the harmonic well with energy less than Emax"""
+    """return a random configuration for the harmonic well with energy less than Emax
+    
+    Parameters
+    ----------
+    ndim : int
+        number of dimensions
+    Emax : float
+        maximum energy
+    Eground : float, optional
+        the energy at zero displacement
+    kappa_sqrt : ndarray, optional
+        the square root of the array of spring constant
+    x0 : ndarray, optional
+        the location of the center of oscilation of the springs
+    """
     #radius is a scalar corresponding to the max distance from the centre
     E = Emax
     if Eground is not None:
@@ -27,6 +39,8 @@ def get_random_configuration_Emax(ndim, Emax, Eground=None, kappa_sqrt=None, x0=
     
 
 class HarmonicSampler(object):
+    """this class generates random configurations subject to a maximum energy
+    """
     
     def __init__(self, potential, ndim):
         self.potential = potential
@@ -36,6 +50,7 @@ class HarmonicSampler(object):
         return self.get_random_configuration(Emax)  
             
     def get_random_configuration(self, Emax):
+        """return a configuration drawn uniformly with energy less than Emax"""
         res = Result()
         res.mciter = 100
         res.nsteps = 100
