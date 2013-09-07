@@ -55,6 +55,10 @@ class NestedSampling(object):
         It should return an object with attributes x, energy, nsteps, naccept, etc.
     nproc : int
         number of processors to use for parallel nested sampling
+    verbose : bool
+        print status messages
+    iprint : int
+        if verbose is true, then status messages will be printed every iprint iterations
     
     Attributes
     ----------
@@ -66,10 +70,11 @@ class NestedSampling(object):
         """
     def __init__(self, system, nreplicas, mc_walker, 
                   stepsize=None, nproc=1, verbose=True,
-                  max_stepsize=0.5):
+                  max_stepsize=0.5, iprint=1):
         self.system = system
         self.nproc = nproc
         self.verbose = verbose
+        self.iprint = iprint
         self.nreplicas = nreplicas
         self.mc_walker = mc_walker
         self.stepsize = stepsize
@@ -81,22 +86,27 @@ class NestedSampling(object):
         self.setup_replicas(nreplicas)
     
         self.iter_number = 0
+        self.failed_mc_walks = 0
         
         if self.verbose:
             print "nreplicas", len(self.replicas)
             sys.stdout.flush()
 
-        #initialize the parallel workers to do the Monte Carlo Walk
+        
         if self.nproc > 1:
-            self.connlist = []
-            self.workerlist = []
-            for i in xrange(self.nproc):
-                parent_conn, child_conn = mp.Pipe()
-                worker = MCWalkerParallelWrapper(child_conn, self.mc_walker)
-                worker.daemon = True
-                self.connlist.append(parent_conn)
-                self.workerlist.append(worker)
-                worker.start()
+            self._set_up_parallelization()
+
+    def _set_up_parallelization(self):
+        #initialize the parallel workers to do the Monte Carlo Walk
+        self.connlist = []
+        self.workerlist = []
+        for i in xrange(self.nproc):
+            parent_conn, child_conn = mp.Pipe()
+            worker = MCWalkerParallelWrapper(child_conn, self.mc_walker)
+            worker.daemon = True
+            self.connlist.append(parent_conn)
+            self.workerlist.append(worker)
+            worker.start()
 
     def _do_monte_carlo_chain_parallel(self, configs, Emax):
         """run all the monte carlo walkers in parallel"""
@@ -117,7 +127,7 @@ class NestedSampling(object):
         configs
 
         # print some data
-        if self.verbose:
+        if self.verbose and self.iter_number % self.iprint == 0:
             accrat = float(sum(mc.naccept for mc in results))/ sum(mc.nsteps for mc in results)
             print "step:", self.iter_number, "%accept", accrat, "Emax", Emax, "Emin", self.replicas[0].energy, \
                 "stepsize", self.stepsize
@@ -139,7 +149,7 @@ class NestedSampling(object):
         r.niter += result.nsteps
     
         # print some data
-        if self.verbose:
+        if self.verbose and self.iter_number % self.iprint == 0:
             # print some data
             dist = np.linalg.norm(result.x - rsave.x)
             print "step:", self.iter_number, "%accept", float(result.naccept) / result.nsteps, \
@@ -167,11 +177,35 @@ class NestedSampling(object):
 
         for result, r in izip(results, configs):
             if result.naccept == 0:
-                sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
-                sys.stdout.write("WARNING: zero steps accepted in the Monte Carlo chain %d\n")
-                print >> sys.stderr, "WARNING: step:", self.iter_number, "%accept", float(result.naccept) / result.nsteps, \
-                    "Enew", result.energy, "Eold", r.energy, "Emax", Emax, "Emin", self.replicas[0].energy, \
-                    "stepsize", self.stepsize #, "distance", dist removed because dist is undefined for multiple processors
+                self.failed_mc_walks += 1
+#                sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain\n")
+#                sys.stdout.write("WARNING: zero steps accepted in the Monte Carlo chain\n")
+                sys.stdout.write("WARNING: step: %d accept %g Enew %g Eold %g Emax %g Emin %g stepsize %g\n" % 
+                                 (self.iter_number, float(result.naccept) / result.nsteps,
+                                  result.energy, r.energy, Emax, self.replicas[0].energy,
+                                  self.stepsize))
+
+                if True:
+                    from pele.utils.xyz import write_xyz
+                    write_xyz(open("error.xyz", "w"), r.x, title="energy %g %d" % (r.energy, self.iter_number))
+                if True:
+#                    print "fail stdout"
+#                    sys.stdout.write("fail stderr\n")
+                    sys.stdout.write("testing configuration\n")
+                    tests = self.system.get_config_tests()
+                    for test in tests:
+                        if not test(coords=r.x):
+                            sys.stdout.write("    test failed\n")
+                            raise Exception("configuration failed configuration tests")
+                        else:
+                            sys.stdout.write("    test passed\n")
+                if True:
+                    print "testing energy of replica"
+                    testenergy = self.system.get_energy(r.x)
+                    assert np.abs(testenergy - r.energy) < 1e-5
+                    
+
+                    
 
         self.adjust_step_size(results)
         return rnewlist
@@ -196,8 +230,9 @@ class NestedSampling(object):
         """
         self.replicas = [self.create_replica() for i in range(nreplicas)]
         self.sort_replicas()
-        print "min replica energy", self.replicas[0].energy
-        print "max replica energy", self.replicas[-1].energy
+        if self.verbose:
+            print "min replica energy", self.replicas[0].energy
+            print "max replica energy", self.replicas[-1].energy
     
     def adjust_step_size(self, results):
         """
