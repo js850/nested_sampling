@@ -69,7 +69,7 @@ class NestedSampling(object):
         list of objects of type Replica
         """
     def __init__(self, system, nreplicas, mc_walker, 
-                  stepsize=None, nproc=1, verbose=True,
+                  stepsize=0.1, nproc=1, verbose=True,
                   max_stepsize=0.5, iprint=1):
         self.system = system
         self.nproc = nproc
