@@ -63,15 +63,15 @@ class MonteCarloWalker(object):
         return self.run(x0, stepsize, Emax, energy, seed=seed)
     
     def run(self, x0, stepsize, Emax, energy, seed=None):        
+        naccept = 0
+        x = x0.copy()
 
         # make sure we're not starting with a bad configuration
         assert energy <= Emax
         if self.accept_test is not None:
-            if not self.accept_test(self.x, 0.):
+            if not self.accept_test(x, 0.):
                 raise Exception("initial configuration for monte carlo chain failed configuration test")
         
-        naccept = 0
-        x = x0.copy()
         for i in xrange(self.mciter):
             xnew = x.copy()
             
