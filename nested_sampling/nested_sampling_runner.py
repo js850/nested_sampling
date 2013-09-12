@@ -19,6 +19,8 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
     isave = 0
     i = 0
     
+    print "nreplicas", len(ns.replicas)
+    
     fout_replicas = open(label+".replicas", "w")
     fout_energies = open(label+".energies", "w")
 

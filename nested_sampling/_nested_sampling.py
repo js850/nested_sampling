@@ -70,7 +70,7 @@ class NestedSampling(object):
         """
     def __init__(self, system, nreplicas, mc_walker, 
                   stepsize=0.1, nproc=1, verbose=True,
-                  max_stepsize=0.5, iprint=1):
+                  max_stepsize=0.5, iprint=1, replicas=None):
         self.system = system
         self.nproc = nproc
         self.verbose = verbose
@@ -83,7 +83,15 @@ class NestedSampling(object):
         self.max_energies = []
         self.store_all_energies = True
         
-        self.setup_replicas(nreplicas)
+        if replicas is not None:
+            print "using passed replicas"
+            if len(replicas) != self.nreplicas:
+                print "passed value nreplicas", self.nreplicas, "was wrong.  Changing it to", len(replicas)
+            self.nreplicas = len(replicas)
+            self.replicas = replicas
+            self.sort_replicas()
+        else:
+            self.setup_replicas(nreplicas)
     
         self.iter_number = 0
         self.failed_mc_walks = 0
