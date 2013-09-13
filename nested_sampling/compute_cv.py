@@ -1,28 +1,24 @@
 from __future__ import division
 import argparse
 import numpy as np
-import copy
-from src.cv_trapezoidal import compute_cv_c
 from itertools import izip
 
+from nested_sampling import compute_heat_capacity
+
 def get_energies(fnames, block=False):
+    """read energies from a list of file names and return as one list
+    """
     if len(fnames) == 1:
         return np.genfromtxt(fnames[0])
-    if not block:
+    else:
         eall = []
         for fname in fnames:
             e = np.genfromtxt(fname)
             eall += e.tolist()
         eall.sort(key=lambda x: -x)
         return np.array(eall).flatten()
-    else:
-        eall = [[] for i in xrange(len(fnames))]
-        for fname,i in zip(fnames,xrange(len(fnames))):
-            e = np.genfromtxt(fname)
-            eall[i] = copy.deepcopy(e.tolist())
-        return np.array(eall)
-    
-if __name__ == "__main__":
+
+def main():   
     parser = argparse.ArgumentParser(description="load energy intervals and compute cv", 
                                      epilog="if more than one file name is given the energies from all runs will be combined and sorted."
                                      "  the number of replicas will be the sum of the replicas used from all runs (automated!!!)")
@@ -34,46 +30,48 @@ if __name__ == "__main__":
     parser.add_argument("--nT", type=int,help="set number of temperature in the interval Tmin-Tmax at which Cv is evaluated (default=500)",default=500)
     parser.add_argument("--ndof", type=int, help="number of degrees of freedom (default=0)", default=0)
     parser.add_argument("--live", action="store_true", help="use live replica energies (default=False), numerically unstable for K>2.5k.",default=False)
-    parser.add_argument("--live_not_stored", action="store_true", help="turn this flag on if you're using a set of data that does not contain the live replica.",default=False)
+    parser.add_argument("--live-not-stored", action="store_true", help="turn this flag on if you're using a set of data that does not contain the live replica.",default=False)
+    parser.add_argument("-o", type=str, default="cv", help="change the prefix of the output files")
     args = parser.parse_args()
     print args.fname
     print args
 
-    energies = get_energies(args.fname, block=False)
+
+    energies = get_energies(args.fname)
     print "energies size", np.size(energies)
     
-    P = args.P
-    print "parallel nprocessors", P
+    print "parallel nprocessors", args.P
+    print "replicas", args.K
     
-    Tmin = args.Tmin
-    Tmax = args.Tmax
-    nT = args.nT
-    dT = (Tmax-Tmin) / nT
-    T = np.array([Tmin + dT*i for i in range(nT)])
-    
-    #in the improved brkf we save the energies of the replicas at the live replica but the ln(dos) underflows for these, hence this:
-    if args.live_not_stored == False:
+    #in the improved parallelization we save the energies of the replicas at the live replica but the ln(dos) underflows for these, hence this:
+    if not args.live_not_stored:
         energies = energies[:-args.K]
     else:
         assert not args.live, "cannot use live replica under any circumstances if they have not been saved" 
     
-    #make nd-arrays C contiguous 
-    energies = np.array(energies, order='C')
-        
-    print "trapezoidal"
-    T, Cv, U, U2 = compute_cv_c(energies, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof), args.live)
+    #make nd-arrays C contiguous # js850> this will already be the case 
+#    energies = np.array(energies, order='C')
     
-    with open("cv.dat", "w") as fout:
-        fout.write("#T Cv\n")
+    # do the computation
+    T, Cv, U, U2 = compute_heat_capacity(energies, args.K, npar=args.P, 
+                                         ndof=args.ndof, Tmin=args.Tmin, Tmax=args.Tmax, 
+                                         nT=args.nT, live_replicas=args.live)
+    
+    # print to cv.dat 
+    with open(args.o+".dat", "w") as fout:
+        fout.write("#T Cv <E> <E^2>\n")
         for vals in izip(T, Cv, U, U2):
-            fout.write("%.30f %.30f %g %g\n" % vals)
-                
+            fout.write("%.16g %.16g %.16g %.16g\n" % vals)
+    
+    # make a plot and save it
     import matplotlib
     matplotlib.use('PDF')
     import pylab as pl
     pl.plot(T, Cv)
     pl.xlabel("T")
     pl.ylabel("Cv")
-    pl.savefig("cv.pdf")
+    pl.savefig(args.o+".pdf")
         
     
+if __name__ == "__main__":
+    main()
