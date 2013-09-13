@@ -20,8 +20,8 @@ cdef extern:
     
 cdef extern: 
     void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, 
-                            double* U, double* U2,
-                            int N, double Tmin, double Tmax, int nT, double ndof, int logscale, 
+                            double* U, double* U2, double * Tlist,
+                            int N, int nT, double ndof, int logscale, 
                             )
     
 def compute_cv_c(np.ndarray[double, ndim=1, mode="c"] E_list,
@@ -32,16 +32,17 @@ def compute_cv_c(np.ndarray[double, ndim=1, mode="c"] E_list,
     cdef int logscale
     cdef np.ndarray[double, ndim=1, mode="c"] dos_list
     cdef np.ndarray[double, ndim=1, mode="c"] logw_list
-    cdef np.ndarray[double, ndim=1, mode="c"] cv_list
-    cdef np.ndarray[double, ndim=1, mode="c"] U
-    cdef np.ndarray[double, ndim=1, mode="c"] U2
+    cdef np.ndarray[double, ndim=1, mode="c"] cv_list = np.zeros(nT)
+    cdef np.ndarray[double, ndim=1, mode="c"] U = np.zeros(nT)
+    cdef np.ndarray[double, ndim=1, mode="c"] U2 = np.zeros(nT)
+    cdef np.ndarray[double, ndim=1, mode="c"] T = np.zeros(nT)
     #Emin = E_list[-1]
     N = np.size(E_list)
     dos_list = np.zeros(N)
     logw_list = np.zeros(N)
-    cv_list = np.zeros(nT)
-    U = np.zeros(nT)
-    U2 = np.zeros(nT)
+#    cv_list = np.zeros(nT)
+#    U = np.zeros(nT)
+#    U2 = np.zeros(nT)
     logscale = 1
     
     #renorm_energies(<double*>E_list.data, N, Emin)
@@ -49,18 +50,18 @@ def compute_cv_c(np.ndarray[double, ndim=1, mode="c"] E_list,
     compute_dos(<double*>dos_list.data, N, P, K, <bint>live)
     
 #    print "dos list",dos_list
+
+    T = np.linspace(Tmin, Tmax, nT)
     
     print "len U", len(U), len(U2)
     heat_capacity_loop(<double*>E_list.data, <double*>dos_list.data, 
                        <double*>logw_list.data, <double*>cv_list.data, 
-                       <double*>U.data, <double*>U2.data,
-                       N, Tmin, Tmax, nT, ndof, logscale,
+                       <double*>U.data, <double*>U2.data, <double*>T.data,
+                       N, nT, ndof, logscale,
                        )
     
     print "logw list",logw_list
     
-    dT = (Tmax - Tmin) / nT
-    T = np.arange(Tmin, Tmax, dT)
     
     return T, cv_list, U, U2
 

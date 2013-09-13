@@ -7,7 +7,7 @@ double X_imp(int i, double K, double P);
 void compute_dos(double* gl, int N, double P, double K, int live);
 void log_weights(double* El, double* gl, double* wl, int N, double T);
 double heat_capacity(double* El, double* wl, int N, double T, double ndof, double * U, double * U2);
-void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, double * U, double * U2, int N, double Tmin, double Tmax, int nT, double ndof);
+void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, double * U, double * U2, double * Tlist, int N, int nT, double ndof);
 
 double max_array(double* a, int N)
 {
@@ -122,20 +122,20 @@ double heat_capacity(double* El, double* wl, int N, double T, double ndof, doubl
 }
 
 //////////////////////////////calculate heat capacity over a set of Ts/////////////////////
-void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, double * U, double * U2, int N, double Tmin, double Tmax, int nT, double ndof)
+void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, double * U, double * U2, double * Tlist, int N, int nT, double ndof)
 {
   //Cvl is a 0's array of size N (same size as El)
   //the mean internal energy for each temperature will be returned in U
   //the mean internal energy squared for each temperature will be returned in U2
   int i,j;
-  double dT = (Tmax - Tmin) / nT;
-  double T = Tmin;
+  double T = 0;
   double wl_max;
   double _U = 0.;
   double _U2 = 0.;
   
   for(i=0;i<nT;++i)
   {
+    T = Tlist[i];
     log_weights(El, gl, wl, N, T);
     wl_max = max_array(wl,N);
     
@@ -148,7 +148,6 @@ void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, double 
     
     //printf("i %d\n", i);
     Cvl[i] = heat_capacity(El, wl, N, T, ndof, &_U, &_U2);
-    T += dT;
     //printf("    done with heat_capacity\n");
     U[i] = _U;
     U2[i] = _U2;
