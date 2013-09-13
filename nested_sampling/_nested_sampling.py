@@ -5,9 +5,10 @@ import sys
 import multiprocessing as mp
 import copy
 from itertools import izip
+
 #this import fixes some bugs in how multiprocessing deals with exceptions
-import utils.fix_multiprocessing
-from mc_walker import MCWalkerParallelWrapper
+import nested_sampling.utils.fix_multiprocessing
+from nested_sampling._mc_walker import MCWalkerParallelWrapper
 
 
 class Replica(object):
