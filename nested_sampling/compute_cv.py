@@ -3,11 +3,12 @@ import argparse
 import numpy as np
 import copy
 from src.cv_trapezoidal import compute_cv_c
+from itertools import izip
 
-def get_energies(fnames,block=False):
+def get_energies(fnames, block=False):
     if len(fnames) == 1:
         return np.genfromtxt(fnames[0])
-    if block == False:
+    if not block:
         eall = []
         for fname in fnames:
             e = np.genfromtxt(fname)
@@ -36,8 +37,9 @@ if __name__ == "__main__":
     parser.add_argument("--live_not_stored", action="store_true", help="turn this flag on if you're using a set of data that does not contain the live replica.",default=False)
     args = parser.parse_args()
     print args.fname
+    print args
 
-    energies = get_energies(args.fname,block=False)
+    energies = get_energies(args.fname, block=False)
     print "energies size", np.size(energies)
     
     P = args.P
@@ -51,20 +53,20 @@ if __name__ == "__main__":
     
     #in the improved brkf we save the energies of the replicas at the live replica but the ln(dos) underflows for these, hence this:
     if args.live_not_stored == False:
-            energies = energies[:-args.K]
+        energies = energies[:-args.K]
     else:
-        assert args.live == False,"cannot use live replica under any circumstances if they have not been saved" 
+        assert not args.live, "cannot use live replica under any circumstances if they have not been saved" 
     
     #make nd-arrays C contiguous 
     energies = np.array(energies, order='C')
         
     print "trapezoidal"
-    Cv = compute_cv_c(energies, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof), args.live)
+    T, Cv, U, U2 = compute_cv_c(energies, float(P), float(args.K*len(args.fname)), float(Tmin), float(Tmax), nT, float(args.ndof), args.live)
     
     with open("cv.dat", "w") as fout:
         fout.write("#T Cv\n")
-        for vals in zip(T, Cv):
-            fout.write("%.30f %.30f\n" % vals)
+        for vals in izip(T, Cv, U, U2):
+            fout.write("%.30f %.30f %g %g\n" % vals)
                 
     import matplotlib
     matplotlib.use('PDF')

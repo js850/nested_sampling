@@ -5,9 +5,9 @@
 double max_array(double* a, int N);
 double X_imp(int i, double K, double P);
 void compute_dos(double* gl, int N, double P, double K, int live);
-void log_weigths(double* El, double* gl, double* wl, int N, double T);
-double heat_capacity(double* El, double* gl, int N, double T, double ndof);
-void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof);
+void log_weights(double* El, double* gl, double* wl, int N, double T);
+double heat_capacity(double* El, double* wl, int N, double T, double ndof, double * U, double * U2);
+void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, double * U, double * U2, int N, double Tmin, double Tmax, int nT, double ndof);
 
 double max_array(double* a, int N)
 {
@@ -16,9 +16,9 @@ double max_array(double* a, int N)
   for (i=0; i<N; ++i)
     {
       if (a[i]>max)
-	{
-	  max=a[i];
-	}
+        {
+          max=a[i];
+        }
     }
   return max;
 }
@@ -62,12 +62,12 @@ void compute_dos(double* gl, int N, double P, double K, int live)
   if (live == 1)
     {
       for(i=live;i<(N-1);++i)
-	{
-	  Xb = Xm;
-	  Xm = Xf;
-	  Xf = Xm * (K-i)/(K-i+1);
-	  gl[i] = 0.5 * (Xb - Xf);
-	}
+        {
+          Xb = Xm;
+          Xm = Xf;
+          Xf = Xm * (K-i)/(K-i+1);
+          gl[i] = 0.5 * (Xb - Xf);
+        }
     }
   Xb = Xm;
   Xm = Xf;
@@ -75,71 +75,83 @@ void compute_dos(double* gl, int N, double P, double K, int live)
   gl[N-1] =  0.5 * (Xb - Xf);  
 }
 
-void log_weigths(double* El, double* gl, double* wl, int N, double T)
+void log_weights(double* El, double* gl, double* wl, int N, double T)
 {
   int i;
   double beta = 1/T;
   for(i=0;i<N;++i)
     {
       if(gl[i]<0)
-	{
-	  printf("gl[%d] is %E \n",i, gl[i]);
-	  abort();
-	}
+        {
+          printf("gl[%d] is %E \n",i, gl[i]);
+          abort();
+        }
       wl[i] = log(gl[i]) - beta * El[i];
     }
 }
 
 ////////////////////////////caclulate heat capacity for a single T////////////////////////
-double heat_capacity(double* El, double* wl, int N, double T, double ndof)
+double heat_capacity(double* El, double* wl, int N, double T, double ndof, double * U, double * U2)
 {
   //K is the number of replicas, beta the reduced temperature and E is the array of energies 
   int i;
   double Cv;
   double Z = 0;
-  double U = 0;
-  double U2 = 0;
-  double beta = 1/T;
+  double _U = 0;
+  double _U2 = 0;
+  double beta = 1./T;
   double bolz = 0.;
+
   
   for(i=0;i<N;++i)
   {
     bolz = exp(wl[i]);
     Z += bolz;
     //printf("Z %E \n",Z);
-    U += El[i] * bolz;
-    U2 += El[i] * El[i] * bolz;
+    _U += El[i] * bolz;
+    _U2 += El[i] * El[i] * bolz;
   }
 
-  U /= Z;
-  U2 /= Z;
-  Cv =  (U2 - U*U)*beta*beta + ndof/2;
-  //printf("Z U U2 Cv %E %E %E %E \n",Z,U,U2,Cv);
+  _U /= Z;
+  _U2 /= Z;
+  Cv =  (_U2 - _U*_U)*beta*beta + 0.5 * ndof;
+  //printf("Z _U _U2 Cv %E %E %E %E \n",Z,_U,_U2,Cv);
+  *U = _U;
+  *U2 = _U2;
   return Cv;
 }
 
 //////////////////////////////calculate heat capacity over a set of Ts/////////////////////
-void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, int N, double Tmin, double Tmax, int nT, double ndof)
+void heat_capacity_loop(double* El, double* gl, double* wl, double* Cvl, double * U, double * U2, int N, double Tmin, double Tmax, int nT, double ndof)
 {
   //Cvl is a 0's array of size N (same size as El)
+  //the mean internal energy for each temperature will be returned in U
+  //the mean internal energy squared for each temperature will be returned in U2
   int i,j;
   double dT = (Tmax - Tmin) / nT;
   double T = Tmin;
   double wl_max;
+  double _U = 0.;
+  double _U2 = 0.;
   
   for(i=0;i<nT;++i)
   {
-    log_weigths(El, gl, wl, N, T);
+    log_weights(El, gl, wl, N, T);
     wl_max = max_array(wl,N);
     
     //printf("wl_max %d \n",wl_max);
     
     for(j=0;j<N;++j)
       {
-	wl[j] -= wl_max;
+        wl[j] -= wl_max;
       }
     
-    Cvl[i] = heat_capacity(El, wl, N, T, ndof);
+    //printf("i %d\n", i);
+    Cvl[i] = heat_capacity(El, wl, N, T, ndof, &_U, &_U2);
     T += dT;
+    //printf("    done with heat_capacity\n");
+    U[i] = _U;
+    U2[i] = _U2;
+    //printf("    done\n");
   }
 }
