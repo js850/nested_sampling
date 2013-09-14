@@ -1,5 +1,6 @@
-from nested_sampling.src.cv_trapezoidal import compute_cv_c
+from collections import namedtuple
 
+from nested_sampling.src.cv_trapezoidal import compute_cv_c
 
 
 def compute_heat_capacity(energies, nreplicas, npar=1, ndof=0, Tmin=.1, Tmax=1., nT=100, live_replicas=False):
@@ -37,5 +38,5 @@ def compute_heat_capacity(energies, nreplicas, npar=1, ndof=0, Tmin=.1, Tmax=1.,
                                 float(nreplicas), float(Tmin), float(Tmax), int(nT), 
                                 float(ndof), bool(live_replicas))
     
-    return T, Cv, U, U2
-    
+    Ret = namedtuple("CvReturn", "T Cv U U2")
+    return Ret(T=T, Cv=Cv, U=U, U2=U2)
