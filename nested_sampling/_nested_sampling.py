@@ -96,6 +96,7 @@ class NestedSampling(object):
     
         self.iter_number = 0
         self.failed_mc_walks = 0
+        self._mc_niter = 0 # total number of monte carlo iterations
         
         if self.verbose:
             print "nreplicas", len(self.replicas)
@@ -183,6 +184,8 @@ class NestedSampling(object):
             rnew, result = self._do_monte_carlo_chain(configs[0], Emax)
             rnewlist = [rnew]
             results = [result]
+
+        self._mc_niter += sum((result.nsteps for result in results))
 
         for result, r in izip(results, configs):
             if result.naccept == 0:
