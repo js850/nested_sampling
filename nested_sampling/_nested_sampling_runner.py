@@ -41,13 +41,19 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
         ns.one_iteration()
         i += 1
     
-    ns.finish()
-    
     write_energies(fout_energies, ns.max_energies, isave=isave)
     fout_energies.close()
 
     print_replicas(fout_replicas, ns.replicas)
     fout_replicas.close()
+    
+    ns.finish()
+
+    # save final replica energies to a file
+    # save them with highest energy first
+    with open(label+".replicas_final", "w") as fout:
+        write_energies(fout, [r.energy for r in reversed(ns.replicas)]) 
+    
 
     print "min replica energy", ns.replicas[0].energy
     print "max replica energy", ns.replicas[-1].energy
