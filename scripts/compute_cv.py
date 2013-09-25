@@ -21,7 +21,7 @@ def get_energies(fnames, block=False):
 def main():   
     parser = argparse.ArgumentParser(description="load energy intervals and compute cv", 
                                      epilog="if more than one file name is given the energies from all runs will be combined and sorted."
-                                     "  the number of replicas will be the sum of the replicas used from all runs (automated!!!)")
+                                     "  the number of replicas will be the sum of the replicas used from all runs (you need to input this number!)")
     parser.add_argument("K", type=int, help="number of replicas")
     parser.add_argument("fname", nargs="+", type=str, help="filenames with energies")
     parser.add_argument("-P", type=int, help="number of cores for parallel run", default=1)
@@ -29,8 +29,7 @@ def main():
     parser.add_argument("--Tmax", type=float,help="set maximum temperature for Cv evaluation (default=0.5)",default=0.5)
     parser.add_argument("--nT", type=int,help="set number of temperature in the interval Tmin-Tmax at which Cv is evaluated (default=500)",default=500)
     parser.add_argument("--ndof", type=int, help="number of degrees of freedom (default=0)", default=0)
-    parser.add_argument("--live", action="store_true", help="use live replica energies (default=False), numerically unstable for K>2.5k.",default=False)
-    parser.add_argument("--live-not-stored", action="store_true", help="turn this flag on if you're using a set of data that does not contain the live replica.",default=False)
+    parser.add_argument("--live", action="store_true", help="use live replica energies (default=False)",default=False)
     parser.add_argument("-o", type=str, default="cv", help="change the prefix of the output files")
     args = parser.parse_args()
     print args.fname
@@ -44,10 +43,8 @@ def main():
     print "replicas", args.K
     
     #in the improved parallelization we save the energies of the replicas at the live replica but the ln(dos) underflows for these, hence this:
-    if not args.live_not_stored:
-        energies = energies[:-args.K]
-    else:
-        assert not args.live, "cannot use live replica under any circumstances if they have not been saved" 
+    if len(args.fname) < 2:
+        assert not args.live,"cannot use live replica under any circumstances if they have not been saved, you need to add a data file with the live replicas energies"
     
     #make nd-arrays C contiguous # js850> this will already be the case 
 #    energies = np.array(energies, order='C')
