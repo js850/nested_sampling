@@ -69,14 +69,15 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, system, nreplicas, mc_walker, 
+    def __init__(self, replicas, mc_walker, 
                   stepsize=0.1, nproc=1, verbose=True,
-                  max_stepsize=0.5, iprint=1, replicas=None):
-        self.system = system
+                  max_stepsize=0.5, iprint=1):
         self.nproc = nproc
         self.verbose = verbose
         self.iprint = iprint
-        self.nreplicas = nreplicas
+        self.replicas = replicas
+        self.nreplicas = len(self.replicas)
+        self.sort_replicas()
         self.mc_walker = mc_walker
         self.stepsize = stepsize
         self.max_stepsize = max_stepsize
@@ -84,16 +85,6 @@ class NestedSampling(object):
         self.max_energies = []
         self.store_all_energies = True
         
-        if replicas is not None:
-            print "using passed replicas"
-            if len(replicas) != self.nreplicas:
-                print "passed value nreplicas", self.nreplicas, "was wrong.  Changing it to", len(replicas)
-            self.nreplicas = len(replicas)
-            self.replicas = replicas
-            self.sort_replicas()
-        else:
-            self.setup_replicas(nreplicas)
-    
         self.iter_number = 0
         self.failed_mc_walks = 0
         self._mc_niter = 0 # total number of monte carlo iterations
@@ -197,24 +188,25 @@ class NestedSampling(object):
                                   result.energy, r.energy, Emax, self.replicas[0].energy,
                                   self.stepsize))
 
-                if True:
-                    from pele.utils.xyz import write_xyz
-                    write_xyz(open("error.xyz", "w"), r.x, title="energy %g %d" % (r.energy, self.iter_number))
-                if True:
-#                    print "fail stdout"
-#                    sys.stdout.write("fail stderr\n")
-                    sys.stdout.write("testing configuration\n")
-                    tests = self.system.get_config_tests()
-                    for test in tests:
-                        if not test(coords=r.x):
-                            sys.stdout.write("    test failed\n")
-                            raise Exception("configuration failed configuration tests")
-                        else:
-                            sys.stdout.write("    test passed\n")
-                if True:
-                    print "testing energy of replica"
-                    testenergy = self.system.get_energy(r.x)
-                    assert np.abs(testenergy - r.energy) < 1e-5
+                
+#                if True:
+#                    from pele.utils.xyz import write_xyz
+#                    write_xyz(open("error.xyz", "w"), r.x, title="energy %g %d" % (r.energy, self.iter_number))
+#                if True:
+##                    print "fail stdout"
+##                    sys.stdout.write("fail stderr\n")
+#                    sys.stdout.write("testing configuration\n")
+#                    tests = self.system.get_config_tests()
+#                    for test in tests:
+#                        if not test(coords=r.x):
+#                            sys.stdout.write("    test failed\n")
+#                            raise Exception("configuration failed configuration tests")
+#                        else:
+#                            sys.stdout.write("    test passed\n")
+#                if True:
+#                    print "testing energy of replica"
+#                    testenergy = self.system.get_energy(r.x)
+#                    assert np.abs(testenergy - r.energy) < 1e-5
                     
 
                     
@@ -222,13 +214,13 @@ class NestedSampling(object):
         self.adjust_step_size(results)
         return rnewlist
     
-    def create_replica(self):
-        """
-        create a random configuration, evaluate its energy and return the corresponding Replica object
-        """
-        x = self.system.get_random_configuration()
-        e = self.system.get_energy(x)
-        return Replica(x, e)
+#    def create_replica(self):
+#        """
+#        create a random configuration, evaluate its energy and return the corresponding Replica object
+#        """
+#        x = self.system.get_random_configuration()
+#        e = self.system.get_energy(x)
+#        return Replica(x, e)
     
     def sort_replicas(self):
         """
@@ -236,15 +228,15 @@ class NestedSampling(object):
         """
         self.replicas.sort(key=lambda r:r.energy)
     
-    def setup_replicas(self, nreplicas):
-        """
-        creates nreplicas replicas and sorts them in decreasing order of energy
-        """
-        self.replicas = [self.create_replica() for i in range(nreplicas)]
-        self.sort_replicas()
-        if self.verbose:
-            print "min replica energy", self.replicas[0].energy
-            print "max replica energy", self.replicas[-1].energy
+#    def setup_replicas(self, nreplicas):
+#        """
+#        creates nreplicas replicas and sorts them in decreasing order of energy
+#        """
+#        self.replicas = [self.create_replica() for i in range(nreplicas)]
+#        self.sort_replicas()
+#        if self.verbose:
+#            print "min replica energy", self.replicas[0].energy
+#            print "max replica energy", self.replicas[-1].energy
     
     def adjust_step_size(self, results):
         """
