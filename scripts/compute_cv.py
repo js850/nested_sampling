@@ -2,7 +2,8 @@ from __future__ import division
 import argparse
 import numpy as np
 from itertools import izip
-
+#from utils._alpha_variance import run_alpha_variance
+#from utils._jackknife_variance import run_jackknife_variance
 from nested_sampling import compute_heat_capacity
 
 def get_energies(fnames, block=False):
@@ -14,9 +15,14 @@ def get_energies(fnames, block=False):
         eall = []
         for fname in fnames:
             e = np.genfromtxt(fname)
-            eall += e.tolist()
-        eall.sort(key=lambda x: -x)
-        return np.array(eall).flatten()
+            if block is False:
+                eall += e.tolist()
+            else:
+                eall.append(e.tolist())
+        if block is False:
+            eall.sort(key=lambda x: -x)
+            eall = np.array(eall).flatten()
+        return eall 
 
 def main():   
     parser = argparse.ArgumentParser(description="load energy intervals and compute cv", 
