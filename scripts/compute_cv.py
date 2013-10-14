@@ -4,30 +4,12 @@ import numpy as np
 from itertools import izip
 #from utils._alpha_variance import run_alpha_variance
 #from utils._jackknife_variance import run_jackknife_variance
-from nested_sampling import compute_heat_capacity
-
-def get_energies(fnames, block=False):
-    """read energies from a list of file names and return as one list
-    """
-    if len(fnames) == 1:
-        return np.genfromtxt(fnames[0])
-    else:
-        eall = []
-        for fname in fnames:
-            e = np.genfromtxt(fname)
-            if block is False:
-                eall += e.tolist()
-            else:
-                eall.append(e.tolist())
-        if block is False:
-            eall.sort(key=lambda x: -x)
-            eall = np.array(eall).flatten()
-        return eall 
+from nested_sampling import compute_heat_capacity, get_energies 
 
 def main():   
     parser = argparse.ArgumentParser(description="load energy intervals and compute cv", 
                                      epilog="if more than one file name is given the energies from all runs will be combined and sorted."
-                                     "  the number of replicas will be the sum of the replicas used from all runs (you need to input this number!)")
+                                     "  the number of replicas MUST be the sum of the replicas used from all runs (you need to input this number!)")
     parser.add_argument("K", type=int, help="number of replicas")
     parser.add_argument("fname", nargs="+", type=str, help="filenames with energies")
     parser.add_argument("-P", type=int, help="number of cores for parallel run", default=1)
@@ -48,7 +30,6 @@ def main():
     print "parallel nprocessors", args.P
     print "replicas", args.K
     
-    #in the improved parallelization we save the energies of the replicas at the live replica but the ln(dos) underflows for these, hence this:
     if len(args.fname) < 2:
         assert not args.live,"cannot use live replica under any circumstances if they have not been saved, you need to add a data file with the live replicas energies"
     

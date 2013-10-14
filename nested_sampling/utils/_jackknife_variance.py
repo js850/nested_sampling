@@ -2,8 +2,7 @@ from __future__ import division
 import argparse
 import numpy as np
 import copy
-from compute_cv import compute_Z, get_energies
-from src.cv_trapezoidal import  compute_cv_c
+from ..src.cv_trapezoidal import compute_cv_c
 from itertools import chain
 
 def run_jackknife_variance(energies, nsubsets, K, Tmin, Tmax, nT, P, ndof, block, live):
@@ -24,7 +23,7 @@ class _jackknife_variance(object):
         self.Tmax = Tmax
         self.nT = nT
         self.dT = (Tmax-Tmin) / nT
-        self.T = np.array([Tmin + dT*i for i in range(nT)])
+        self.T = np.array([Tmin + self.dT*i for i in range(nT)])
         self.P = P
         self.ndof = ndof
         self.block = block
@@ -41,7 +40,7 @@ class _jackknife_variance(object):
         CvJack = self.jack_Cv_averages(EJack)
         CvMom1 = self.jack_Cv_moments(CvJack)[0]
         sigma = self.jack_Cv_stdev(CvJack) 
-        return sigma, CvSingle, CvMom1, self.T
+        return self.T, sigma, CvSingle, CvMom1
     
     def split_energies_randomly(self):
         """
@@ -98,7 +97,7 @@ class _jackknife_variance(object):
         """
         CvJack = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
-            CvJack[i][:] = compute_cv_c(np.array(EJack[i][:]), float(P), (self.K - self.n), float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.live)
+            T, CvJack[i][:], U, U2 = compute_cv_c(np.array(EJack[i][:]), float(self.P), (self.K - self.n), float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.live)
         #print 'CvJack ',CvJack
         return np.array(CvJack)
     
@@ -108,7 +107,7 @@ class _jackknife_variance(object):
         """
         CvSingle = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
-            CvSingle[i][:] = compute_cv_c(np.array(Esplit[i][:]), float(P), (self.n), float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.live)
+            T, CvSingle[i][:], U, U2 = compute_cv_c(np.array(Esplit[i][:]), float(self.P), (self.n), float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.live)
         #print 'CvSingle ',CvSingle
         return np.array(CvSingle)
     

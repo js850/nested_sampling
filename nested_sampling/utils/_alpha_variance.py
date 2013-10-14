@@ -2,8 +2,7 @@ from __future__ import division
 import argparse
 import numpy as np
 import copy
-from compute_cv import compute_Z, get_energies
-from src.cv_trapezoidal import compute_cv_c, compute_alpha_cv_c
+from ..src.cv_trapezoidal import compute_alpha_cv_c
 from itertools import chain
 
 def run_alpha_variance(energies, nsubsets, K, Tmin, Tmax, nT, P, ndof, live):
@@ -24,7 +23,7 @@ class _alpha_variance(object):
         self.Tmax = Tmax
         self.nT = nT
         self.dT = (Tmax-Tmin) / nT
-        self.T = np.array([Tmin + dT*i for i in range(nT)])
+        self.T = np.array([Tmin + self.dT*i for i in range(nT)])
         self.P = P
         self.ndof = ndof
         self.live = live
@@ -63,7 +62,7 @@ class _alpha_variance(object):
         print 'Calculating standard deviation'
         sigma = np.sqrt(CvMom2 - np.square(CvMom1))
         print 'Plotting...'
-        return sigma, CvSingle, CvMom1, self.T
+        return self.T, sigma, CvSingle, CvMom1
                 
     def make_random_alpha_list(self):
         rn_list = np.zeros(self.N)
@@ -97,7 +96,7 @@ class _alpha_variance(object):
         """
         CvSingle = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
-            CvSingle[i][:] = compute_alpha_cv_c(self.E, np.array(alpha_sets[i][:]), float(P), self.K, float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.live)
+            T, CvSingle[i][:], U, U2 = compute_alpha_cv_c(self.E, np.array(alpha_sets[i][:]), float(P), self.K, float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.live)
         #print 'CvSingle ',CvSingle
         return np.array(CvSingle)
     
