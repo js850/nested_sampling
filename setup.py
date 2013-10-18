@@ -22,7 +22,7 @@ setup(
         [
             Extension("nested_sampling.src.cv_trapezoidal", ["nested_sampling/src/cv_trapezoidal.c", "nested_sampling/src/cv.c"],
                       include_dirs=[numpy_include],
-                      extra_compile_args = ['-Wextra','-pedantic','-funroll-loops','-O3',],
+                      extra_compile_args = ['-Wextra','-pedantic','-funroll-loops','-O3','-march=native','-mtune=native'],
                         ),
         ]
       )
