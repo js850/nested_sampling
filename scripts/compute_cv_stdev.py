@@ -75,7 +75,7 @@ def main():
     elif args.stdev == "alpha":
         T, Cv_stdev, Cv_singles, CvMom1 =  run_alpha_variance(energies, nsubsets, args.K, 
                                                                   args.Tmin, args.Tmax, args.nT, args.P, 
-                                                                  args.ndof, args.B, args.live)
+                                                                  args.ndof, args.live)
     
     #===========================================================================
     # print data

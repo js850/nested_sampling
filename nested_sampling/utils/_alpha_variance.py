@@ -96,7 +96,7 @@ class _alpha_variance(object):
         """
         CvSingle = np.zeros((self.nsubsets,self.T.size))
         for i in xrange(self.nsubsets):
-            T, CvSingle[i][:], U, U2 = compute_alpha_cv_c(self.E, np.array(alpha_sets[i][:]), float(P), self.K, float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.live)
+            T, CvSingle[i][:], U, U2 = compute_alpha_cv_c(self.E, np.array(alpha_sets[i][:]), float(self.P), self.K, float(self.Tmin), float(self.Tmax), self.nT, float(self.ndof), self.live)
         #print 'CvSingle ',CvSingle
         return np.array(CvSingle)
     
