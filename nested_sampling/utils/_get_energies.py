@@ -39,16 +39,14 @@ def get_energies(fnames, block=False, live=False):
                 else:
                     if i%2 is 0:
                         eall.append(e)
-                        print eall
                     else:
                         j = i/2
-                        print e
                         eall[j] = np.hstack((eall[j],e))
             i+=1
         if block is False:
             eall.sort(axis=0)
             eall = eall[::-1]
-            print eall
+        
         return np.array(eall)
 
 # old version of get energies, it does not make use of 
