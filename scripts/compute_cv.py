@@ -23,7 +23,7 @@ def main():
     print args.fname
     print args
 
-
+    print "started get_energies..."
     energies = get_energies(args.fname)
     print "energies size", np.size(energies)
     
