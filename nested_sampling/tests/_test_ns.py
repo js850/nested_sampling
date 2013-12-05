@@ -21,7 +21,7 @@ class TestNS(unittest.TestCase):
             x = self.harmonic.get_random_configuration()
             replicas.append(Replica(x, self.harmonic.get_energy(x)))
         self.ns = NestedSampling(replicas, self.mc_runner, 
-                                 stepsize=0.1, nproc=nproc, verbose=False)
+                                 stepsize=0.1, nproc=nproc, verbose=False, job_name = 'test', nsIP='172.26.182.160')
         
         self.Emax0 = self.ns.replicas[-1].energy
         
@@ -32,6 +32,7 @@ class TestNS(unittest.TestCase):
         self.Emin = self.ns.replicas[0].energy
     
     def test1(self):
+        print "running TestNS"
         self.assert_(len(self.ns.replicas) == self.nreplicas)
         self.assert_(self.Emax < self.Emax0)
         self.assert_(self.Emin < self.Emax)

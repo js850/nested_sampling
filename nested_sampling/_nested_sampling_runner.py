@@ -46,8 +46,6 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
 
     print_replicas(fout_replicas, ns.replicas)
     fout_replicas.close()
-    
-    ns.finish()
 
     # save final replica energies to a file
     # save them with highest energy first

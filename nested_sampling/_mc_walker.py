@@ -4,6 +4,12 @@ import numpy as np
 
 from nested_sampling import Result
 
+from collections import namedtuple
+
+from multiprocessing.managers import SyncManager
+import Queue
+import time
+
 def random_displace(x, stepsize):
     x += np.random.uniform(low=-stepsize, high=stepsize, size=x.shape)
     return x
@@ -106,29 +112,11 @@ class MonteCarloWalker(object):
         res.naccept = naccept
         return res
 
-
-        
-class MCWalkerParallelWrapper(mp.Process):
+class MCWalkerParallelWrapper(object):
     """define a worker to do the monte carlo chain in a separate process
     """
-    def __init__(self, conn, mc_runner):
-        mp.Process.__init__(self)
-        self.conn = conn
-        self.mc_runner = mc_runner
-
-    def do_MC(self, x0, stepsize, Emax, energy, seed):
-        return self.mc_runner(x0, stepsize, Emax, energy, seed) 
-     
-    def run(self):
-        while 1:
-            message = self.conn.recv()
-            if message == "kill":
-                return
-            elif message[0] == "do mc":
-                x0, stepsize, Emax, energy, seed = message[1:]
-                res = self.do_MC(x0, stepsize, Emax, energy, seed)
-                self.conn.send(res)
-            else:
-                print "error: unknown message: %s\n%s" % (self.name, message)
-
+    
+    def run(self, x0, stepsize, Emax, energy, seed, mc_runner):
+        mc = mc_runner(x0, stepsize, Emax, energy, seed)
+        return mc
 
