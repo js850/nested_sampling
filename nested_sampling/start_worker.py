@@ -3,6 +3,7 @@ import Pyro4
 import Pyro4.util
 from nested_sampling._mc_walker import MCWalkerParallelWrapper
 import argparse
+import uuid
 
 class pyro_worker(object):
     """ the worker starts a demon and registers its uri with the name server (passed to the )"""
@@ -35,12 +36,15 @@ class pyro_worker(object):
 def main():   
     parser = argparse.ArgumentParser(description="must pass a name for the worker to be registered with the name server", 
                                                 epilog="and the IP address where the name server is kept")
-    parser.add_argument("worker_name", type=str, help="name for the worker")
     parser.add_argument("job_name", type=str, help="name of the job")
     parser.add_argument("name_server_IP", type=str, help="IP address of the machine hosting the Name Server")
+    parser.add_argument("--worker-name", type=str, help="name for the worker",default=None)
     args = parser.parse_args()
     
-    worker_name = args.worker_name
+    if args.worker_name != None:
+        worker_name = args.worker_name
+    else:
+        worker_name = "{0}".format(uuid.uuid4())
     job_name = args.job_name
     nsIP = args.name_server_IP
     
