@@ -33,7 +33,7 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
             isave = len(ns.max_energies)
 
         # write the current replicas to a file
-        if i % 1000 == 0:
+        if i % 100000 == 0:
             print_replicas(fout_replicas, ns.replicas)
 
         if ediff < etol: break
