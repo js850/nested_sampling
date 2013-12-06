@@ -21,7 +21,7 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
     
     print "nreplicas", len(ns.replicas)
     
-    fout_replicas = open(label+".replicas", "w")
+    #fout_replicas = open(label+".replicas", "w")
     fout_energies = open(label+".energies", "w")
 
     while True:
@@ -33,8 +33,8 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
             isave = len(ns.max_energies)
 
         # write the current replicas to a file
-        if i % 100000 == 0:
-            print_replicas(fout_replicas, ns.replicas)
+        #if i % 100000 == 0:
+        #    print_replicas(fout_replicas, ns.replicas)
 
         if ediff < etol: break
         if maxiter is not None and i >= maxiter: break  
@@ -44,8 +44,8 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
     write_energies(fout_energies, ns.max_energies, isave=isave)
     fout_energies.close()
 
-    print_replicas(fout_replicas, ns.replicas)
-    fout_replicas.close()
+    #print_replicas(fout_replicas, ns.replicas)
+    #fout_replicas.close()
 
     # save final replica energies to a file
     # save them with highest energy first
