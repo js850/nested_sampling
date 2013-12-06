@@ -24,11 +24,11 @@ class pyro_worker(object):
     
     def _start_core(self):
         worker = MCWalkerParallelWrapper()
-        daemon = Pyro4.Daemon(host=self.host,port=self.port)
-        self.worker_uri = daemon.register(worker)
+        self.daemon = Pyro4.Daemon(host=self.host,port=self.port)
+        self.worker_uri = self.daemon.register(worker)
         self.ns.register(self.worker_name, self.worker_uri)
         print "{0} is listening".format(self.worker_name)
-        daemon.requestLoop()
+        self.daemon.requestLoop()
     
     def name_and_uri(self):
         return self.worker_name, self.worker_uri

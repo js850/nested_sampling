@@ -98,30 +98,37 @@ class NestedSampling(object):
             Pyro4.config.BROADCAST_ADDRS = self.nsIP
             self._set_up_serializer()
             self.ns = Pyro4.locateNS()
-            self.worker_proxy_list = []
+            self.worker_address_list = []
             self.ns_prefix = "nested.sampling.{0}".format(self.job_name)
+            self.copy_address_list()
 
     def _set_up_serializer(self):
         sys.excepthook = Pyro4.util.excepthook
         Pyro4.config.SERIALIZER = self.serializer
         Pyro4.config.SERIALIZERS_ACCEPTED.add(self.serializer)       
     
-    def _do_monte_carlo_chain_parallel(self, configs, Emax):
-        """run all the monte carlo walkers in parallel"""
-
+    def copy_address_list(self):
         if len(self.ns.list(prefix=self.ns_prefix).items()) != self.nproc:
             for worker,worker_uri in self.ns.list(prefix=self.ns_prefix).items():
                 print "worker: {0}, worker_uri: {1}".format(worker,worker_uri)
         
         assert( len(self.ns.list(prefix=self.ns_prefix).items()) == self.nproc)
-                
+        
+        for worker,worker_uri in self.ns.list(prefix=self.ns_prefix).items():
+            self.worker_address_list.append(worker_uri)
+        
+        workers_removed = self.ns.remove(prefix=self.ns_prefix)
+        print "copied address list and removed {0} workers from name server".format(workers_removed)
+        
+    def _do_monte_carlo_chain_parallel(self, configs, Emax):
+        """run all the monte carlo walkers in parallel"""
+        
         results = [0 for i in xrange(self.nproc)]
         
         i = 0
-        for worker,worker_uri in self.ns.list(prefix=self.ns_prefix).items():
+        for worker_uri in self.worker_address_list:
             seed = np.random.randint(0, sys.maxint)
             r = configs[i]
-            #print "joining worker {0}".format(worker)
             worker_proxy = Pyro4.Proxy(worker_uri)
             async_worker_proxy = Pyro4.async(worker_proxy)
             results[i] = async_worker_proxy.run(r.x, self.stepsize, Emax, r.energy, seed, self.mc_walker)
@@ -336,3 +343,5 @@ class NestedSampling(object):
 #        print "copying live replicas"
 #        for replica in reversed(self.replicas):
 #            self.max_energies.append(replica.energy)
+        
+                

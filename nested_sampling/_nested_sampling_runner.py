@@ -55,5 +55,6 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
 
     print "min replica energy", ns.replicas[0].energy
     print "max replica energy", ns.replicas[-1].energy
+    
     return ns
 
