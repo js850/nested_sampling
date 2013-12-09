@@ -106,7 +106,7 @@ class NestedSampling(object):
         sys.excepthook = Pyro4.util.excepthook
         Pyro4.config.SERIALIZER = self.serializer
         Pyro4.config.SERIALIZERS_ACCEPTED.add(self.serializer)       
-    
+        
     def copy_address_list(self):
         
         if len(self.ns.list(prefix=self.ns_prefix).items()) != self.nproc:
@@ -116,6 +116,7 @@ class NestedSampling(object):
         assert( len(self.ns.list(prefix=self.ns_prefix).items()) == self.nproc)
         
         for worker,worker_uri in self.ns.list(prefix=self.ns_prefix).items():
+            print "worker: {0}, worker_uri: {1}".format(worker,worker_uri)
             self.worker_address_list.append(worker_uri)
         
         workers_removed = self.ns.remove(prefix=self.ns_prefix)

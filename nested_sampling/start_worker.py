@@ -39,6 +39,8 @@ def main():
     parser.add_argument("job_name", type=str, help="name of the job")
     parser.add_argument("name_server_IP", type=str, help="IP address of the machine hosting the Name Server")
     parser.add_argument("--worker-name", type=str, help="name for the worker",default=None)
+    parser.add_argument("--host", type=str, help="address of the host (node on which the worker is started)",default=None)
+    parser.add_argument("--port", type=int, help="port number on which the worker is started)",default=0)
     args = parser.parse_args()
     
     if args.worker_name != None:
@@ -47,8 +49,10 @@ def main():
         worker_name = "{0}".format(uuid.uuid4())
     job_name = args.job_name
     nsIP = args.name_server_IP
+    host = args.host
+    port = args.port
     
-    worker = pyro_worker(worker_name, job_name, nsIP)
+    worker = pyro_worker(worker_name, job_name, nsIP, host=host, port=port)
     worker._start_core()
        
 if __name__ == "__main__":
