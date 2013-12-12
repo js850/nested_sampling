@@ -1,13 +1,29 @@
 """
 a routine to run a nested sampling class
 """
+import cPickle as pickle
+import copy
 
+def save_replicas_to_binary(fout, ns):
+    checkpoint = {}
+    checkpoint['replicas'] = ns.replicas
+    checkpoint['iter_number'] = ns.iter_number
+    checkpoint['failed_mc_walks'] = ns.failed_mc_walks
+    checkpoint['_mc_niter'] = ns._mc_niter
+    pickle.dump( checkpoint, open(fout,"wb"))
+    #Emax can then be obtained by get_new_Emax in _nested_sampling
+    
+def load_replicas_from_binary(fin):
+    checkpoint = pickle.load(open(fin, "rb"))
+    return checkpoint
 
-def print_replicas(fout, replicas):
-    fout.write("#energy niter from_random\n")
-    for r in replicas:
-        fout.write("%g %d %d\n" % (r.energy, r.niter, int(r.from_random))) 
-    fout.write("\n\n")
+def load_checkpoint(fin, ns):
+        checkpoint = load_replicas_from_binary(fin)
+        ns.replicas = copy.deepcopy(checkpoint['replicas'])
+        ns.nreplicas = copy.deepcopy(len(ns.replicas))
+        ns.iter_number = copy.deepcopy(checkpoint['iter_number'])
+        ns.failed_mc_walks = copy.deepcopy(checkpoint['failed_mc_walks'])
+        ns._mc_niter = copy.deepcopy(checkpoint['_mc_niter'])
 
 def write_energies(fout, max_energies, isave=0):
     fout.write( "\n".join([ str(e) for e in max_energies[isave:]]) )
@@ -21,20 +37,24 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
     
     print "nreplicas", len(ns.replicas)
     
-    #fout_replicas = open(label+".replicas", "w")
+    fout_replicas = label + ".replicas.p"
     fout_energies = open(label+".energies", "w")
 
     while True:
+        
+        if i == 0:
+            load_checkpoint(fout_replicas, ns)
+        
         ediff = ns.replicas[-1].energy - ns.replicas[0].energy
 
         # save max energies to a file
         if i != 0 and i % 100 == 0:
             write_energies(fout_energies, ns.max_energies, isave=isave)
             isave = len(ns.max_energies)
-
-        # write the current replicas to a file
-        #if i % 100000 == 0:
-        #    print_replicas(fout_replicas, ns.replicas)
+        
+        #pickle current replicas and write them to a file current replicas to a file
+        if i % 1000 == 0:
+            save_replicas_to_binary(fout_replicas, ns)
 
         if ediff < etol: break
         if maxiter is not None and i >= maxiter: break  
