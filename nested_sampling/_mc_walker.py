@@ -112,11 +112,11 @@ class MonteCarloWalker(object):
         res.naccept = naccept
         return res
 
-class MCWalkerParallelWrapper(object):
-    """define a worker to do the monte carlo chain in a separate process
-    """
-    
-    def run(self, x0, stepsize, Emax, energy, seed, mc_runner):
-        mc = mc_runner(x0, stepsize, Emax, energy, seed)
-        return mc
+#class MCWalkerParallelWrapper(object):
+#    """define a worker to do the monte carlo chain in a separate process
+#    """
+#    
+#    def run(self, x0, stepsize, Emax, energy, seed, mc_runner):
+#        mc = mc_runner(x0, stepsize, Emax, energy, seed)
+#        return mc
 

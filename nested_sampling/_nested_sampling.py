@@ -6,7 +6,10 @@ import copy
 from itertools import izip
 import Pyro4
 import Pyro4.util
-#this import fixes some bugs in how multiprocessing deals with exceptions
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 class Replica(object):
     """object to represent the state of a system
@@ -34,6 +37,19 @@ class Replica(object):
         """return a complete copy of self"""
         return copy.deepcopy(self)
 
+class Forwarditem(Replica):
+    """wrapper to Replica for distributed parallel calculations"""
+    
+    def __init__(self, replica, Emax, stepsize, seed, itemId):
+        super(Forwarditem,self).__init__(replica.x, replica.energy, replica.niter, replica.from_random) 
+        
+        self.Emax = Emax
+        self.seed = seed
+        self.stepsize = stepsize
+        self.Id=itemId
+    
+    def __str__(self):
+        return "<Workitem id=%s>" % str(self.Id)
 
 class NestedSampling(object):
     """the main class for implementing nested sampling
@@ -66,9 +82,8 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, replicas, mc_walker, 
-                  stepsize=0.1, nproc=1, verbose=True,
-                  max_stepsize=0.5, iprint=1, job_name = None, nsIP=None, serializer='pickle'):
+    def __init__(self, replicas, mc_walker, stepsize=0.1, nproc=1, verbose=True,
+                  max_stepsize=0.5, iprint=1, dispatcher_URI=None, serializer='pickle'):
         self.nproc = nproc
         self.verbose = verbose
         self.iprint = iprint
@@ -86,67 +101,66 @@ class NestedSampling(object):
         self.failed_mc_walks = 0
         self._mc_niter = 0 # total number of monte carlo iterations
         self.serializer= serializer
-        self.nsIP = nsIP
-        self.job_name = job_name
-        
+        self.dispatcher_URI = dispatcher_URI
+                
         if self.verbose:
             print "nreplicas", len(self.replicas)
             sys.stdout.flush()
 
         
         if self.nproc > 1:
-            Pyro4.config.BROADCAST_ADDRS = self.nsIP
             self._set_up_serializer()
-            self.ns = Pyro4.locateNS()
-            self.worker_address_list = []
-            self.ns_prefix = "nested.sampling.{0}".format(self.job_name)
-            self.copy_address_list()
+            
 
     def _set_up_serializer(self):
         sys.excepthook = Pyro4.util.excepthook
         Pyro4.config.SERIALIZER = self.serializer
         Pyro4.config.SERIALIZERS_ACCEPTED.add(self.serializer)       
+        self.dispatcher = Pyro4.Proxy(self.dispatcher_URI)
+    
+    def collectresults(self):
+        results={}
+        results_list = []
         
-    def copy_address_list(self):
+        while len(results) < self.nproc:
+            try:
+                item = self.dispatcher.getResult()
+                #print("Got result: %s (from %s)" % (item, item.processedBy))
+                results[item.Id] = item
+            except queue.Empty:
+                pass
+                #print("Not all results available yet (got %d out of %d). Work queue size: %d" % \
+                #        (len(results), self.nproc, self.dispatcher.workQueueSize()))
+    
+        if self.dispatcher.resultQueueSize() > 0:
+            print("there's still stuff in the dispatcher result queue, that is odd...")
+            print "queue size", self.dispatcher.resultQueueSize()
         
-        if len(self.ns.list(prefix=self.ns_prefix).items()) != self.nproc:
-            for worker,worker_uri in self.ns.list(prefix=self.ns_prefix).items():
-                print "worker: {0}, worker_uri: {1}".format(worker,worker_uri)
-        
-        assert( len(self.ns.list(prefix=self.ns_prefix).items()) == self.nproc)
-        
-        for worker,worker_uri in self.ns.list(prefix=self.ns_prefix).items():
-            print "worker: {0}, worker_uri: {1}".format(worker,worker_uri)
-            self.worker_address_list.append(worker_uri)
-        
-        workers_removed = self.ns.remove(prefix=self.ns_prefix)
-        print "copied address list and removed {0} workers from name server".format(workers_removed)
-        
+        for key in sorted(results.iterkeys()):
+            results_list.append(results[key])
+            
+        return results_list
+       
     def _do_monte_carlo_chain_parallel(self, configs, Emax):
         """run all the monte carlo walkers in parallel"""
         
-        results = [0 for i in xrange(self.nproc)]
-        
-        i = 0
-        for worker_uri in self.worker_address_list:
+        for i in xrange(len(configs)):
             seed = np.random.randint(0, sys.maxint)
-            r = configs[i]
-            worker_proxy = Pyro4.Proxy(worker_uri)
-            async_worker_proxy = Pyro4.async(worker_proxy)
-            results[i] = async_worker_proxy.run(r.x, self.stepsize, Emax, r.energy, seed, self.mc_walker)
-            i += 1
+            replica = configs[i]
+            #crete item to be put in the queue
+            item = Forwarditem(replica, Emax, self.stepsize, seed, i)
+            #put item in the queue
+            self.dispatcher.putWork(item)
         
-        #turn future objects into result objects objects
-        for i in xrange(len(results)):
-            results[i] = copy.deepcopy(results[i].value)
-        
+        #collect results from queue    
+        results = self.collectresults()
+                
         # update the replicas
         for r, mc in izip(configs, results):
             r.x = mc.x
             r.energy = mc.energy
             r.niter += mc.nsteps
-        configs
-
+        
         # print some data
         if self.verbose and self.iter_number % self.iprint == 0:
             accrat = float(sum(mc.naccept for mc in results))/ sum(mc.nsteps for mc in results)

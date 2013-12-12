@@ -13,9 +13,10 @@
 
 from utils.result import Result
 from _mc_walker import MonteCarloWalker
-from _nested_sampling import NestedSampling, Replica
+from _nested_sampling import NestedSampling, Replica, Forwarditem
 from _nested_sampling_runner import run_nested_sampling
-
+from _worker import pyro_worker
+from _dispatcher import DispatcherQueue
 from models.harmonic import Harmonic
 
 from utils._heat_capacity import compute_heat_capacity

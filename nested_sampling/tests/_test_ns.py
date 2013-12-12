@@ -21,7 +21,7 @@ class TestNS(unittest.TestCase):
             x = self.harmonic.get_random_configuration()
             replicas.append(Replica(x, self.harmonic.get_energy(x)))
         self.ns = NestedSampling(replicas, self.mc_runner, 
-                                 stepsize=0.1, nproc=nproc, verbose=False, job_name = 'test', nsIP='172.26.182.160')
+                                 stepsize=0.1, nproc=nproc, verbose=False, dispatcher_URI="PYRO:obj_8844732db13d4485a7cc3309f3528125@172.26.182.160:35835")
         
         self.Emax0 = self.ns.replicas[-1].energy
         
