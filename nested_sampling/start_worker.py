@@ -1,59 +1,85 @@
 import sys
 import Pyro4
 import Pyro4.util
-from nested_sampling._mc_walker import MCWalkerParallelWrapper
+#from nested_sampling._mc_walker import MCWalkerParallelWrapper
 import argparse
 import uuid
+try:
+    import queue
+except ImportError:
+    import Queue as queue
+from workitem import Workitem
 
 class pyro_worker(object):
-    """ the worker starts a demon and registers its uri with the name server (passed to the )"""
+    """ the worker starts a demon that picks work times from the queue"""
     
-    def __init__(self, worker_name, job_name, nsIP, host=None, port=0, serializer='pickle'):
+    def __init__(self, dispatcher_URI, worker_name=None, host=None, port=0, serializer='pickle', server_type='multiplex'):
         
-        self.worker_name = "nested.sampling.{0}.{1}".format(job_name, worker_name)
-        self.host = host
+        if host==None:
+            self.host = Pyro4.socketutil.getIpAddress(None, workaround127=True)
+            print "host IP address was found to be {0}".format(host)
+        else:
+            self.host = host
+        
+        if worker_name == None:
+            self.worker_name = "nested.sampling.worker@{0}".format(host)
+        else:
+            self.worker_name = worker_name
+         
         self.port = port
-        self.nsIP = nsIP
+        self.dispatcher_URI = dispatcher_URI
         self.serializer = serializer
+        self.server_type = server_type
+                 
+    def _run(self,item):
+        result = item.mc_runner(item.x, item.stepsize, item.Emax, item.energy, item.seed)
+        item.x = result.x
+        item.energy = result.energy
+        item.processedBy = self.worker_name
+    
+    def _start_worker(self):
         
         sys.excepthook = Pyro4.util.excepthook
-        Pyro4.config.BROADCAST_ADDRS = self.nsIP
         Pyro4.config.SERIALIZER = self.serializer
         Pyro4.config.SERIALIZERS_ACCEPTED.add(self.serializer)
-        self.ns = Pyro4.locateNS()
+        Pyro4.config.SERVERTYPE=self.server_type
+        
+        self.dispatcher = Pyro4.core.Proxy(self.dispatcher_URI)
+        print "This is worker: {0}".format(self.worker_name)
+        print("getting work from dispatcher.")
+        
+        while True:
+            try:
+                item = self.dispatcher.getWork()
+            except queue.Empty:
+                pass
+            else:
+                self._run(item)
+                self.dispatcher.putResult(item)
+
     
-    def _start_core(self):
-        worker = MCWalkerParallelWrapper()
-        self.daemon = Pyro4.Daemon(host=self.host,port=self.port)
-        self.worker_uri = self.daemon.register(worker)
-        self.ns.register(self.worker_name, self.worker_uri)
-        print "{0} is listening".format(self.worker_name)
-        self.daemon.requestLoop()
-    
-    def name_and_uri(self):
-        return self.worker_name, self.worker_uri
 
 def main():   
-    parser = argparse.ArgumentParser(description="must pass a name for the worker to be registered with the name server", 
-                                                epilog="and the IP address where the name server is kept")
-    parser.add_argument("job_name", type=str, help="name of the job")
-    parser.add_argument("name_server_IP", type=str, help="IP address of the machine hosting the Name Server")
+    parser = argparse.ArgumentParser(description="must pass the URI of the dispatcher")
+    parser.add_argument("dispatcher_URI", type=str, help="name for the worker")
     parser.add_argument("--worker-name", type=str, help="name for the worker",default=None)
     parser.add_argument("--host", type=str, help="address of the host (node on which the worker is started)",default=None)
     parser.add_argument("--port", type=int, help="port number on which the worker is started)",default=0)
+    parser.add_argument("--server-type", type=str, help="multiplex or threaded",default="multiplex")
     args = parser.parse_args()
     
     if args.worker_name != None:
         worker_name = args.worker_name
     else:
         worker_name = "{0}".format(uuid.uuid4())
-    job_name = args.job_name
-    nsIP = args.name_server_IP
+    
+    dispatcher_URI = args.dispatcher_URI
     host = args.host
     port = args.port
+    server_type = args.server_type
     
-    worker = pyro_worker(worker_name, job_name, nsIP, host=host, port=port)
-    worker._start_core()
+    worker = pyro_worker(dispatcher_URI, worker_name=worker_name, host=host, port=port, server_type=server_type)
+    worker._start_worker()
        
 if __name__ == "__main__":
     main()
