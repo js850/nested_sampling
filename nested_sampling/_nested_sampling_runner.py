@@ -26,7 +26,7 @@ def load_checkpoint(fin, ns):
     ns._mc_niter = copy.deepcopy(checkpoint['_mc_niter'])
 
 def remove_energies(fout, Emax):
-    temp_file = open(fout,'r')
+    temp_file = open(fout,'rb')
     temp_energies = []
     for i, energy in enumerate(temp_file):
         if energy > Emax:
@@ -34,7 +34,7 @@ def remove_energies(fout, Emax):
         else:
             break
     temp_file.close()
-    temp_file = open(fout, 'w')
+    temp_file = open(fout, 'wb')
     temp_file.writelines(temp_energies)
     temp_file.close()
 
@@ -58,9 +58,9 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
     fout_energies_file = label+".energies"
     
     if ns.cpstart == True:
-        fout_energies = open(fout_energies_file, "a")
+        fout_energies = open(fout_energies_file, "ab")
     else:
-        fout_energies = open(fout_energies_file, "w")
+        fout_energies = open(fout_energies_file, "wb")
     
     while True:
         #start from checkpoint binary file?
