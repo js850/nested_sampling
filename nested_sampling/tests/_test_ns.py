@@ -1,13 +1,16 @@
 import unittest
 import numpy as np
-
+import socket
+import Pyro4
 from nested_sampling import NestedSampling, MonteCarloWalker, Harmonic, Replica
 
 class TestNS(unittest.TestCase):
+    """to test distributed computing must start a dispatcher with --server-name test and --port 9090
+    """
     def setUp(self):
         self.setUp1()
 
-    def setUp1(self, nproc=1):
+    def setUp1(self, nproc=1, multiproc=True):
         self.ndim = 3
         self.harmonic = Harmonic(self.ndim)
         self.nreplicas = 10
@@ -15,9 +18,12 @@ class TestNS(unittest.TestCase):
         self.nproc = nproc
         
         self.mc_runner = MonteCarloWalker(self.harmonic, mciter=40)
-        self.dispatcher_URI = raw_input('please insert dispatcher URI connected to 3 workers,'\
-        'just press enter to test multiprocessing parallelisation: ')
-        if not self.dispatcher_URI:
+        
+        if multiproc == False:
+            hostname=socket.gethostname()
+            host = Pyro4.socketutil.getIpAddress(hostname, workaround127=True)
+            self.dispatcher_URI = "PYRO:"+"test@"+host+":9090"
+        else:
             self.dispatcher_URI = None
         
         replicas = []
@@ -44,10 +50,13 @@ class TestNS(unittest.TestCase):
         self.assert_(self.ns.stepsize != self.stepsize)
         self.assertEqual(len(self.ns.max_energies), self.niter * self.nproc)
 
-class testNSPar(TestNS):
+class testNSParMultiproc(TestNS):
     def setUp(self):
         self.setUp1(nproc=3)
-    
+
+class testNSParPyro(TestNS):
+    def setUp(self):
+        self.setUp1(nproc=3,multiproc=False)
     
 if __name__ == "__main__":
     unittest.main()  

@@ -6,7 +6,9 @@ import socket
 
 def main():
     parser = argparse.ArgumentParser(description="dispatcher queue")
+    parser.add_argument("--server-name", type=str, help="name of the dispatcher",default=None)
     parser.add_argument("--host", type=str, help="address of the host (node on which the worker is started)",default=None)
+    parser.add_argument("--port", type=int, help="address of the host (node on which the worker is started)",default=0)
     parser.add_argument("--server-type", type=str, help="multiplex or threaded",default="multiplex")
     args = parser.parse_args()
     
@@ -21,8 +23,8 @@ def main():
     Pyro4.config.SERIALIZERS_ACCEPTED.add('pickle')
     Pyro4.config.SERVERTYPE=args.server_type
     
-    daemon = Pyro4.Daemon(host=host)
-    dispatcher_uri = daemon.register(DispatcherQueue())
+    daemon = Pyro4.Daemon(host=host,port=args.port)
+    dispatcher_uri = daemon.register(DispatcherQueue(),objectId=args.server_name)
     print(dispatcher_uri)
     out_dispatcher_uri = open('dispatcher_uri.dat','w+')
     out_dispatcher_uri.write(str(dispatcher_uri)) 
