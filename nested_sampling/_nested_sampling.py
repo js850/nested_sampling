@@ -83,7 +83,7 @@ class NestedSampling(object):
         list of objects of type Replica
         """
     def __init__(self, replicas, mc_walker, stepsize=0.1, nproc=1, verbose=True,
-                  max_stepsize=0.5, iprint=1, dispatcher_URI=None, serializer='pickle'):
+                  max_stepsize=0.5, iprint=1, cpfile=None, cpfreq=10000, cpstart = False, dispatcher_URI=None, serializer='pickle'):
         self.nproc = nproc
         self.verbose = verbose
         self.iprint = iprint
@@ -93,13 +93,17 @@ class NestedSampling(object):
         self.mc_walker = mc_walker
         self.stepsize = stepsize
         self.max_stepsize = max_stepsize
-
+        self.cpfreq = cpfreq
+        self.cpfile = cpfile
+        self.cpstart = cpstart
         self.max_energies = []
         self.store_all_energies = True
         
         self.iter_number = 0
         self.failed_mc_walks = 0
         self._mc_niter = 0 # total number of monte carlo iterations
+        
+        #pyro
         self.serializer= serializer
         self.dispatcher_URI = dispatcher_URI
                 
