@@ -3,7 +3,6 @@ import Pyro4
 import Pyro4.util
 import socket
 
-#from nested_sampling._mc_walker import MCWalkerParallelWrapper
 try:
     import queue
 except ImportError:

@@ -6,6 +6,10 @@ import copy
 from itertools import izip
 import Pyro4
 import Pyro4.util
+import multiprocessing as mp
+#this import fixes some bugs in how multiprocessing deals with exceptions
+import nested_sampling.utils.fix_multiprocessing
+from nested_sampling._mc_walker import MCWalkerParallelWrapper
 try:
     import queue
 except ImportError:
@@ -113,15 +117,67 @@ class NestedSampling(object):
 
         
         if self.nproc > 1:
-            self._set_up_serializer()
+            if dispatcher_URI != None:
+                self._set_up_serializer()
+            else:
+                self._set_up_multiproc_parallelization()
+    
+    #===========================================================================
+    # multiprocessing functions for cpu locked parallelisation (on single node)
+    #===========================================================================
+    
+    def _set_up_multiproc_parallelization(self):
+        #initialize the parallel workers to do the Monte Carlo Walk
+        self.connlist = []
+        self.workerlist = []
+        for _ in xrange(self.nproc):
+            parent_conn, child_conn = mp.Pipe()
+            worker = MCWalkerParallelWrapper(child_conn, self.mc_walker)
+            worker.daemon = True
+            self.connlist.append(parent_conn)
+            self.workerlist.append(worker)
+            worker.start()
             
+    def _do_monte_carlo_chain_parallel_multiproc(self, configs, Emax):
+        """run all the monte carlo walkers in parallel"""
+        # pass the workers the starting configurations for the MC walk
+        for conn, r in izip(self.connlist, configs):
+            seed = np.random.randint(0, sys.maxint)
+            message = ("do mc", r.x, self.stepsize, Emax, r.energy, seed)
+            conn.send(message)
+
+        # receive the results back from the workers
+        results = [conn.recv() for conn in self.connlist]
+        
+        # update the replicas
+        for r, mc in izip(configs, results):
+            r.x = mc.x
+            r.energy = mc.energy
+            r.niter += mc.nsteps
+        configs
+
+        # print some data
+        if self.verbose and self.iter_number % self.iprint == 0:
+            accrat = float(sum(mc.naccept for mc in results))/ sum(mc.nsteps for mc in results)
+            print "step:", self.iter_number, "%accept", accrat, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                "stepsize", self.stepsize
+
+        return configs, results
+    
+    #===========================================================================
+    # end of multiprocessing based functions
+    #===========================================================================
+    
+    #===========================================================================
+    # Pyro4 functions for distributed computing parallelisation
+    #===========================================================================
 
     def _set_up_serializer(self):
         sys.excepthook = Pyro4.util.excepthook
         Pyro4.config.SERIALIZER = self.serializer
         Pyro4.config.SERIALIZERS_ACCEPTED.add(self.serializer)       
         self.dispatcher = Pyro4.Proxy(self.dispatcher_URI)
-    
+        
     def collectresults(self):
         results={}
         results_list = []
@@ -145,7 +201,7 @@ class NestedSampling(object):
             
         return results_list
        
-    def _do_monte_carlo_chain_parallel(self, configs, Emax):
+    def _do_monte_carlo_chain_parallel_distributed(self, configs, Emax):
         """run all the monte carlo walkers in parallel"""
         
         for i in xrange(len(configs)):
@@ -172,6 +228,18 @@ class NestedSampling(object):
                 "stepsize", self.stepsize
 
         return configs, results
+
+    #===========================================================================
+    # end of Pyro4 based functions
+    #===========================================================================
+
+    def _do_monte_carlo_chain_parallel(self, configs, Emax):
+        
+        if self.dispatcher_URI != None:
+            rnewlist, result = self._do_monte_carlo_chain_parallel_distributed(configs, Emax)
+        else:
+            rnewlist, result = self._do_monte_carlo_chain_parallel_multiproc(configs, Emax)
+        return rnewlist, result
 
     def _do_monte_carlo_chain(self, r, Emax):
         """do the monte carlo walk"""
@@ -217,7 +285,7 @@ class NestedSampling(object):
         self._mc_niter += sum((result.nsteps for result in results))
 
         for result, r in izip(results, configs):
-           if result.naccept == 0:
+            if result.naccept == 0:
                 self.failed_mc_walks += 1
 #                sys.stderr.write("WARNING: zero steps accepted in the Monte Carlo chain\n")
 #                sys.stdout.write("WARNING: zero steps accepted in the Monte Carlo chain\n")

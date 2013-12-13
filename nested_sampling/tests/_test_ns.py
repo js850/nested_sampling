@@ -16,6 +16,9 @@ class TestNS(unittest.TestCase):
         
         self.mc_runner = MonteCarloWalker(self.harmonic, mciter=40)
         self.dispatcher_URI = raw_input('please insert dispatcher URI connected to 3 workers: ')
+        if not self.dispatcher_URI:
+            self.dispatcher_URI = None
+        
         replicas = []
         for i in xrange(self.nreplicas):
             x = self.harmonic.get_random_configuration()

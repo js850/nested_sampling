@@ -11,7 +11,6 @@ def save_replicas_to_binary(fout, ns):
     checkpoint['failed_mc_walks'] = ns.failed_mc_walks
     checkpoint['_mc_niter'] = ns._mc_niter
     pickle.dump( checkpoint, open(fout,"wb"), pickle.HIGHEST_PROTOCOL)
-    #Emax can then be obtained by get_new_Emax in _nested_sampling
     
 def load_replicas_from_binary(fin):
     checkpoint = pickle.load(open(fin, "rb"))
@@ -66,7 +65,7 @@ def run_nested_sampling(ns, label="ns_out", etol=0.01, maxiter=None,
         #start from checkpoint binary file?
         if ns.cpstart == True and i == 0 :
             load_checkpoint(fout_replicas_name, ns)
-            remove_energies(fout_energies_file, ns._get_new_Emax())
+            remove_energies(fout_energies_file, ns.replicas[-1].energy)
         
         ediff = ns.replicas[-1].energy - ns.replicas[0].energy
 
