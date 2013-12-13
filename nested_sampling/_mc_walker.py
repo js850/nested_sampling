@@ -106,10 +106,9 @@ class MonteCarloWalker(object):
         res.naccept = naccept
         return res
 
-
-        
 class MCWalkerParallelWrapper(mp.Process):
     """define a worker to do the monte carlo chain in a separate process
+    (using multiprocessing)
     """
     def __init__(self, conn, mc_runner):
         mp.Process.__init__(self)

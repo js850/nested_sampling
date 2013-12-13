@@ -2,14 +2,18 @@
 import random
 import numpy as np
 import sys
-import multiprocessing as mp
 import copy
 from itertools import izip
-
+import Pyro4
+import Pyro4.util
+import multiprocessing as mp
 #this import fixes some bugs in how multiprocessing deals with exceptions
 import nested_sampling.utils.fix_multiprocessing
 from nested_sampling._mc_walker import MCWalkerParallelWrapper
-
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 class Replica(object):
     """object to represent the state of a system
@@ -37,6 +41,19 @@ class Replica(object):
         """return a complete copy of self"""
         return copy.deepcopy(self)
 
+class Forwarditem(Replica):
+    """wrapper to Replica for distributed parallel calculations"""
+    
+    def __init__(self, replica, Emax, stepsize, seed, itemId):
+        super(Forwarditem,self).__init__(replica.x, replica.energy, replica.niter, replica.from_random) 
+        
+        self.Emax = Emax
+        self.seed = seed
+        self.stepsize = stepsize
+        self.Id=itemId
+    
+    def __str__(self):
+        return "<Workitem id=%s>" % str(self.Id)
 
 class NestedSampling(object):
     """the main class for implementing nested sampling
@@ -69,9 +86,8 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
         """
-    def __init__(self, replicas, mc_walker, 
-                  stepsize=0.1, nproc=1, verbose=True,
-                  max_stepsize=0.5, iprint=1):
+    def __init__(self, replicas, mc_walker, stepsize=0.1, nproc=1, verbose=True,
+                  max_stepsize=0.5, iprint=1, cpfile=None, cpfreq=10000, cpstart = False, dispatcher_URI=None, serializer='pickle'):
         self.nproc = nproc
         self.verbose = verbose
         self.iprint = iprint
@@ -81,7 +97,9 @@ class NestedSampling(object):
         self.mc_walker = mc_walker
         self.stepsize = stepsize
         self.max_stepsize = max_stepsize
-
+        self.cpfreq = cpfreq
+        self.cpfile = cpfile
+        self.cpstart = cpstart
         self.max_energies = []
         self.store_all_energies = True
         
@@ -89,27 +107,38 @@ class NestedSampling(object):
         self.failed_mc_walks = 0
         self._mc_niter = 0 # total number of monte carlo iterations
         
+        #pyro
+        self.serializer= serializer
+        self.dispatcher_URI = dispatcher_URI
+                
         if self.verbose:
             print "nreplicas", len(self.replicas)
             sys.stdout.flush()
 
         
         if self.nproc > 1:
-            self._set_up_parallelization()
-
-    def _set_up_parallelization(self):
+            if dispatcher_URI != None:
+                self._set_up_serializer()
+            else:
+                self._set_up_multiproc_parallelization()
+    
+    #===========================================================================
+    # multiprocessing functions for cpu locked parallelisation (on single node)
+    #===========================================================================
+    
+    def _set_up_multiproc_parallelization(self):
         #initialize the parallel workers to do the Monte Carlo Walk
         self.connlist = []
         self.workerlist = []
-        for i in xrange(self.nproc):
+        for _ in xrange(self.nproc):
             parent_conn, child_conn = mp.Pipe()
             worker = MCWalkerParallelWrapper(child_conn, self.mc_walker)
             worker.daemon = True
             self.connlist.append(parent_conn)
             self.workerlist.append(worker)
             worker.start()
-
-    def _do_monte_carlo_chain_parallel(self, configs, Emax):
+            
+    def _do_monte_carlo_chain_parallel_multiproc(self, configs, Emax):
         """run all the monte carlo walkers in parallel"""
         # pass the workers the starting configurations for the MC walk
         for conn, r in izip(self.connlist, configs):
@@ -134,6 +163,83 @@ class NestedSampling(object):
                 "stepsize", self.stepsize
 
         return configs, results
+    
+    #===========================================================================
+    # end of multiprocessing based functions
+    #===========================================================================
+    
+    #===========================================================================
+    # Pyro4 functions for distributed computing parallelisation
+    #===========================================================================
+
+    def _set_up_serializer(self):
+        sys.excepthook = Pyro4.util.excepthook
+        Pyro4.config.SERIALIZER = self.serializer
+        Pyro4.config.SERIALIZERS_ACCEPTED.add(self.serializer)       
+        self.dispatcher = Pyro4.Proxy(self.dispatcher_URI)
+        
+    def collectresults(self):
+        results={}
+        results_list = []
+        
+        while len(results) < self.nproc:
+            try:
+                item = self.dispatcher.getResult()
+                #print("Got result: %s (from %s)" % (item, item.processedBy))
+                results[item.Id] = item
+            except queue.Empty:
+                pass
+                #print("Not all results available yet (got %d out of %d). Work queue size: %d" % \
+                #        (len(results), self.nproc, self.dispatcher.workQueueSize()))
+    
+        if self.dispatcher.resultQueueSize() > 0:
+            print("there's still stuff in the dispatcher result queue, that is odd...")
+            print "queue size", self.dispatcher.resultQueueSize()
+        
+        for key in sorted(results.iterkeys()):
+            results_list.append(results[key])
+            
+        return results_list
+       
+    def _do_monte_carlo_chain_parallel_distributed(self, configs, Emax):
+        """run all the monte carlo walkers in parallel"""
+        
+        for i in xrange(len(configs)):
+            seed = np.random.randint(0, sys.maxint)
+            replica = configs[i]
+            #crete item to be put in the queue
+            item = Forwarditem(replica, Emax, self.stepsize, seed, i)
+            #put item in the queue
+            self.dispatcher.putWork(item)
+        
+        #collect results from queue    
+        results = self.collectresults()
+                
+        # update the replicas
+        for r, mc in izip(configs, results):
+            r.x = mc.x
+            r.energy = mc.energy
+            r.niter += mc.nsteps
+        
+        # print some data
+        if self.verbose and self.iter_number % self.iprint == 0:
+            accrat = float(sum(mc.naccept for mc in results))/ sum(mc.nsteps for mc in results)
+            print "step:", self.iter_number, "%accept", accrat, "Emax", Emax, "Emin", self.replicas[0].energy, \
+                "stepsize", self.stepsize
+
+        return configs, results
+
+    #===========================================================================
+    # end of Pyro4 based functions
+    #===========================================================================
+
+    def _do_monte_carlo_chain_parallel(self, configs, Emax):
+        
+        if self.dispatcher_URI != None:
+            rnewlist, result = self._do_monte_carlo_chain_parallel_distributed(configs, Emax)
+        else:
+            rnewlist, result = self._do_monte_carlo_chain_parallel_multiproc(configs, Emax)
+        return rnewlist, result
 
     def _do_monte_carlo_chain(self, r, Emax):
         """do the monte carlo walk"""
@@ -170,7 +276,7 @@ class NestedSampling(object):
 
         if self.nproc > 1:
             rnewlist, results = self._do_monte_carlo_chain_parallel(configs, Emax)
-
+            
         else:
             rnew, result = self._do_monte_carlo_chain(configs[0], Emax)
             rnewlist = [rnew]
@@ -321,16 +427,9 @@ class NestedSampling(object):
         
         if self.nreplicas != len(self.replicas):
             raise Exception("number of replicas (%d) is not correct (%d)" % (len(self.replicas), self.nreplicas))
-
-    def finish(self):
-        """do any clean up that needs to be done at the end of the simulation"""
-        if self.nproc > 1:
-            for conn, worker in izip(self.connlist, self.workerlist):
-                conn.send("kill")
-                worker.join()
-                worker.terminate()
-                worker.join()
+        
 #        print "copying live replicas"
 #        for replica in reversed(self.replicas):
 #            self.max_energies.append(replica.energy)
-
+        
+                
