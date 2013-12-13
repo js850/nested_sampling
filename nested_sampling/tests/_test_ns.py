@@ -15,7 +15,8 @@ class TestNS(unittest.TestCase):
         self.nproc = nproc
         
         self.mc_runner = MonteCarloWalker(self.harmonic, mciter=40)
-        self.dispatcher_URI = raw_input('please insert dispatcher URI connected to 3 workers: ')
+        self.dispatcher_URI = raw_input('please insert dispatcher URI connected to 3 workers,'\
+        'just press enter to test multiprocessing parallelisation: ')
         if not self.dispatcher_URI:
             self.dispatcher_URI = None
         
