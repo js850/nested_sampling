@@ -14,7 +14,7 @@ import uuid
 class pyro_worker(object):
     """ the worker starts a demon that picks work times from the queue"""
     
-    def __init__(self, dispatcher_URI, system, mciter, worker_name=None, host=None, port=0, serializer='pickle', server_type='multiplex'):
+    def __init__(self, dispatcher_URI, mc_runner, worker_name=None, host=None, port=0, serializer='pickle', server_type='multiplex'):
         
         if host==None:
             hostname = socket.gethostname()
@@ -32,7 +32,7 @@ class pyro_worker(object):
         self.dispatcher_URI = dispatcher_URI
         self.serializer = serializer
         self.server_type = server_type
-        self.mc_runner = system.get_mc_walker(mciter)
+        self.mc_runner = mc_runner
         
     def _run(self,item):
         mc = self.mc_runner(item.x, item.stepsize, item.Emax, item.energy, item.seed)

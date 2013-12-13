@@ -1,10 +1,10 @@
 from nested_sampling import pyro_worker
 import argparse
-from sens.models._lj_tools import LJClusterSENS
+from nested_sampling import MonteCarloWalker, Harmonic
 
 def main():   
     parser = argparse.ArgumentParser(description="must pass the URI of the dispatcher")
-    parser.add_argument("natoms", type=int, help="number of atoms")
+    parser.add_argument("ndim", type=int, help="number of dimensions")
     parser.add_argument("dispatcher_URI", type=str, help="name for the worker")
     parser.add_argument("-n","--mciter", type=int, default=1000, help="number of steps in the monte carlo walk")
     parser.add_argument("--radius", type=float, default=2.5, help="maintain atoms in a sphere of this radius")
@@ -15,18 +15,18 @@ def main():
     args = parser.parse_args()
     
     #===========================================================================
-    # MUST SET THE SYSTEM
+    # MUST SET THE SYSTEM THEN GET THE RUNNER TO PASS
     #===========================================================================
-    system = LJClusterSENS(args.natoms, args.radius)
+    system = Harmonic(args.ndim)
+    mc_runner = MonteCarloWalker(system, mciter=args.mciter)
     
     dispatcher_URI = args.dispatcher_URI
     worker_name = args.worker_name
     host = args.host
     port = args.port
     server_type = args.server_type
-    mciter = args.mciter
     
-    worker = pyro_worker(dispatcher_URI, system, mciter, worker_name=worker_name, host=host, port=port, server_type=server_type)
+    worker = pyro_worker(dispatcher_URI, mc_runner, worker_name=worker_name, host=host, port=port, server_type=server_type)
     worker._start_worker()
        
 if __name__ == "__main__":

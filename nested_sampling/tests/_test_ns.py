@@ -15,13 +15,13 @@ class TestNS(unittest.TestCase):
         self.nproc = nproc
         
         self.mc_runner = MonteCarloWalker(self.harmonic, mciter=40)
-
+        self.dispatcher_URI = raw_input('please insert dispatcher URI connected to 3 workers: ')
         replicas = []
         for i in xrange(self.nreplicas):
             x = self.harmonic.get_random_configuration()
             replicas.append(Replica(x, self.harmonic.get_energy(x)))
         self.ns = NestedSampling(replicas, self.mc_runner, 
-                                 stepsize=0.1, nproc=nproc, verbose=False, dispatcher_URI="PYRO:obj_8844732db13d4485a7cc3309f3528125@172.26.182.160:35835")
+                                 stepsize=0.1, nproc=nproc, verbose=False, dispatcher_URI=self.dispatcher_URI)
         
         self.Emax0 = self.ns.replicas[-1].energy
         
