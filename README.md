@@ -21,4 +21,4 @@ Tools:
 
 See the examples for how to run the method
 
-[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/cb24e4a2592ef1a9437961574fe06490 "githalytics.com")](http://githalytics.com/js850/nested_sampling)
+[![githalytics.com alpha](https://cruel-carlota.gopagoda.com/cb24e4a2592ef1a9437961574fe06490 "githalytics.com")](http://githalytics.com/js850/nested_sampling)
