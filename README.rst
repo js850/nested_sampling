@@ -20,3 +20,4 @@ Tools:
 * scripts to compute heat capacities and perform error analysis
 
 See the examples for how to run the method
+
