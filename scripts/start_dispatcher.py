@@ -25,9 +25,11 @@ def main():
     
     daemon = Pyro4.Daemon(host=host,port=args.port)
     dispatcher_uri = daemon.register(DispatcherQueue(),objectId=args.server_name)
-    print(dispatcher_uri)
-    out_dispatcher_uri = open('dispatcher_uri.dat','w+')
-    out_dispatcher_uri.write(str(dispatcher_uri)) 
+    print str(dispatcher_uri)
+    
+    with open('dispatcher_uri.dat','w+') as out_dispatcher_uri:
+        out_dispatcher_uri.write(str(dispatcher_uri))
+         
     daemon.requestLoop()
 
 #    hostname=socket.gethostname()
