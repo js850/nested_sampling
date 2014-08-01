@@ -416,9 +416,11 @@ class NestedSampling(object):
         
         # get starting configurations for the monte carlo walk
         rlist = self.get_starting_configurations(Emax)
+        self.starting_replicas = rlist # for optional later access
         
         # do the monte carlo walk
         rlist = self.do_monte_carlo_chain(rlist, Emax)
+        self.new_replicas = rlist # for optional later access
 
         # add the new replicas and keep the list sorted
         self.add_new_replicas(rlist)
