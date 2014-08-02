@@ -6,33 +6,52 @@ import numpy as np
 import time
 
 from nested_sampling import NestedSampling, MonteCarloWalker, Replica
+from scipy.optimize import Result
+
+    
 
 class Pot(object):
     def get_energy(self, coords):
         assert len(coords) == 2
         return f(coords[::2], coords[1::2])[0]
 
-def do_nested_sampling(nreplicas=10, niter=20, mciter=1000, stepsize=.8):
+def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=-.7):
+    path = []
+    def mc_record_position_event(coords=None, **kwargs):
+        path.append(coords) 
+
     p = Pot()
     print p.get_energy(np.array([1,2.]))
-    mc_walker = MonteCarloWalker(p, mciter=mciter)
+    mc_walker = MonteCarloWalker(p, mciter=mciter, events=[mc_record_position_event])
     replicas = []
     for i in xrange(nreplicas):
         coords = np.random.uniform(-1,3, size=2)
         r = Replica(coords, p.get_energy(coords))
         replicas.append(r)
+    
         
     ns = NestedSampling(replicas, mc_walker, stepsize=stepsize)
-    saved_replicas = [[r.copy() for r in replicas]]
+    results = [Result()]
+    results[0].replicas = [r.copy() for r in replicas]
     for i in xrange(niter):
         ns.one_iteration()
-        saved_replicas.append([r.copy() for r in replicas])
-        print len(saved_replicas)
+        new_res = Result()
+        new_res.replicas = [r.copy() for r in replicas]
+        new_res.starting_replica = ns.starting_replicas[0].copy()
+        new_res.new_replica = ns.new_replicas[0].copy()
+        new_res.mc_path = path
+        path = []
+        results.append(new_res)
+        
+        if ns.replicas[-1].energy < estop:
+            break
+        
+        
         
 #    plt.plot(ns.max_energies)
 #    plt.show()
     
-    return ns, saved_replicas
+    return ns, results
     
 
 def ig(x, y, x0, y0, a, b):
@@ -73,26 +92,36 @@ def contour(ns, i):
     zmax = 0
     
     im = plt.imshow(Z, interpolation='bilinear', origin='lower',
-                cmap=mpl.cm.gray, extent=(-1,3,-1,3))
+                cmap=mpl.cm.summer, extent=(-1,3,-1,3))
     
     
 
-    plt.contour(X,Y,Z, levels=ns.max_energies[:(i+1)], vmin=zmin, vmax=zmax)
+    plt.contour(X,Y,Z, levels=ns.max_energies[:(i+1)], vmin=zmin, vmax=zmax, 
+                colors="k", linestyles="solid")
 
 
-def plot_replicas(saved_replicas, i):
+def plot_replicas(results, i):
     # plot replicas
-    xrep = np.array([r.x[0] for r in saved_replicas[i]])
-    yrep = np.array([r.x[1] for r in saved_replicas[i]])
-    plt.scatter(xrep, yrep)
+    xrep = np.array([r.x[0] for r in results[i].replicas])
+    yrep = np.array([r.x[1] for r in results[i].replicas])
+    plt.scatter(xrep, yrep, c='k')
     
+    if i > 0:
+        r = results[i].starting_replica
+        plt.scatter(r.x[0], r.x[1], c='b')
+    
+        r = results[i].new_replica
+        plt.scatter(r.x[0], r.x[1], c='r')
+        
+        path = np.array(results[i].mc_path)
+        plt.plot(path[:,0], path[:,1], '--k', lw=.5)
 
 def main():
     plt.ion()
-    ns, saved_replicas = do_nested_sampling(nreplicas=5, niter=10, mciter=2000)
-    for i in xrange(len(saved_replicas)):
+    ns, results = do_nested_sampling(nreplicas=15, niter=100, mciter=50)
+    for i in xrange(len(results)):
         contour(ns, i)
-        plot_replicas(saved_replicas, i)
+        plot_replicas(results, i)
         plt.pause(.2)
         raw_input("press any key to continue")
     plt.show(block=True)
