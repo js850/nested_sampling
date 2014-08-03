@@ -4,9 +4,12 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib as mpl
 import numpy as np
 import time
+import bisect
 
 from nested_sampling import NestedSampling, MonteCarloWalker, Replica
+from nested_sampling.utils.rotations import vector_random_uniform_hypersphere
 from scipy.optimize import Result
+from _bisect import bisect_left
 
     
 
@@ -23,9 +26,12 @@ def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=
     p = Pot()
     print p.get_energy(np.array([1,2.]))
     mc_walker = MonteCarloWalker(p, mciter=mciter, events=[mc_record_position_event])
+    
+    # initialize the replicas with random positions
     replicas = []
     for i in xrange(nreplicas):
-        coords = np.random.uniform(-1,3, size=2)
+        # choose points uniformly in a circle 
+        coords = vector_random_uniform_hypersphere(2) * 2 + 1
         r = Replica(coords, p.get_energy(coords))
         replicas.append(r)
     
@@ -80,48 +86,84 @@ def plot3d():
 
     plt.show()
 
-def contour(ns, i):
-    plt.clf()
-#    fig = plt.figure()
-#    ax = fig.gca(projection='3d')
-    X = np.arange(-1, 3, 0.1)
-    Y = np.arange(-1, 3, 0.1)
-    X, Y = np.meshgrid(X, Y)
-    Z = f(X, Y)
-    zmin = np.min(Z)
-    zmax = 0
-    
-    im = plt.imshow(Z, interpolation='bilinear', origin='lower',
-                cmap=mpl.cm.summer, extent=(-1,3,-1,3))
-    
-    
-
-    plt.contour(X,Y,Z, levels=ns.max_energies[:(i+1)], vmin=zmin, vmax=zmax, 
-                colors="k", linestyles="solid")
-
-
-def plot_replicas(results, i):
-    # plot replicas
-    xrep = np.array([r.x[0] for r in results[i].replicas])
-    yrep = np.array([r.x[1] for r in results[i].replicas])
-    plt.scatter(xrep, yrep, c='k')
-    
-    if i > 0:
-        r = results[i].starting_replica
-        plt.scatter(r.x[0], r.x[1], c='b')
-    
-        r = results[i].new_replica
-        plt.scatter(r.x[0], r.x[1], c='r')
+class NSViewer(object):
+    def __init__(self, ns, results):
+        self.ns = ns
+        self.results = results
+        self.X = np.arange(-1, 3, 0.1)
+        self.Y = np.arange(-1, 3, 0.1)
+        self.X, self.Y = np.meshgrid(self.X, self.Y)
+        self.Z = f(self.X, self.Y)
+        self.zmin = np.min(self.Z)
+        self.zmax = 0
         
-        path = np.array(results[i].mc_path)
-        plt.plot(path[:,0], path[:,1], '--k', lw=.5)
+        self.Zlinear = np.array(sorted(self.Z.flatten(), reverse=True))
+        self.Zlinear = self.Zlinear.reshape([-1,1])
+        self.Zlinear_sorted = np.array(sorted(self.Zlinear.reshape(-1)))
+        
+        self.fig = plt.figure()
+        self.axes1 = self.fig.add_subplot(1,2,1)
+        self.axes2 = self.fig.add_subplot(1,2,2)
+        
+        self.cmap = mpl.cm.summer
+        
+    def plot_contours(self, i):
+        ax = self.axes1
+
+        ax.clear()
+    #    fig = plt.figure()
+    #    ax = fig.gca(projection='3d')
+        
+        im = ax.imshow(self.Z, interpolation='bilinear', origin='lower',
+                    cmap=self.cmap, extent=(-1,3,-1,3))
+        
+        
+    
+        ax.contour(self.X, self.Y, self.Z, levels=self.ns.max_energies[:(i+1)], 
+                    vmin=self.zmin, vmax=self.zmax, 
+                    colors="k", linestyles="solid")
+
+
+    def plot_replicas(self, i):
+        # plot replicas
+        ax = self.axes1
+        results = self.results
+        xrep = np.array([r.x[0] for r in results[i].replicas])
+        yrep = np.array([r.x[1] for r in results[i].replicas])
+        ax.scatter(xrep, yrep, c='k')
+        
+        if i > 0:
+            r = results[i].starting_replica
+            ax.scatter(r.x[0], r.x[1], c='b')
+        
+            r = results[i].new_replica
+            ax.scatter(r.x[0], r.x[1], c='r')
+            
+            path = np.array(results[i].mc_path)
+            ax.plot(path[:,0], path[:,1], '--k', lw=.5)
+    
+    def plot_sidebar(self, i):
+        ax = self.axes2
+        ax.clear()
+        ax.set_yticks([])
+        ax.imshow(self.Zlinear, aspect="auto", cmap=self.cmap)
+
+        n = self.Zlinear.size
+        ypos = [n-1-bisect.bisect_left(self.Zlinear_sorted, r.energy) 
+                for r in self.results[i].replicas]
+        xpos = [0] * len(ypos)
+        ax.scatter(xpos, ypos)
+    
+
 
 def main():
     plt.ion()
     ns, results = do_nested_sampling(nreplicas=15, niter=100, mciter=50)
+    viewer = NSViewer(ns, results)
     for i in xrange(len(results)):
-        contour(ns, i)
-        plot_replicas(results, i)
+        viewer.plot_contours(i)
+        viewer.plot_replicas(i)
+        viewer.plot_sidebar(i)
         plt.pause(.2)
         raw_input("press any key to continue")
     plt.show(block=True)
