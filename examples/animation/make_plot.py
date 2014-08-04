@@ -18,10 +18,11 @@ class Pot(object):
         assert len(coords) == 2
         return f(coords[::2], coords[1::2])[0]
 
-def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=-.7):
+def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=-.9):
     path = []
     def mc_record_position_event(coords=None, **kwargs):
-        path.append(coords) 
+        if len(path) == 0 or not np.all(path[-1] == coords):
+            path.append(coords)
 
     p = Pot()
     print p.get_energy(np.array([1,2.]))
@@ -46,9 +47,10 @@ def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=
         new_res.replicas = [r.copy() for r in replicas]
         new_res.starting_replica = ns.starting_replicas[0].copy()
         new_res.new_replica = ns.new_replicas[0].copy()
+        path.insert(0, new_res.starting_replica.x)
         new_res.mc_path = path
-        path = []
         results.append(new_res)
+        path = []
         
         if ns.replicas[-1].energy < estop:
             break
@@ -69,7 +71,7 @@ def f(x, y):
     x01 = np.array([0.,0])
     x02 = np.array([1.,1])
     z1 = ig(x, y, 0, 0, 1, .3)
-    z2 = ig(x, y, 1, 1, .8, 1)
+    z2 = ig(x, y, 1, 1, .6, 1)
     return z1 + z2
 
 
@@ -119,24 +121,32 @@ class NSViewer(object):
         self.sidebar_line_segments = [[(-0.5, y), (0.5, y)] 
                  for y in max_energy_sidebar_indices]
 
-        
-    def plot_contours(self, i):
+    
+    def plot_background(self):
         ax = self.axes1
-
         ax.clear()
         ax.set_xlim(self.xmin, self.xmax)
         ax.set_ylim(self.ymin, self.ymax)
-    #    fig = plt.figure()
-    #    ax = fig.gca(projection='3d')
-        
+
         im = ax.imshow(self.Z, interpolation='bilinear', origin='lower',
                     cmap=self.cmap, extent=(-1,3,-1,3))
         
-        
+        self.plot_sidebar_background()
     
-        ax.contour(self.X, self.Y, self.Z, levels=self.ns.max_energies[:(i+1)], 
+    def plot_contours_old(self, i):
+        if i == 0: return
+        ax = self.axes1
+        ax.contour(self.X, self.Y, self.Z, levels=self.ns.max_energies[:i], 
                     vmin=self.zmin, vmax=self.zmax, 
                     colors="k", linestyles="solid")
+        self.plot_sidebar_contours_old(i)
+
+    def plot_contours_new(self, i):
+        ax = self.axes1
+        ax.contour(self.X, self.Y, self.Z, levels=self.ns.max_energies[i:(i+1)], 
+                    vmin=self.zmin, vmax=self.zmax, 
+                    colors="k", linestyles="solid")
+        self.plot_sidebar_contours_new(i)
 
 
     def plot_replicas(self, i):
@@ -145,23 +155,32 @@ class NSViewer(object):
         results = self.results
         xrep = np.array([r.x[0] for r in results[i].replicas])
         yrep = np.array([r.x[1] for r in results[i].replicas])
-        ax.scatter(xrep, yrep, c='k')
+        ax.scatter(xrep, yrep, c='k', facecolors="none")
         
-        if i > 0:
-            r = results[i].starting_replica
-            ax.scatter(r.x[0], r.x[1], c='b')
+        self.plot_sidebar_replicas(i)
         
-            r = results[i].new_replica
-            ax.scatter(r.x[0], r.x[1], c='r')
+    def plot_replica_to_delete(self, i):
+        r = self.results[i].replicas[-1]
+        self.axes1.scatter(r.x[0], r.x[1], marker='x', s=160, c='r')
+        
             
-            path = np.array(results[i].mc_path)
-            ax.plot(path[:,0], path[:,1], '--k', lw=.5)
+    def plot_mc_path(self, i):
+        ax = self.axes1
+#            r = self.results[i].starting_replica
+#            ax.scatter(r.x[0], r.x[1], c='b', 
+#                       )
+        
+        r = self.results[i+1].new_replica
+        ax.scatter(r.x[0], r.x[1], c='r')
+        
+        path = np.array(self.results[i+1].mc_path)
+        ax.plot(path[:,0], path[:,1], '--k', lw=.5)
     
     def sidebar_e_to_index(self, energy):
         n = self.Zlinear.size
         return n-1-bisect.bisect_left(self.Zlinear_sorted, energy)
     
-    def plot_sidebar(self, i):
+    def plot_sidebar_background(self):
         ax = self.axes2
         ax.clear()
         ax.set_yticks([])
@@ -169,32 +188,64 @@ class NSViewer(object):
         ax.imshow(self.Zlinear, aspect="auto", cmap=self.cmap)
         ax.set_ylim(self.Zlinear.size, 0)
         ax.set_xlim(-0.5,0.5)
-
+    
+    def plot_sidebar_replicas(self, i):
+        ax = self.axes2
         ypos = [self.sidebar_e_to_index(r.energy)
                 for r in self.results[i].replicas]
         xpos = [0] * len(ypos)
-        ax.scatter(xpos, ypos)
-        
+        ax.scatter(xpos, ypos, c='k', facecolors="none")
+    
+    def plot_sidebar_contours_old(self, i):
         # plot line segments
-        lc = mpl.collections.LineCollection(self.sidebar_line_segments[:(i+1)],
+        lc = mpl.collections.LineCollection(self.sidebar_line_segments[:(i)],
                                             colors='k')
-        ax.add_collection(lc)
+        self.axes2.add_collection(lc)
+
+    def plot_sidebar_contours_new(self, i):
+        # plot line segments
+        lc = mpl.collections.LineCollection(self.sidebar_line_segments[i:(i+1)],
+                                            colors='k')
+        self.axes2.add_collection(lc)
     
+    def pause(self):
+        plt.pause(.2)
+        raw_input("press any key to continue")
+    
+    def title(self, str):
+        if not hasattr(self, "_title"):
+            self._title = self.fig.suptitle(str)
+        self._title.set_text(str)
+        
         
     
+    def run(self):
+        plt.ion()
+        for i in xrange(len(self.results)):
+            self.plot_background()
+            self.plot_contours_old(i)
+            if i == 0:
+                self.title("the replicas are uniformly distributed in space")
+            else:
+                self.title("the replicas are uniformly distributed in the space with energy < Emax")
+            self.plot_replicas(i)
+            self.pause()
+            self.plot_contours_new(i)
+#            self.pause()
+            self.title("the replica with the highest energy is removed.  It's energy becomes the next Emax")
+            self.plot_replica_to_delete(i)
+            self.pause()
+            self.title("a new replica is generated via a MC walk")
+            self.plot_mc_path(i)
+            print "finishing iteration", i
+            self.pause()
+        plt.show(block=True)
 
 
 def main():
-    plt.ion()
     ns, results = do_nested_sampling(nreplicas=15, niter=100, mciter=20)
     viewer = NSViewer(ns, results)
-    for i in xrange(len(results)):
-        viewer.plot_contours(i)
-        viewer.plot_replicas(i)
-        viewer.plot_sidebar(i)
-        plt.pause(.2)
-        raw_input("press any key to continue")
-    plt.show(block=True)
+    viewer.run()
 
 if __name__ == "__main__":
     main()
