@@ -32,6 +32,7 @@ def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=
     for i in xrange(nreplicas):
         # choose points uniformly in a circle 
         coords = vector_random_uniform_hypersphere(2) * 2 + 1
+#         coords = np.random.uniform(-1,3,size=2)
         r = Replica(coords, p.get_energy(coords))
         replicas.append(r)
     
@@ -90,8 +91,10 @@ class NSViewer(object):
     def __init__(self, ns, results):
         self.ns = ns
         self.results = results
-        self.X = np.arange(-1, 3, 0.1)
-        self.Y = np.arange(-1, 3, 0.1)
+        self.xmin = self.ymin = -1.
+        self.xmax = self.ymax = 3
+        self.X = np.arange(self.xmin, self.xmax, 0.1)
+        self.Y = np.arange(self.ymin, self.ymax, 0.1)
         self.X, self.Y = np.meshgrid(self.X, self.Y)
         self.Z = f(self.X, self.Y)
         self.zmin = np.min(self.Z)
@@ -102,15 +105,27 @@ class NSViewer(object):
         self.Zlinear_sorted = np.array(sorted(self.Zlinear.reshape(-1)))
         
         self.fig = plt.figure()
-        self.axes1 = self.fig.add_subplot(1,2,1)
-        self.axes2 = self.fig.add_subplot(1,2,2)
+        n = 10
+        self.axes1 = plt.subplot2grid((n, n+1), (0, 0), colspan=n, rowspan=n)
+        self.axes2 = plt.subplot2grid((n, n+1), (0, n), colspan=1, rowspan=n)
+        
+#         self.axes1 = self.fig.add_subplot(1,2,1)
+#         self.axes2 = self.fig.add_subplot(1,2,2)
         
         self.cmap = mpl.cm.summer
+        
+        max_energy_sidebar_indices = [self.sidebar_e_to_index(e)
+                                           for e in self.ns.max_energies]
+        self.sidebar_line_segments = [[(-0.5, y), (0.5, y)] 
+                 for y in max_energy_sidebar_indices]
+
         
     def plot_contours(self, i):
         ax = self.axes1
 
         ax.clear()
+        ax.set_xlim(self.xmin, self.xmax)
+        ax.set_ylim(self.ymin, self.ymax)
     #    fig = plt.figure()
     #    ax = fig.gca(projection='3d')
         
@@ -142,23 +157,36 @@ class NSViewer(object):
             path = np.array(results[i].mc_path)
             ax.plot(path[:,0], path[:,1], '--k', lw=.5)
     
+    def sidebar_e_to_index(self, energy):
+        n = self.Zlinear.size
+        return n-1-bisect.bisect_left(self.Zlinear_sorted, energy)
+    
     def plot_sidebar(self, i):
         ax = self.axes2
         ax.clear()
         ax.set_yticks([])
+        ax.set_xticks([])
         ax.imshow(self.Zlinear, aspect="auto", cmap=self.cmap)
+        ax.set_ylim(self.Zlinear.size, 0)
+        ax.set_xlim(-0.5,0.5)
 
-        n = self.Zlinear.size
-        ypos = [n-1-bisect.bisect_left(self.Zlinear_sorted, r.energy) 
+        ypos = [self.sidebar_e_to_index(r.energy)
                 for r in self.results[i].replicas]
         xpos = [0] * len(ypos)
         ax.scatter(xpos, ypos)
+        
+        # plot line segments
+        lc = mpl.collections.LineCollection(self.sidebar_line_segments[:(i+1)],
+                                            colors='k')
+        ax.add_collection(lc)
+    
+        
     
 
 
 def main():
     plt.ion()
-    ns, results = do_nested_sampling(nreplicas=15, niter=100, mciter=50)
+    ns, results = do_nested_sampling(nreplicas=15, niter=100, mciter=20)
     viewer = NSViewer(ns, results)
     for i in xrange(len(results)):
         viewer.plot_contours(i)
