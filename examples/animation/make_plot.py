@@ -18,7 +18,8 @@ class Pot(object):
         assert len(coords) == 2
         return f(coords[::2], coords[1::2])[0]
 
-def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=-.9):
+def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=-.9,
+                       x0=[1,1], r0=2):
     path = []
     def mc_record_position_event(coords=None, **kwargs):
         if len(path) == 0 or not np.all(path[-1] == coords):
@@ -32,7 +33,7 @@ def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=
     replicas = []
     for i in xrange(nreplicas):
         # choose points uniformly in a circle 
-        coords = vector_random_uniform_hypersphere(2) * 2 + 1
+        coords = vector_random_uniform_hypersphere(2) * r0 + x0
 #         coords = np.random.uniform(-1,3,size=2)
         r = Replica(coords, p.get_energy(coords))
         replicas.append(r)
@@ -67,12 +68,20 @@ def ig(x, y, x0, y0, a, b):
     """inverse gausian"""
     return - a * np.exp(-( (x-x0)**2 + (y-y0)**2 ) / b**2)
 
-def f(x, y):
+def f1(x, y):
     x01 = np.array([0.,0])
     x02 = np.array([1.,1])
-    z1 = ig(x, y, 0, 0, 1, .3)
-    z2 = ig(x, y, 1, 1, .6, 1)
-    return z1 + z2
+    z = ig(x, y, 0, 0, 1, .3)
+    z += ig(x, y, 1.5, .5, .6, 1)
+    z += ig(x, y, 1, 1, .2, 3)
+    return z
+
+def styblinski_tang(x, y):
+    e1 = x**4 + 16*x**2 + 5*x
+    e2 = y**4 + 16*y**2 + 5*y
+    return (e1 + e2) / 2
+
+f = f1
 
 
 def plot3d():
@@ -90,11 +99,13 @@ def plot3d():
     plt.show()
 
 class NSViewer(object):
-    def __init__(self, ns, results):
+    def __init__(self, ns, results, xlim=[-1,3], ylim=[-1,3]):
         self.ns = ns
         self.results = results
-        self.xmin = self.ymin = -1.
-        self.xmax = self.ymax = 3
+        self.xmin = xlim[0]
+        self.xmax = xlim[1]
+        self.ymin = ylim[0]
+        self.ymax = ylim[1]
         self.X = np.arange(self.xmin, self.xmax, 0.1)
         self.Y = np.arange(self.ymin, self.ymax, 0.1)
         self.X, self.Y = np.meshgrid(self.X, self.Y)
@@ -114,7 +125,10 @@ class NSViewer(object):
 #         self.axes1 = self.fig.add_subplot(1,2,1)
 #         self.axes2 = self.fig.add_subplot(1,2,2)
         
-        self.cmap = mpl.cm.summer
+        self.cmap = mpl.cm.gist_heat
+        self.cmap = mpl.cm.hot
+        self.cmap = mpl.cm.gist_earth
+
         
         max_energy_sidebar_indices = [self.sidebar_e_to_index(e)
                                            for e in self.ns.max_energies]
@@ -129,7 +143,7 @@ class NSViewer(object):
         ax.set_ylim(self.ymin, self.ymax)
 
         im = ax.imshow(self.Z, interpolation='bilinear', origin='lower',
-                    cmap=self.cmap, extent=(-1,3,-1,3))
+                    cmap=self.cmap, extent=(self.xmin, self.xmax, self.ymin, self.ymax))
         
         self.plot_sidebar_background()
     
@@ -242,12 +256,21 @@ class NSViewer(object):
         plt.show(block=True)
 
 
-def main():
+def main1():
     ns, results = do_nested_sampling(nreplicas=15, niter=100, mciter=20)
     viewer = NSViewer(ns, results)
     viewer.run()
+    
+def main_st():
+    r0 = 3
+    xlim = ylim = [-r0,r0]
+    x0 = [0,0]
+    ns, results = do_nested_sampling(nreplicas=15, niter=100, mciter=20,
+                                     x0=x0, r0=r0)
+    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
+    viewer.run()
 
 if __name__ == "__main__":
-    main()
+    main1()
     
     
