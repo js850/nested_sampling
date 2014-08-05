@@ -107,7 +107,7 @@ def plot3d():
     plt.show()
 
 class NSViewer(object):
-    def __init__(self, ns, results, xlim=[-1,3], ylim=[-1,3]):
+    def __init__(self, ns, results, xlim=[-1,3], ylim=[-1,3], better_dos=None):
         self.ns = ns
         self.results = results
         self.xmin = xlim[0]
@@ -127,10 +127,12 @@ class NSViewer(object):
         self.Zlinear = self.Zlinear.reshape([-1,1])
         self.Zlinear_sorted = np.array(sorted(self.Zlinear.reshape(-1)))
         
-        self.fig = plt.figure()
+        self.fig = plt.figure(figsize=(12,7))
         n = 10
-        self.axes1 = plt.subplot2grid((n, n+1), (0, 0), colspan=n, rowspan=n)
-        self.axes2 = plt.subplot2grid((n, n+1), (0, n), colspan=1, rowspan=n)
+        
+        self.axes1 = plt.subplot2grid((n, 2*n+1), (0, 0), colspan=n, rowspan=n)
+        self.axes2 = plt.subplot2grid((n, 2*n+1), (0, n), colspan=1, rowspan=n)
+        self.axes3 = plt.subplot2grid((n, 2*n+1), (0, n+1), colspan=n, rowspan=n)
         
 #         self.axes1 = self.fig.add_subplot(1,2,1)
 #         self.axes2 = self.fig.add_subplot(1,2,2)
@@ -146,6 +148,11 @@ class NSViewer(object):
         self.sidebar_line_segments = [[(-0.5, y), (0.5, y)] 
                  for y in max_energy_sidebar_indices]
 
+        # copute the density of states
+        self.better_dos = better_dos
+        self.dos = self.compute_dos(self.ns.max_energies)
+        self.get_exact_dos()
+        
     
     def plot_background(self):
         ax = self.axes1
@@ -155,7 +162,7 @@ class NSViewer(object):
 
         im = ax.imshow(self.Z, interpolation='bilinear', origin='lower',
                     cmap=self.cmap, extent=(self.xmin, self.xmax, self.ymin, self.ymax),
-                    vmax=self.vmax)
+                    vmax=self.vmax, aspect="auto")
         
         self.plot_sidebar_background()
     
@@ -234,6 +241,34 @@ class NSViewer(object):
                                             colors='k')
         self.axes2.add_collection(lc)
     
+    def get_exact_dos(self):
+        V = len(self.Zlinear_sorted)
+        K = float(len(self.ns.replicas))
+        n = len(self.ns.max_energies)
+        for k in xrange(n):
+            vk = 1./(K+1) * 1./(K+1) * (K/(K+1))**k
+            ek = self.Zlinear_sorted[int(vk*V)]
+        self.better_dos = Result()
+        self.better_dos.energies = [ self.Zlinear_sorted[int(V/(K+1) * 1./(K+1) * (K/(K+1))**i)] for i in xrange(n)]
+        self.better_dos.dos = self.compute_dos(self.better_dos.energies)
+        
+
+    def compute_dos(self, energies):
+        K = float(len(self.ns.replicas))
+        dos = [1./(K+1) * (K/(K+1))**i 
+                    for i, e in enumerate(energies)]
+#        if self.better_dos is not None:
+#            self.better_dos.dos = np.array(self.better_dos.dos)
+#            self.better_dos.dos *= len(self.better_dos.energies) / len(self.dos)
+        return dos
+    
+    def plot_dos(self, i):
+        self.axes3.clear()
+        if self.better_dos is not None:
+            self.axes3.plot(self.better_dos.energies, np.log(self.better_dos.dos), '--r')
+        self.axes3.plot(self.ns.max_energies[:(i+1)], np.log(self.dos[:(i+1)]))
+        
+    
     def pause(self):
         if not hasattr(self, "_pause_skip"):
             self._pause_skip = 0
@@ -274,6 +309,7 @@ class NSViewer(object):
             self.pause()
             self.title("a new replica is generated via a MC walk")
             self.plot_mc_path(i)
+            self.plot_dos(i)
             print "finishing iteration", i
             self.pause()
         plt.show(block=True)
@@ -293,14 +329,44 @@ def main_st():
     viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
     viewer.run()
 
+
+    
+    
+
+def get_better_dos_2(nreplicas, niter, x0, r0, xlim, ylim, load_pickle=True):
+    import pickle
+    fname = "f2.better_dos.pkl"
+    if load_pickle:
+        try:
+            better_dos = pickle.load(open(fname, "rb"))
+            return better_dos
+        except:
+            pass
+    ns, results = do_nested_sampling(nreplicas=nreplicas, niter=niter, mciter=20,
+                                     x0=x0, r0=r0, estop=-1.7)
+    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
+    better_dos = Result()
+    better_dos.dos = viewer.dos
+    better_dos.energies = ns.max_energies
+    pickle.dump(better_dos, open(fname, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+    return better_dos
+
 def main2():
     xlim = [-4, 3]
     ylim = [-3, 4]
     x0 = [np.mean(xlim), np.mean(ylim)]
     r0 = np.abs(xlim[1] - xlim[0]) / 2
-    ns, results = do_nested_sampling(nreplicas=15, niter=100, mciter=20,
+    nreplicas = 15
+    niter = 100
+    # do a longer NS run to get a better estimate
+    better_dos = None
+#    if True:
+#        better_dos = get_better_dos_2(nreplicas*100, niter*100, x0, r0, xlim, ylim, load_pickle=False)
+        
+    ns, results = do_nested_sampling(nreplicas=nreplicas, niter=niter, mciter=20,
                                      x0=x0, r0=r0, estop=-1.7)
-    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
+    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim, 
+                      better_dos=better_dos)
     viewer.run()
 
 
