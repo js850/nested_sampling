@@ -106,9 +106,10 @@ def plot3d():
     plt.show()
 
 class NSViewer(object):
-    def __init__(self, ns, results, xlim=[-1,3], ylim=[-1,3], better_dos=None):
+    def __init__(self, ns, results, xlim=[-1,3], ylim=[-1,3], show_dos=False):
         self.ns = ns
         self.results = results
+        self.show_dos = show_dos
         self.xmin = xlim[0]
         self.xmax = xlim[1]
         self.ymin = ylim[0]
@@ -126,20 +127,21 @@ class NSViewer(object):
         self.Zlinear = self.Zlinear.reshape([-1,1])
         self.Zlinear_sorted = np.array(sorted(self.Zlinear.reshape(-1)))
         
-        self.fig = plt.figure(figsize=(12,7))
         n = 10
-        
-        self.axes1 = plt.subplot2grid((n, 2*n+1), (0, 0), colspan=n, rowspan=n)
-        self.axes2 = plt.subplot2grid((n, 2*n+1), (0, n), colspan=1, rowspan=n)
-        self.axes3 = plt.subplot2grid((n, 2*n+1), (0, n+1), colspan=n, rowspan=n)
-        
-#         self.axes1 = self.fig.add_subplot(1,2,1)
-#         self.axes2 = self.fig.add_subplot(1,2,2)
-        
-        self.cmap = mpl.cm.gist_heat
-        self.cmap = mpl.cm.hot
+        if self.show_dos:
+            nx = 2*n
+        else:
+            nx = n  
+        self.fig = plt.figure(figsize=(12,7))
+        self.axes1 = plt.subplot2grid((n, nx+1), (0, 0), colspan=n, rowspan=n)
+        self.axes2 = plt.subplot2grid((n, nx+1), (0, n), colspan=1, rowspan=n)
+        if self.show_dos:
+            self.axes3 = plt.subplot2grid((n, 2*n+1), (0, n+1), colspan=n, rowspan=n)
+            self.axes3.set_yticks([])
+
+#        self.cmap = mpl.cm.gist_heat
+#        self.cmap = mpl.cm.hot
         self.cmap = mpl.cm.gist_earth
-#        self.cmap.set_clim(vmax=1.)
 
         
         max_energy_sidebar_indices = [self.sidebar_e_to_index(e)
@@ -148,8 +150,8 @@ class NSViewer(object):
                  for y in max_energy_sidebar_indices]
 
         # copute the density of states
-        self.better_dos = better_dos
-        self.dos = self.compute_dos(self.ns.max_energies)
+        self.better_dos = None
+        self.dos = self.compute_dos(len(self.ns.max_energies))
         self.get_exact_dos()
         
     
@@ -248,13 +250,13 @@ class NSViewer(object):
         n = len(self.ns.max_energies)
         self.better_dos = Result()
         self.better_dos.energies = [ self.Zlinear_sorted[np.round(V * (K/(K+1))**i)] for i in xrange(n)]
-        self.better_dos.dos = self.compute_dos(self.better_dos.energies)
+        self.better_dos.dos = self.compute_dos(len(self.better_dos.energies))
         
 
-    def compute_dos(self, energies):
+    def compute_dos(self, niter):
         K = float(len(self.ns.replicas))
         dos = [1./(K+1) * (K/(K+1))**i 
-                    for i, e in enumerate(energies)]
+                    for i in xrange(niter)]
 #        if self.better_dos is not None:
 #            self.better_dos.dos = np.array(self.better_dos.dos)
 #            self.better_dos.dos *= len(self.better_dos.energies) / len(self.dos)
@@ -262,6 +264,7 @@ class NSViewer(object):
     
     def plot_dos(self, i):
         self.axes3.clear()
+        self.axes3.set_yticks([])
         if self.better_dos is not None:
             self.axes3.plot(self.better_dos.energies, np.log(self.better_dos.dos), '--r')
         self.axes3.plot(self.ns.max_energies[:(i+1)], np.log(self.dos[:(i+1)]))
@@ -307,7 +310,8 @@ class NSViewer(object):
             self.pause()
             self.title("a new replica is generated via a MC walk")
             self.plot_mc_path(i)
-            self.plot_dos(i)
+            if self.show_dos:
+                self.plot_dos(i)
             print "finishing iteration", i
             self.pause()
         plt.show(block=True)
@@ -337,7 +341,7 @@ def main2():
         
     ns, results = do_nested_sampling(nreplicas=nreplicas, niter=niter, mciter=20,
                                      x0=x0, r0=r0, estop=-1.7)
-    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
+    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim, show_dos=True)
     viewer.run()
 
 
