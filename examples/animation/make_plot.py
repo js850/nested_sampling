@@ -10,7 +10,6 @@ import bisect
 from nested_sampling import NestedSampling, MonteCarloWalker, Replica
 from nested_sampling.utils.rotations import vector_random_uniform_hypersphere
 from scipy.optimize import Result
-from _bisect import bisect_left
 
     
 
@@ -242,14 +241,13 @@ class NSViewer(object):
         self.axes2.add_collection(lc)
     
     def get_exact_dos(self):
-        V = len(self.Zlinear_sorted)
+        N = len(self.Zlinear_sorted)
+        V = N-1-self.sidebar_e_to_index(self.ns.max_energies[0])
+        print self.ns.max_energies[0], self.Zlinear_sorted[V]
         K = float(len(self.ns.replicas))
         n = len(self.ns.max_energies)
-        for k in xrange(n):
-            vk = 1./(K+1) * 1./(K+1) * (K/(K+1))**k
-            ek = self.Zlinear_sorted[int(vk*V)]
         self.better_dos = Result()
-        self.better_dos.energies = [ self.Zlinear_sorted[int(V/(K+1) * 1./(K+1) * (K/(K+1))**i)] for i in xrange(n)]
+        self.better_dos.energies = [ self.Zlinear_sorted[np.round(V * (K/(K+1))**i)] for i in xrange(n)]
         self.better_dos.dos = self.compute_dos(self.better_dos.energies)
         
 
@@ -329,28 +327,6 @@ def main_st():
     viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
     viewer.run()
 
-
-    
-    
-
-def get_better_dos_2(nreplicas, niter, x0, r0, xlim, ylim, load_pickle=True):
-    import pickle
-    fname = "f2.better_dos.pkl"
-    if load_pickle:
-        try:
-            better_dos = pickle.load(open(fname, "rb"))
-            return better_dos
-        except:
-            pass
-    ns, results = do_nested_sampling(nreplicas=nreplicas, niter=niter, mciter=20,
-                                     x0=x0, r0=r0, estop=-1.7)
-    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
-    better_dos = Result()
-    better_dos.dos = viewer.dos
-    better_dos.energies = ns.max_energies
-    pickle.dump(better_dos, open(fname, "wb"), protocol=pickle.HIGHEST_PROTOCOL)
-    return better_dos
-
 def main2():
     xlim = [-4, 3]
     ylim = [-3, 4]
@@ -358,15 +334,10 @@ def main2():
     r0 = np.abs(xlim[1] - xlim[0]) / 2
     nreplicas = 15
     niter = 100
-    # do a longer NS run to get a better estimate
-    better_dos = None
-#    if True:
-#        better_dos = get_better_dos_2(nreplicas*100, niter*100, x0, r0, xlim, ylim, load_pickle=False)
         
     ns, results = do_nested_sampling(nreplicas=nreplicas, niter=niter, mciter=20,
                                      x0=x0, r0=r0, estop=-1.7)
-    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim, 
-                      better_dos=better_dos)
+    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
     viewer.run()
 
 
