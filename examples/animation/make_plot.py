@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 #from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import matplotlib as mpl
+from matplotlib import mlab
 import numpy as np
 import time
 import bisect
@@ -64,16 +65,23 @@ def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=
     return ns, results
     
 
-def ig(x, y, x0, y0, a, b):
+def ig(x, y, x0, y0, sigx, sigy):
     """inverse gausian"""
-    return - a * np.exp(-( (x-x0)**2 + (y-y0)**2 ) / b**2)
+    return np.exp(-( ((x-x0)/sigx)**2 + ((y-y0)/sigy)**2 ))
 
 def f1(x, y):
-    x01 = np.array([0.,0])
-    x02 = np.array([1.,1])
-    z = ig(x, y, 0, 0, 1, .3)
-    z += ig(x, y, 1.5, .5, .6, 1)
-    z += ig(x, y, 1, 1, .2, 3)
+    z = -1. *   ig(x, y, 0, 0, .3, .3)
+    z += -0.6 * ig(x, y, 1.5, .5, 1, 1)
+    z += -0.2 * ig(x, y, 1, 1, 3, 3)
+    return z
+
+def f2(x, y):
+#    z =  -1.0 * ig(x, y, 0, -1, 1.3, 0.7)
+#    z += -0.3 * ig(x, y, 1, 0.7, 0.45, 0.5)
+#    z += -2.0 * ig(x, y, -1, 1, 2, 2)
+    z =  -1.2 * ig(x, y, 0, -1, 1.3, 0.7)
+    z += -1.5 * ig(x, y, 1, 0.7, 0.45, 0.5)
+    z += -1.0 * ig(x, y, -1, 1, 2, 2)
     return z
 
 def styblinski_tang(x, y):
@@ -81,7 +89,7 @@ def styblinski_tang(x, y):
     e2 = y**4 + 16*y**2 + 5*y
     return (e1 + e2) / 2
 
-f = f1
+f = f2
 
 
 def plot3d():
@@ -111,7 +119,9 @@ class NSViewer(object):
         self.X, self.Y = np.meshgrid(self.X, self.Y)
         self.Z = f(self.X, self.Y)
         self.zmin = np.min(self.Z)
+        print "zmin", self.zmin
         self.zmax = 0
+        self.vmax = self.Z.max() + .05
         
         self.Zlinear = np.array(sorted(self.Z.flatten(), reverse=True))
         self.Zlinear = self.Zlinear.reshape([-1,1])
@@ -128,6 +138,7 @@ class NSViewer(object):
         self.cmap = mpl.cm.gist_heat
         self.cmap = mpl.cm.hot
         self.cmap = mpl.cm.gist_earth
+#        self.cmap.set_clim(vmax=1.)
 
         
         max_energy_sidebar_indices = [self.sidebar_e_to_index(e)
@@ -143,7 +154,8 @@ class NSViewer(object):
         ax.set_ylim(self.ymin, self.ymax)
 
         im = ax.imshow(self.Z, interpolation='bilinear', origin='lower',
-                    cmap=self.cmap, extent=(self.xmin, self.xmax, self.ymin, self.ymax))
+                    cmap=self.cmap, extent=(self.xmin, self.xmax, self.ymin, self.ymax),
+                    vmax=self.vmax)
         
         self.plot_sidebar_background()
     
@@ -151,14 +163,14 @@ class NSViewer(object):
         if i == 0: return
         ax = self.axes1
         ax.contour(self.X, self.Y, self.Z, levels=self.ns.max_energies[:i], 
-                    vmin=self.zmin, vmax=self.zmax, 
+                    vmin=self.zmin, vmax=self.vmax, 
                     colors="k", linestyles="solid")
         self.plot_sidebar_contours_old(i)
 
     def plot_contours_new(self, i):
         ax = self.axes1
         ax.contour(self.X, self.Y, self.Z, levels=self.ns.max_energies[i:(i+1)], 
-                    vmin=self.zmin, vmax=self.zmax, 
+                    vmin=self.zmin, vmax=self.vmax, 
                     colors="k", linestyles="solid")
         self.plot_sidebar_contours_new(i)
 
@@ -199,7 +211,7 @@ class NSViewer(object):
         ax.clear()
         ax.set_yticks([])
         ax.set_xticks([])
-        ax.imshow(self.Zlinear, aspect="auto", cmap=self.cmap)
+        ax.imshow(self.Zlinear, aspect="auto", cmap=self.cmap, vmax=self.vmax)
         ax.set_ylim(self.Zlinear.size, 0)
         ax.set_xlim(-0.5,0.5)
     
@@ -223,8 +235,19 @@ class NSViewer(object):
         self.axes2.add_collection(lc)
     
     def pause(self):
-        plt.pause(.2)
-        raw_input("press any key to continue")
+        if not hasattr(self, "_pause_skip"):
+            self._pause_skip = 0
+        if self._pause_skip > 0:
+            self._pause_skip -= 1
+            plt.pause(.03)
+            return
+        plt.pause(.05)
+        n = raw_input("press any key to continue. enter a number to skip future pauses")
+        try:
+            n = int(n)
+            self._pause_skip = n
+        except ValueError:
+            return
     
     def title(self, str):
         if not hasattr(self, "_title"):
@@ -235,7 +258,7 @@ class NSViewer(object):
     
     def run(self):
         plt.ion()
-        for i in xrange(len(self.results)):
+        for i in xrange(len(self.results)-1):
             self.plot_background()
             self.plot_contours_old(i)
             if i == 0:
@@ -270,7 +293,19 @@ def main_st():
     viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
     viewer.run()
 
+def main2():
+    xlim = [-4, 3]
+    ylim = [-3, 4]
+    x0 = [np.mean(xlim), np.mean(ylim)]
+    r0 = np.abs(xlim[1] - xlim[0]) / 2
+    ns, results = do_nested_sampling(nreplicas=15, niter=100, mciter=20,
+                                     x0=x0, r0=r0, estop=-1.7)
+    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
+    viewer.run()
+
+
+
 if __name__ == "__main__":
-    main1()
+    main2()
     
     
