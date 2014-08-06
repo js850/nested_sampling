@@ -105,6 +105,10 @@ def plot3d():
 
     plt.show()
 
+def prod(a):
+    from operator import mul
+    return reduce(mul, a)
+
 class NSViewer(object):
     def __init__(self, ns, results, xlim=[-1,3], ylim=[-1,3], show_dos=False):
         self.ns = ns
@@ -252,6 +256,15 @@ class NSViewer(object):
         self.better_dos.energies = [ self.Zlinear_sorted[np.round(V * (K/(K+1))**i)] for i in xrange(n)]
         self.better_dos.dos = self.compute_dos(len(self.better_dos.energies))
         
+        # also make some random dos versions
+        self.better_dos.random_energies = []
+        for i in xrange(20):
+            alphas = np.random.beta(K,1, size=n-1)
+            elist = [ self.Zlinear_sorted[np.round(V * prod(alphas[:i]))] for i in xrange(1,n)]
+            elist.insert(0, self.Zlinear_sorted[np.round(V)])
+            self.better_dos.random_energies.append(elist)
+            
+        
 
     def compute_dos(self, niter):
         K = float(len(self.ns.replicas))
@@ -266,8 +279,10 @@ class NSViewer(object):
         self.axes3.clear()
         self.axes3.set_yticks([])
         if self.better_dos is not None:
-            self.axes3.plot(self.better_dos.energies, np.log(self.better_dos.dos), '--r')
-        self.axes3.plot(self.ns.max_energies[:(i+1)], np.log(self.dos[:(i+1)]))
+            self.axes3.plot(self.better_dos.energies, np.log(self.better_dos.dos), '-r', lw=.5)
+            for elist in self.better_dos.random_energies:
+                self.axes3.plot(elist, np.log(self.better_dos.dos), '-.b', lw=.5)
+        self.axes3.plot(self.ns.max_energies[:(i+1)], np.log(self.dos[:(i+1)]), 'k')
         
     
     def pause(self):
