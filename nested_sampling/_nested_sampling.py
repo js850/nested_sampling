@@ -388,6 +388,7 @@ class NestedSampling(object):
         # choose a replica randomly
         assert len(self.replicas) == (self.nreplicas - self.nproc)
         rlist = random.sample(self.replicas, self.nproc)
+        self.starting_replicas = rlist # save in case the user wants to see it
         
         # make a copy of the replicas so we don't modify the old ones
         rlist = [r.copy() for r in rlist]
@@ -419,6 +420,7 @@ class NestedSampling(object):
         
         # do the monte carlo walk
         rlist = self.do_monte_carlo_chain(rlist, Emax)
+        self.new_replicas = rlist # for optional later access
 
         # add the new replicas and keep the list sorted
         self.add_new_replicas(rlist)
