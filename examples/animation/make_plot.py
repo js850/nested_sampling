@@ -19,7 +19,9 @@ class Pot(object):
         return f(coords[::2], coords[1::2])[0]
 
 def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=-.9,
-                       x0=[1,1], r0=2):
+                       x0=[1,1], r0=2,
+                       xlim=None, ylim=None, circle=False
+                       ):
     path = []
     def mc_record_position_event(coords=None, **kwargs):
         if len(path) == 0 or not np.all(path[-1] == coords):
@@ -32,8 +34,13 @@ def do_nested_sampling(nreplicas=10, niter=200, mciter=1000, stepsize=.8, estop=
     # initialize the replicas with random positions
     replicas = []
     for i in xrange(nreplicas):
-        # choose points uniformly in a circle 
-        coords = vector_random_uniform_hypersphere(2) * r0 + x0
+        # choose points uniformly in a circle
+        if circle: 
+            coords = vector_random_uniform_hypersphere(2) * r0 + x0
+        else:
+            coords = np.zeros(2)
+            coords[0] = np.random.uniform(xlim[0], xlim[1])
+            coords[1] = np.random.uniform(ylim[0], ylim[1])
 #         coords = np.random.uniform(-1,3,size=2)
         r = Replica(coords, p.get_energy(coords))
         replicas.append(r)
@@ -126,6 +133,7 @@ class NSViewer(object):
         print "zmin", self.zmin
         self.zmax = 0
         self.vmax = self.Z.max() + .05
+        self._pause_count = 0
         
         self.Zlinear = np.array(sorted(self.Z.flatten(), reverse=True))
         self.Zlinear = self.Zlinear.reshape([-1,1])
@@ -159,7 +167,7 @@ class NSViewer(object):
         self.get_exact_dos()
         
     
-    def plot_background(self):
+    def plot_background(self, sidebar=True):
         ax = self.axes1
         ax.clear()
         ax.set_xlim(self.xmin, self.xmax)
@@ -169,7 +177,8 @@ class NSViewer(object):
                     cmap=self.cmap, extent=(self.xmin, self.xmax, self.ymin, self.ymax),
                     vmax=self.vmax, aspect="auto")
         
-        self.plot_sidebar_background()
+        if sidebar:
+            self.plot_sidebar_background()
     
     def plot_contours_old(self, i):
         if i == 0: return
@@ -187,15 +196,17 @@ class NSViewer(object):
         self.plot_sidebar_contours_new(i)
 
 
-    def plot_replicas(self, i):
+    def plot_replicas(self, i, replicas=None, sidebar=True):
+        if replicas is None:
+            replicas = self.results[i].replicas
         # plot replicas
         ax = self.axes1
-        results = self.results
-        xrep = np.array([r.x[0] for r in results[i].replicas])
-        yrep = np.array([r.x[1] for r in results[i].replicas])
+        xrep = np.array([r.x[0] for r in replicas])
+        yrep = np.array([r.x[1] for r in replicas])
         ax.scatter(xrep, yrep, c='k', facecolors="none")
         
-        self.plot_sidebar_replicas(i)
+        if sidebar:
+            self.plot_sidebar_replicas(i)
         
     def plot_replica_to_delete(self, i):
         r = self.results[i].replicas[-1]
@@ -207,12 +218,21 @@ class NSViewer(object):
 #            r = self.results[i].starting_replica
 #            ax.scatter(r.x[0], r.x[1], c='b', 
 #                       )
-        
         r = self.results[i+1].new_replica
-        ax.scatter(r.x[0], r.x[1], c='r')
-        
+
         path = np.array(self.results[i+1].mc_path)
         ax.plot(path[:,0], path[:,1], '--k', lw=.5)
+        
+        self.plot_new_replica(i)
+
+    def plot_new_replica(self, i):
+        r = self.results[i+1].new_replica
+        self.axes1.scatter(r.x[0], r.x[1], c='r', linewidths=0, s=30)
+        
+        # on the sidebar also
+        xpos = 0
+        ypos = self.sidebar_e_to_index(r.energy)
+        self.axes2.scatter(xpos, ypos, c='r', linewidths=0, s=30)
     
     def sidebar_e_to_index(self, energy):
         n = self.Zlinear.size
@@ -227,10 +247,12 @@ class NSViewer(object):
         ax.set_ylim(self.Zlinear.size, 0)
         ax.set_xlim(-0.5,0.5)
     
-    def plot_sidebar_replicas(self, i):
+    def plot_sidebar_replicas(self, i, replicas=None):
+        if replicas is None:
+            replicas = self.results[i].replicas
         ax = self.axes2
         ypos = [self.sidebar_e_to_index(r.energy)
-                for r in self.results[i].replicas]
+                for r in replicas]
         xpos = [0] * len(ypos)
         ax.scatter(xpos, ypos, c='k', facecolors="none")
     
@@ -286,6 +308,8 @@ class NSViewer(object):
         
     
     def pause(self):
+        plt.savefig("animation/animation_%i.pdf"%self._pause_count, type="pdf", bbox_inches="tight")
+        self._pause_count += 1
         if not hasattr(self, "_pause_skip"):
             self._pause_skip = 0
         if self._pause_skip > 0:
@@ -346,6 +370,70 @@ def main_st():
     viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim)
     viewer.run()
 
+#def make_first_plot(viewer):
+#    p = Pot()
+#    replicas = []
+#    for i in xrange(viewer.ns.nreplicas):
+#        # choose points uniformly in a circle 
+##        coords = vector_random_uniform_hypersphere(2) * r0 + x0
+#        coords = np.zeros(2)
+#        coords[0] = np.random.uniform(viewer.xmin, viewer.xmax)
+#        coords[1] = np.random.uniform(viewer.ymin, viewer.ymax)
+#        r = Replica(coords, p.get_energy(coords))
+#        replicas.append(r)
+#
+#    viewer.plot_background()
+#    viewer.plot_sidebar_background()
+#    viewer.plot_replicas(0, replicas=replicas)
+#    viewer.plot_sidebar_replicas(0, replicas=replicas)
+#    plt.savefig("animation_initial.pdf", type="pdf")
+#    plt.show()
+
+def make_first_plots(viewer):
+    viewer.fig.set_figheight(5)
+    viewer.fig.set_figwidth(6)
+    i=0
+    viewer.plot_background(sidebar=False)
+    viewer.plot_replicas(i, sidebar=False)
+#    viewer.title("the replicas are uniformly distributed in space")
+    viewer.axes2.set_xticks([])
+    viewer.axes2.set_yticks([])
+    plt.savefig("initial_animation_1.pdf", type="pdf", bbox_inches="tight")
+#    plt.show()
+    viewer.plot_sidebar_background()
+    viewer.plot_sidebar_replicas(i)
+    plt.savefig("initial_animation_2.pdf", type="pdf", bbox_inches="tight")
+    viewer.plot_contours_new(i)
+    plt.savefig("initial_animation_3.pdf", type="pdf", bbox_inches="tight")
+    viewer.plot_new_replica(i)
+    plt.savefig("initial_animation_4.pdf", type="pdf", bbox_inches="tight")
+    # add the monte carlo path
+    viewer.plot_mc_path(i)
+    plt.savefig("initial_animation_4_1.pdf", type="pdf", bbox_inches="tight")
+    
+    # refresh and redraw
+    viewer.plot_background()
+    viewer.plot_contours_old(i+1)
+    viewer.plot_replicas(i+1)
+    viewer.plot_contours_new(i+1)
+    viewer.plot_new_replica(i)
+    plt.savefig("initial_animation_5.pdf", type="pdf", bbox_inches="tight")
+    
+    # after n iterations
+    i = 20
+    viewer.plot_background()
+    viewer.plot_contours_old(i)
+    viewer.plot_replicas(i)
+    viewer.plot_contours_new(i)
+#    viewer.plot_new_replica(i)
+    plt.savefig("initial_animation_6.pdf", type="pdf", bbox_inches="tight")
+    
+    plt.show()
+#    viewer.plot_contours_new(i)
+#    viewer.title("the replica with the highest energy is removed.  It's energy becomes the next Emax")
+#    viewer.plot_replica_to_delete(i)
+
+
 def main2():
     xlim = [-4, 3]
     ylim = [-3, 4]
@@ -355,8 +443,19 @@ def main2():
     niter = 100
         
     ns, results = do_nested_sampling(nreplicas=nreplicas, niter=niter, mciter=20,
-                                     x0=x0, r0=r0, estop=-1.7)
-    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim, show_dos=True)
+                                     x0=x0, r0=r0, estop=-1.7, xlim=xlim, ylim=ylim,
+                                     circle=False)
+    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim, show_dos=False)
+    
+    if True:
+        import pickle
+        ns.mc_walker.events = [] # can't pickle it
+        pickle.dump(viewer, open("viewer.pkl", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
+    
+    if True:
+        make_first_plots(viewer)
+        return
+    
     viewer.run()
 
 
