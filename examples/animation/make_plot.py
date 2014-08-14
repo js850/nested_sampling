@@ -428,6 +428,11 @@ def make_first_plots(viewer):
 #    viewer.plot_new_replica(i)
     plt.savefig("initial_animation_6.pdf", type="pdf", bbox_inches="tight")
     
+    # after n iterations with the mc path
+    viewer.plot_mc_path(i)
+    viewer.plot_replica_to_delete(i)
+    plt.savefig("initial_animation_7.pdf", type="pdf", bbox_inches="tight")
+    
     plt.show()
 #    viewer.plot_contours_new(i)
 #    viewer.title("the replica with the highest energy is removed.  It's energy becomes the next Emax")
