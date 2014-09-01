@@ -22,6 +22,7 @@ def plots1d(nimages=30, nreplicas=4, with_hist=True, show=True,
         ax.set_yticks([])
         ypos = np.random.uniform(0,1,nreplicas)
         ymax= ypos.max()
+        ax.axhspan(0, ymax, alpha=0.2)
         xpos = np.zeros(nreplicas, )
         ax.scatter(xpos, ypos, c='k', facecolors="none")
         ax.scatter(0, ymax, c='r', linewidths=0, s=40)
@@ -52,18 +53,20 @@ def plots1d(nimages=30, nreplicas=4, with_hist=True, show=True,
         plt.show()
     
 
-def make_1d_plots():    
-    plots1d(nimages=1, nreplicas=1, with_hist=False, show=False, width=1)
+def make_1d_plots():
+    show=False    
+    plots1d(nimages=1, nreplicas=1, with_hist=False, show=show, width=1)
     plt.savefig("plot1d_1_1_nohist.pdf", type="pdf", bbox_inches="tight")
    
-    plots1d(nimages=1, nreplicas=2, with_hist=False, show=False, width=1)
+    plots1d(nimages=1, nreplicas=2, with_hist=False, show=show, width=1)
     plt.savefig("plot1d_1_2_nohist.pdf", type="pdf", bbox_inches="tight")
 
-    plots1d(nimages=10, nreplicas=2, with_hist=True, show=False)
+    plots1d(nimages=10, nreplicas=2, with_hist=True, show=show)
     plt.savefig("plot1d_10_2.pdf", type="pdf", bbox_inches="tight")
     
-    plots1d(nimages=10, nreplicas=10, with_hist=True, show=False)
+    plots1d(nimages=10, nreplicas=10, with_hist=True, show=show)
     plt.savefig("plot1d_10_10.pdf", type="pdf", bbox_inches="tight")
+    plt.show()
 
 if __name__ == "__main__":
     make_1d_plots()

@@ -308,7 +308,7 @@ class NSViewer(object):
         
     
     def pause(self):
-        plt.savefig("animation/animation_%i.pdf"%self._pause_count, type="pdf", bbox_inches="tight")
+#         plt.savefig("anim/ation/animation_%i.pdf"%self._pause_count, type="pdf", bbox_inches="tight")
         self._pause_count += 1
         if not hasattr(self, "_pause_skip"):
             self._pause_skip = 0
@@ -452,12 +452,12 @@ def main2():
                                      circle=False)
     viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim, show_dos=False)
     
-    if True:
+    if False:
         import pickle
         ns.mc_walker.events = [] # can't pickle it
         pickle.dump(viewer, open("viewer.pkl", "wb"), protocol=pickle.HIGHEST_PROTOCOL)
     
-    if True:
+    if False:
         make_first_plots(viewer)
         return
     
