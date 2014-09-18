@@ -134,21 +134,25 @@ class NSViewer(object):
         self.zmax = 0
         self.vmax = self.Z.max() + .05
         self._pause_count = 0
+        self._save_figs = False
         
         self.Zlinear = np.array(sorted(self.Z.flatten(), reverse=True))
         self.Zlinear = self.Zlinear.reshape([-1,1])
         self.Zlinear_sorted = np.array(sorted(self.Zlinear.reshape(-1)))
         
+        # set up the subplot geometry
         n = 10
         if self.show_dos:
             nx = 2*n
+            self.fig = plt.figure(figsize=(12,7))
         else:
             nx = n  
-        self.fig = plt.figure(figsize=(12,7))
-        self.axes1 = plt.subplot2grid((n, nx+1), (0, 0), colspan=n, rowspan=n)
-        self.axes2 = plt.subplot2grid((n, nx+1), (0, n), colspan=1, rowspan=n)
+            self.fig = plt.figure(figsize=(8,7))
+        shape = (n+1, nx)
+        self.axes1 = plt.subplot2grid(shape, (0, 0), colspan=n, rowspan=n)
+        self.axes2 = plt.subplot2grid(shape, (n, 0), colspan=nx, rowspan=1)
         if self.show_dos:
-            self.axes3 = plt.subplot2grid((n, 2*n+1), (0, n+1), colspan=n, rowspan=n)
+            self.axes3 = plt.subplot2grid(shape, (0, n+1), colspan=n, rowspan=n)
             self.axes3.set_yticks([])
 
 #        self.cmap = mpl.cm.gist_heat
@@ -158,10 +162,10 @@ class NSViewer(object):
         
         max_energy_sidebar_indices = [self.sidebar_e_to_index(e)
                                            for e in self.ns.max_energies]
-        self.sidebar_line_segments = [[(-0.5, y), (0.5, y)] 
+        self.sidebar_line_segments = [[(y, -0.5), (y, 0.5)] 
                  for y in max_energy_sidebar_indices]
 
-        # copute the density of states
+        # compute the density of states
         self.better_dos = None
         self.dos = self.compute_dos(len(self.ns.max_energies))
         self.get_exact_dos()
@@ -172,6 +176,8 @@ class NSViewer(object):
         ax.clear()
         ax.set_xlim(self.xmin, self.xmax)
         ax.set_ylim(self.ymin, self.ymax)
+        ax.set_xticks([])
+        ax.set_yticks([])
 
         im = ax.imshow(self.Z, interpolation='bilinear', origin='lower',
                     cmap=self.cmap, extent=(self.xmin, self.xmax, self.ymin, self.ymax),
@@ -241,11 +247,11 @@ class NSViewer(object):
     def plot_sidebar_background(self):
         ax = self.axes2
         ax.clear()
-        ax.set_yticks([])
         ax.set_xticks([])
-        ax.imshow(self.Zlinear, aspect="auto", cmap=self.cmap, vmax=self.vmax)
-        ax.set_ylim(self.Zlinear.size, 0)
-        ax.set_xlim(-0.5,0.5)
+        ax.set_yticks([])
+        ax.imshow(self.Zlinear.transpose(), aspect="auto", cmap=self.cmap, vmax=self.vmax)
+        ax.set_xlim(self.Zlinear.size, 0)
+        ax.set_ylim(-0.5,0.5)
     
     def plot_sidebar_replicas(self, i, replicas=None):
         if replicas is None:
@@ -254,7 +260,7 @@ class NSViewer(object):
         ypos = [self.sidebar_e_to_index(r.energy)
                 for r in replicas]
         xpos = [0] * len(ypos)
-        ax.scatter(xpos, ypos, c='k', facecolors="none")
+        ax.scatter(ypos, xpos, c='k', facecolors="none")
     
     def plot_sidebar_contours_old(self, i):
         # plot line segments
@@ -308,7 +314,9 @@ class NSViewer(object):
         
     
     def pause(self):
-#         plt.savefig("anim/ation/animation_%i.pdf"%self._pause_count, type="pdf", bbox_inches="tight")
+        if self._save_figs or True:
+#            plt.savefig("animation/animation_%i.pdf"%self._pause_count, type="pdf", bbox_inches="tight")
+            plt.savefig("animation/animation_%i.jpg"%self._pause_count, type="jpg", bbox_inches="tight")
         self._pause_count += 1
         if not hasattr(self, "_pause_skip"):
             self._pause_skip = 0
