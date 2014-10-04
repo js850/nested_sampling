@@ -117,7 +117,7 @@ def prod(a):
     return reduce(mul, a)
 
 class NSViewer(object):
-    def __init__(self, ns, results, xlim=[-1,3], ylim=[-1,3], show_dos=False):
+    def __init__(self, ns, results, xlim=[-1,3], ylim=[-1,3], show_dos=True, save_figs=False):
         self.ns = ns
         self.results = results
         self.show_dos = show_dos
@@ -134,7 +134,7 @@ class NSViewer(object):
         self.zmax = 0
         self.vmax = self.Z.max() + .05
         self._pause_count = 0
-        self._save_figs = False
+        self._save_figs = save_figs
         
         self.Zlinear = np.array(sorted(self.Z.flatten(), reverse=True))
         self.Zlinear = self.Zlinear.reshape([-1,1])
@@ -305,6 +305,7 @@ class NSViewer(object):
     
     def plot_dos(self, i):
         self.axes3.clear()
+        self.axes3.set_xticks([])
         self.axes3.set_yticks([])
         if self.better_dos is not None:
             self.axes3.plot(self.better_dos.energies, np.log(self.better_dos.dos), '-r', lw=.5)
@@ -314,7 +315,7 @@ class NSViewer(object):
         
     
     def pause(self):
-        if self._save_figs or True:
+        if self._save_figs:
 #            plt.savefig("animation/animation_%i.pdf"%self._pause_count, type="pdf", bbox_inches="tight")
             plt.savefig("animation/animation_%i.jpg"%self._pause_count, type="jpg", bbox_inches="tight")
         self._pause_count += 1
@@ -326,6 +327,8 @@ class NSViewer(object):
             return
         plt.pause(.05)
         n = raw_input("press any key to continue. enter a number to skip future pauses")
+        if n == "q":
+            raise Exception("quitting")
         try:
             n = int(n)
             self._pause_skip = n
@@ -458,7 +461,7 @@ def main2():
     ns, results = do_nested_sampling(nreplicas=nreplicas, niter=niter, mciter=20,
                                      x0=x0, r0=r0, estop=-1.7, xlim=xlim, ylim=ylim,
                                      circle=False)
-    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim, show_dos=False)
+    viewer = NSViewer(ns, results, xlim=xlim, ylim=ylim, show_dos=True)
     
     if False:
         import pickle
