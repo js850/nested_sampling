@@ -60,16 +60,11 @@ class NestedSampling(object):
 
     Parameters
     ----------
-    system : object
-        defines the system of interest.  must have the following functions as
-        attributes
-        
-            system.get_random_configuration()
-            system.get_energy()
-    nreplicas : integer
-        number of replicas
-    mc_walker : callable
-        does Markov Chain walk to create a new configuration from an old configuration.
+    replicas : list
+        list of objects of type Replica
+    mc_walker: callable
+        class of type MonteCarloWalker
+        performs a Monte Carlo walk to sample phase space.
         It should return an object with attributes x, energy, nsteps, naccept, etc.
     nproc : int
         number of processors to use for parallel nested sampling
@@ -77,15 +72,30 @@ class NestedSampling(object):
         print status messages
     iprint : int
         if verbose is true, then status messages will be printed every iprint iterations
-    
+    cpfile: str
+        checkpoint file name
+    cpfreq: int
+        checkpointing frequency in number of steps
+    cpstart: bool
+        start calculation from checkpoint binary file
+    dispatcher_URI: str
+        address (URI) of dispatcher (required for distributed parallelisation)
+    serializer: str
+        choice of serializer
     Attributes
     ----------
+    nreplicas : integer
+        number of replicas
+    stepsize : float
+        starting stepsize. It is then adapted to meet some target MC acceptance
+        by default 0.5
     max_energies : list
         array of stored energies (at each step the highest energy configuration
         is stored and replaced by a valid configuration)
-    replicas : list
-        list of objects of type Replica
-        """
+    store_all_energies: bool
+        store the energy of all the nproc replicas replaced when running NS
+        in parallel
+    """
     def __init__(self, replicas, mc_walker, stepsize=0.1, nproc=1, verbose=True,
                   max_stepsize=0.5, iprint=1, cpfile=None, cpfreq=10000, cpstart = False, dispatcher_URI=None, serializer='pickle'):
         self.nproc = nproc
@@ -293,8 +303,6 @@ class NestedSampling(object):
                                  (self.iter_number, float(result.naccept) / result.nsteps,
                                   result.energy, r.energy, Emax, self.replicas[0].energy,
                                   self.stepsize))
-
-                
 #                if True:
 #                    from pele.utils.xyz import write_xyz
 #                    write_xyz(open("error.xyz", "w"), r.x, title="energy %g %d" % (r.energy, self.iter_number))
@@ -314,35 +322,8 @@ class NestedSampling(object):
 #                    testenergy = self.system.get_energy(r.x)
 #                    assert np.abs(testenergy - r.energy) < 1e-5
                     
-
-                    
-
         self.adjust_step_size(results)
         return rnewlist
-    
-#    def create_replica(self):
-#        """
-#        create a random configuration, evaluate its energy and return the corresponding Replica object
-#        """
-#        x = self.system.get_random_configuration()
-#        e = self.system.get_energy(x)
-#        return Replica(x, e)
-    
-    def sort_replicas(self):
-        """
-        sorts the replicas in decreasing order of energy
-        """
-        self.replicas.sort(key=lambda r:r.energy)
-    
-#    def setup_replicas(self, nreplicas):
-#        """
-#        creates nreplicas replicas and sorts them in decreasing order of energy
-#        """
-#        self.replicas = [self.create_replica() for i in range(nreplicas)]
-#        self.sort_replicas()
-#        if self.verbose:
-#            print "min replica energy", self.replicas[0].energy
-#            print "max replica energy", self.replicas[-1].energy
     
     def adjust_step_size(self, results):
         """
@@ -372,6 +353,12 @@ class NestedSampling(object):
             self.stepsize /= f
         if self.stepsize > max_stepsize:
             self.stepsize = max_stepsize
+    
+    def sort_replicas(self):
+        """
+        sorts the replicas in decreasing order of energy
+        """
+        self.replicas.sort(key=lambda r:r.energy)
         
     def pop_replicas(self):
         """
