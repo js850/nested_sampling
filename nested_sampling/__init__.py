@@ -12,7 +12,7 @@
 """
 
 from utils.result import Result
-from _mc_walker import MonteCarloWalker
+from _mc_walker import MonteCarloWalker, random_displace
 from _nested_sampling import NestedSampling, Replica, Forwarditem
 from _nested_sampling_runner import run_nested_sampling
 from _worker import pyro_worker
