@@ -1,0 +1,1 @@
+.. automodule:: nested_sampling
