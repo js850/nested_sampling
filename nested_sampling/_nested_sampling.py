@@ -63,7 +63,7 @@ class NestedSampling(object):
     replicas : list
         list of objects of type Replica
     mc_walker: callable
-        class of type MonteCarloWalker
+        class of type MonteCarloWalker or similar. It
         performs a Monte Carlo walk to sample phase space.
         It should return an object with attributes x, energy, nsteps, naccept, etc.
     nproc : int
