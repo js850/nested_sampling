@@ -189,7 +189,7 @@ gh-pages:
 	cd doc &&\
 	make html &&\
 	mv -fv _build/html/* ../ &&\
-	mv -fv -t ../ *jpg *.png *.rst _build sphinxext &&\
+	mv -fv -t ../ *.jpg *.rst _build sphinxext &&\
 	rm -rfv conf.py _static _templates &&\
 	cd $(PACKAGEDIR) &&\
 	rm -rvf $(GH_PAGES_SOURCES) &&\
