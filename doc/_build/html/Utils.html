@@ -1,0 +1,467 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Utils &mdash; nested sampling 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/scipy.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nested sampling 1.0.0 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">nested sampling 1.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="utils">
+<h1>Utils<a class="headerlink" href="#utils" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="heat-capacity">
+<h2>Heat capacity<a class="headerlink" href="#heat-capacity" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="nested_sampling.utils.compute_heat_capacity">
+<tt class="descclassname">nested_sampling.utils.</tt><tt class="descname">compute_heat_capacity</tt><big>(</big><em>energies</em>, <em>nreplicas</em>, <em>npar=1</em>, <em>ndof=0</em>, <em>Tmin=0.1</em>, <em>Tmax=1.0</em>, <em>nT=100</em>, <em>live_replicas=False</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_heat_capacity.py#L6"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils.compute_heat_capacity" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute the heat capacity and average energies from the energy levels of a nested sampling run</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters :</th><td class="field-body"><p class="first"><strong>energies: nparray of floats</strong></p>
+<blockquote>
+<div><p>the array of energy levels which is the main result of a nested sampling run.  These are stored in
+NestedSampling.max_energies</p>
+</div></blockquote>
+<p><strong>nreplicas</strong> : int</p>
+<p><strong>npar</strong> : int</p>
+<blockquote>
+<div><p>the number of processors uses in a the nested sampling run.  This changes the phase space compression factor
+between the energies.</p>
+</div></blockquote>
+<p><strong>ndof</strong> : int</p>
+<blockquote>
+<div><p>number of degrees of freedom in the system being studied.
+This is used to add in the contribution from the momentum degrees of freedom.  
+If this is not passed the heat capacity will be off by an additive constant.</p>
+</div></blockquote>
+<p><strong>Tmin, Tmax</strong> : float</p>
+<blockquote>
+<div><p>minimum and maximum temperatures</p>
+</div></blockquote>
+<p><strong>nT</strong> : int</p>
+<blockquote>
+<div><p>number of temperatures at which to compute the heat capacity</p>
+</div></blockquote>
+<p><strong>live_replicas</strong> : bool</p>
+<blockquote>
+<div><p>if True then the last nreplcas energies are the sorted energies of the live replicas
+at the end of the nested sampling run.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns :</th><td class="field-body"><p class="first"><strong>T</strong> : array of temperatures</p>
+<p><strong>Cv</strong> : array of heat capacities (including the momentum degrees of freedom)</p>
+<p><strong>U</strong> : the mean energy</p>
+<p class="last"><strong>U</strong> : the mean  of the (energy squared)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="error-analysis">
+<h2>Error analysis<a class="headerlink" href="#error-analysis" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="nested_sampling.utils._jackknife_variance">
+<em class="property">class </em><tt class="descclassname">nested_sampling.utils.</tt><tt class="descname">_jackknife_variance</tt><big>(</big><em>energies</em>, <em>nsubsets</em>, <em>K</em>, <em>Tmin</em>, <em>Tmax</em>, <em>nT</em>, <em>P</em>, <em>ndof</em>, <em>block</em>, <em>live</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_jackknife_variance.py#L15"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._jackknife_variance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<p class="rubric">Methods</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#nested_sampling.utils._jackknife_variance.Cv_singles" title="nested_sampling.utils._jackknife_variance.Cv_singles"><tt class="xref py py-obj docutils literal"><span class="pre">Cv_singles</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">__call__</span></tt></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nested_sampling.utils._jackknife_variance.jack_Cv_averages" title="nested_sampling.utils._jackknife_variance.jack_Cv_averages"><tt class="xref py py-obj docutils literal"><span class="pre">jack_Cv_averages</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nested_sampling.utils._jackknife_variance.jack_Cv_moments" title="nested_sampling.utils._jackknife_variance.jack_Cv_moments"><tt class="xref py py-obj docutils literal"><span class="pre">jack_Cv_moments</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nested_sampling.utils._jackknife_variance.jack_Cv_stdev" title="nested_sampling.utils._jackknife_variance.jack_Cv_stdev"><tt class="xref py py-obj docutils literal"><span class="pre">jack_Cv_stdev</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nested_sampling.utils._jackknife_variance.jack_E_averages" title="nested_sampling.utils._jackknife_variance.jack_E_averages"><tt class="xref py py-obj docutils literal"><span class="pre">jack_E_averages</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nested_sampling.utils._jackknife_variance.split_energies" title="nested_sampling.utils._jackknife_variance.split_energies"><tt class="xref py py-obj docutils literal"><span class="pre">split_energies</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nested_sampling.utils._jackknife_variance.split_energies_block" title="nested_sampling.utils._jackknife_variance.split_energies_block"><tt class="xref py py-obj docutils literal"><span class="pre">split_energies_block</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nested_sampling.utils._jackknife_variance.split_energies_randomly" title="nested_sampling.utils._jackknife_variance.split_energies_randomly"><tt class="xref py py-obj docutils literal"><span class="pre">split_energies_randomly</span></tt></a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="nested_sampling.utils._jackknife_variance.Cv_singles">
+<tt class="descname">Cv_singles</tt><big>(</big><em>Esplit</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_jackknife_variance.py#L104"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._jackknife_variance.Cv_singles" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the single Cvs</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._jackknife_variance.jack_Cv_averages">
+<tt class="descname">jack_Cv_averages</tt><big>(</big><em>EJack</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_jackknife_variance.py#L94"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._jackknife_variance.jack_Cv_averages" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the M(=self.nsubsets) Cv Jackknife averages (from the combined subsets)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._jackknife_variance.jack_Cv_moments">
+<tt class="descname">jack_Cv_moments</tt><big>(</big><em>CvJack</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_jackknife_variance.py#L114"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._jackknife_variance.jack_Cv_moments" title="Permalink to this definition">¶</a></dt>
+<dd><p>return Cv expectation value from the Jackknife averages of Cv</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._jackknife_variance.jack_Cv_stdev">
+<tt class="descname">jack_Cv_stdev</tt><big>(</big><em>CvJack</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_jackknife_variance.py#L123"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._jackknife_variance.jack_Cv_stdev" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the stdev associated with the heat capacity, it calculates the variance of the Jackknife
+estimate and then from this finds the standard deviation of the heat capacity estimate obtained 
+from the sample average</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._jackknife_variance.jack_E_averages">
+<tt class="descname">jack_E_averages</tt><big>(</big><em>Esplit</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_jackknife_variance.py#L77"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._jackknife_variance.jack_E_averages" title="Permalink to this definition">¶</a></dt>
+<dd><p>return array of Jacknife averages (more like combined subsets than averages):</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._jackknife_variance.split_energies">
+<tt class="descname">split_energies</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_jackknife_variance.py#L65"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._jackknife_variance.split_energies" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the correct type of energy subsets, as chosen by the user</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._jackknife_variance.split_energies_block">
+<tt class="descname">split_energies_block</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_jackknife_variance.py#L58"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._jackknife_variance.split_energies_block" title="Permalink to this definition">¶</a></dt>
+<dd><p>split the array of energies into n subsets of size n/K as provided</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._jackknife_variance.split_energies_randomly">
+<tt class="descname">split_energies_randomly</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_jackknife_variance.py#L45"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._jackknife_variance.split_energies_randomly" title="Permalink to this definition">¶</a></dt>
+<dd><p>split the array of energies into n subsets of size n/K randomly</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="nested_sampling.utils.run_jackknife_variance">
+<tt class="descclassname">nested_sampling.utils.</tt><tt class="descname">run_jackknife_variance</tt><big>(</big><em>energies</em>, <em>nsubsets</em>, <em>K</em>, <em>Tmin</em>, <em>Tmax</em>, <em>nT</em>, <em>P</em>, <em>ndof</em>, <em>block</em>, <em>live</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_jackknife_variance.py#L8"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils.run_jackknife_variance" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the stdev calculated by jackknifing</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="nested_sampling.utils._alpha_variance">
+<em class="property">class </em><tt class="descclassname">nested_sampling.utils.</tt><tt class="descname">_alpha_variance</tt><big>(</big><em>energies</em>, <em>nsubsets</em>, <em>K</em>, <em>Tmin</em>, <em>Tmax</em>, <em>nT</em>, <em>P</em>, <em>ndof</em>, <em>live</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_alpha_variance.py#L15"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._alpha_variance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/functions.html#object" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></a></p>
+<p class="rubric">Methods</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="#nested_sampling.utils._alpha_variance.Cv_moments" title="nested_sampling.utils._alpha_variance.Cv_moments"><tt class="xref py py-obj docutils literal"><span class="pre">Cv_moments</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nested_sampling.utils._alpha_variance.Cv_singles" title="nested_sampling.utils._alpha_variance.Cv_singles"><tt class="xref py py-obj docutils literal"><span class="pre">Cv_singles</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nested_sampling.utils._alpha_variance.Cv_stdev" title="nested_sampling.utils._alpha_variance.Cv_stdev"><tt class="xref py py-obj docutils literal"><span class="pre">Cv_stdev</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">__call__</span></tt></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nested_sampling.utils._alpha_variance.jack_Cv_averages" title="nested_sampling.utils._alpha_variance.jack_Cv_averages"><tt class="xref py py-obj docutils literal"><span class="pre">jack_Cv_averages</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nested_sampling.utils._alpha_variance.jack_alpha_averages" title="nested_sampling.utils._alpha_variance.jack_alpha_averages"><tt class="xref py py-obj docutils literal"><span class="pre">jack_alpha_averages</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#nested_sampling.utils._alpha_variance.make_random_alpha_list" title="nested_sampling.utils._alpha_variance.make_random_alpha_list"><tt class="xref py py-obj docutils literal"><span class="pre">make_random_alpha_list</span></tt></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#nested_sampling.utils._alpha_variance.sample_alphas" title="nested_sampling.utils._alpha_variance.sample_alphas"><tt class="xref py py-obj docutils literal"><span class="pre">sample_alphas</span></tt></a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="nested_sampling.utils._alpha_variance.Cv_moments">
+<tt class="descname">Cv_moments</tt><big>(</big><em>CvJack</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_alpha_variance.py#L103"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._alpha_variance.Cv_moments" title="Permalink to this definition">¶</a></dt>
+<dd><p>return Cv expectation value from the Cvs</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._alpha_variance.Cv_singles">
+<tt class="descname">Cv_singles</tt><big>(</big><em>alpha_sets</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_alpha_variance.py#L93"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._alpha_variance.Cv_singles" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the single Cvs</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._alpha_variance.Cv_stdev">
+<tt class="descname">Cv_stdev</tt><big>(</big><em>CvJack</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_alpha_variance.py#L112"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._alpha_variance.Cv_stdev" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the stdev associated with the heat capacity, it calculates the variance of the estimates
+and then from this finds the standard deviation of the heat capacity estimate obtained 
+from the heat capacity average</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._alpha_variance.jack_Cv_averages">
+<tt class="descname">jack_Cv_averages</tt><big>(</big><em>alphaJack</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_alpha_variance.py#L142"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._alpha_variance.jack_Cv_averages" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the M(=self.nsubsets) Cv Jackknife averages</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._alpha_variance.jack_alpha_averages">
+<tt class="descname">jack_alpha_averages</tt><big>(</big><em>alpha_sets</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_alpha_variance.py#L126"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._alpha_variance.jack_alpha_averages" title="Permalink to this definition">¶</a></dt>
+<dd><p>return array of Jacknife averages:</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._alpha_variance.make_random_alpha_list">
+<tt class="descname">make_random_alpha_list</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_alpha_variance.py#L67"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._alpha_variance.make_random_alpha_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nested_sampling.utils._alpha_variance.sample_alphas">
+<tt class="descname">sample_alphas</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_alpha_variance.py#L80"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils._alpha_variance.sample_alphas" title="Permalink to this definition">¶</a></dt>
+<dd><p>create nsubsets of sampled compression factors</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="nested_sampling.utils.run_alpha_variance">
+<tt class="descclassname">nested_sampling.utils.</tt><tt class="descname">run_alpha_variance</tt><big>(</big><em>energies</em>, <em>nsubsets</em>, <em>K</em>, <em>Tmin</em>, <em>Tmax</em>, <em>nT</em>, <em>P</em>, <em>ndof</em>, <em>live</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_alpha_variance.py#L8"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils.run_alpha_variance" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the stdev calculated by jackknifing</p>
+</dd></dl>
+
+</div>
+<div class="section" id="general">
+<h2>General<a class="headerlink" href="#general" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="nested_sampling.utils.Result">
+<em class="property">class </em><tt class="descclassname">nested_sampling.utils.</tt><tt class="descname">Result</tt><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/result.py#L7"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils.Result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/library/stdtypes.html#dict" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">dict</span></tt></a></p>
+<p>Represents the optimization result.</p>
+<p class="rubric">Notes</p>
+<p>There may be additional attributes not listed above depending of the
+specific solver. Since this class is essentially a subclass of dict
+with attribute accessors, one can see which attributes are available
+using the <cite>keys()</cite> method.</p>
+<p class="rubric">Attributes</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>x</td>
+<td>(ndarray) The solution of the optimization.</td>
+</tr>
+<tr class="row-even"><td>success</td>
+<td>(bool) Whether or not the optimizer exited successfully.</td>
+</tr>
+<tr class="row-odd"><td>status</td>
+<td>(int) Termination status of the optimizer. Its value depends on the underlying solver. Refer to <cite>message</cite> for details.</td>
+</tr>
+<tr class="row-even"><td>message</td>
+<td>(str) Description of the cause of the termination.</td>
+</tr>
+<tr class="row-odd"><td>fun, jac, hess</td>
+<td>(ndarray) Values of objective function, Jacobian and Hessian (if available).</td>
+</tr>
+<tr class="row-even"><td>nfev, njev, nhev</td>
+<td>(int) Number of evaluations of the objective functions and of its Jacobian and Hessian.</td>
+</tr>
+<tr class="row-odd"><td>nit</td>
+<td>(int) Number of iterations performed by the optimizer.</td>
+</tr>
+<tr class="row-even"><td>maxcv</td>
+<td>(float) The maximum constraint violation.</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><tt class="xref py py-obj docutils literal"><span class="pre">clear</span></tt>(()&nbsp;-&gt;&nbsp;None.&nbsp;&nbsp;Remove&nbsp;all&nbsp;items&nbsp;from&nbsp;D.)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">copy</span></tt>(()&nbsp;-&gt;&nbsp;a&nbsp;shallow&nbsp;copy&nbsp;of&nbsp;D)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><tt class="xref py py-obj docutils literal"><span class="pre">fromkeys</span></tt>(...)</td>
+<td>v defaults to None.</td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">get</span></tt>((k[,d])&nbsp;-&gt;&nbsp;D[k]&nbsp;if&nbsp;k&nbsp;in&nbsp;D,&nbsp;...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><tt class="xref py py-obj docutils literal"><span class="pre">has_key</span></tt>((k)&nbsp;-&gt;&nbsp;True&nbsp;if&nbsp;D&nbsp;has&nbsp;a&nbsp;key&nbsp;k,&nbsp;else&nbsp;False)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">items</span></tt>(()&nbsp;-&gt;&nbsp;list&nbsp;of&nbsp;D&#8217;s&nbsp;(key,&nbsp;value)&nbsp;pairs,&nbsp;...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><tt class="xref py py-obj docutils literal"><span class="pre">iteritems</span></tt>(()&nbsp;-&gt;&nbsp;an&nbsp;iterator&nbsp;over&nbsp;the&nbsp;(key,&nbsp;...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">iterkeys</span></tt>(()&nbsp;-&gt;&nbsp;an&nbsp;iterator&nbsp;over&nbsp;the&nbsp;keys&nbsp;of&nbsp;D)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><tt class="xref py py-obj docutils literal"><span class="pre">itervalues</span></tt>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">keys</span></tt>(()&nbsp;-&gt;&nbsp;list&nbsp;of&nbsp;D&#8217;s&nbsp;keys)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><tt class="xref py py-obj docutils literal"><span class="pre">pop</span></tt>((k[,d])&nbsp;-&gt;&nbsp;v,&nbsp;...)</td>
+<td>If key is not found, d is returned if given, otherwise KeyError is raised</td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">popitem</span></tt>(()&nbsp;-&gt;&nbsp;(k,&nbsp;v),&nbsp;...)</td>
+<td>2-tuple; but raise KeyError if D is empty.</td>
+</tr>
+<tr class="row-odd"><td><tt class="xref py py-obj docutils literal"><span class="pre">setdefault</span></tt>((k[,d])&nbsp;-&gt;&nbsp;D.get(k,d),&nbsp;...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">update</span></tt>(([E,&nbsp;...)</td>
+<td>If E present and has a .keys() method, does:     for k in E: D[k] = E[k]</td>
+</tr>
+<tr class="row-odd"><td><tt class="xref py py-obj docutils literal"><span class="pre">values</span></tt>(()&nbsp;-&gt;&nbsp;list&nbsp;of&nbsp;D&#8217;s&nbsp;values)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">viewitems</span></tt>(...)</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><tt class="xref py py-obj docutils literal"><span class="pre">viewkeys</span></tt>(...)</td>
+<td></td>
+</tr>
+<tr class="row-even"><td><tt class="xref py py-obj docutils literal"><span class="pre">viewvalues</span></tt>(...)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="nested_sampling.utils.get_energies">
+<tt class="descclassname">nested_sampling.utils.</tt><tt class="descname">get_energies</tt><big>(</big><em>fnames</em>, <em>block=False</em>, <em>live=False</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/utils/_get_energies.py#L23"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.utils.get_energies" title="Permalink to this definition">¶</a></dt>
+<dd><p>read energies from a list of file names, append the live replicas and return as one list</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Utils</a><ul>
+<li><a class="reference internal" href="#heat-capacity">Heat capacity</a></li>
+<li><a class="reference internal" href="#error-analysis">Error analysis</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#general">General</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">nested sampling 1.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Stefano Martiniani and Jacob D. Stevenson.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
