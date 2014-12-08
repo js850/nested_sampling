@@ -7,7 +7,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = _build
-GH_PAGES_SOURCES = nested_sampling source setup.py
+GH_PAGES_SOURCES = nested_sampling setup.py
 
 # User-friendly check for sphinx-build
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)
