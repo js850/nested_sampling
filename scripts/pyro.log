@@ -1,0 +1,78 @@
+[2013-12-18 14:04:19.668,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:04:31.603,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:04:31.650,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:04:31.650,Pyro4.core,DEBUG] created daemon on 172.26.182.160:34674
+[2013-12-18 14:04:31.650,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:04:31.650,Pyro4.core,INFO] daemon 172.26.182.160:34674 entering requestloop
+[2013-12-18 14:04:31.650,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:06:37.885,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:07:06.563,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:07:25.848,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:07:44.665,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:09:35.388,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:09:35.427,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:09:35.427,Pyro4.core,DEBUG] created daemon on 172.26.182.160:41622
+[2013-12-18 14:09:35.427,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:09:35.427,Pyro4.core,INFO] daemon 172.26.182.160:41622 entering requestloop
+[2013-12-18 14:09:35.428,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:10:10.046,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:10:10.084,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:10:10.084,Pyro4.core,DEBUG] created daemon on 172.26.182.160:59945
+[2013-12-18 14:10:10.084,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:10:10.084,Pyro4.core,INFO] daemon 172.26.182.160:59945 entering requestloop
+[2013-12-18 14:10:10.085,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:10:52.116,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:10:52.159,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:10:52.159,Pyro4.core,DEBUG] created daemon on 172.26.182.160:51192
+[2013-12-18 14:10:52.159,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:10:52.159,Pyro4.core,INFO] daemon 172.26.182.160:51192 entering requestloop
+[2013-12-18 14:10:52.160,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:12:15.071,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:12:15.101,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:12:15.101,Pyro4.core,DEBUG] created daemon on 172.26.182.160:47762
+[2013-12-18 14:12:15.101,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:12:15.102,Pyro4.core,INFO] daemon 172.26.182.160:47762 entering requestloop
+[2013-12-18 14:12:15.102,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:13:05.294,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:13:05.324,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:13:05.324,Pyro4.core,DEBUG] created daemon on 172.26.182.160:34095
+[2013-12-18 14:13:05.324,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:13:05.325,Pyro4.core,INFO] daemon 172.26.182.160:34095 entering requestloop
+[2013-12-18 14:13:05.325,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:13:52.033,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:13:52.064,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:13:52.064,Pyro4.core,DEBUG] created daemon on 172.26.182.160:38485
+[2013-12-18 14:13:52.065,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:13:52.065,Pyro4.core,INFO] daemon 172.26.182.160:38485 entering requestloop
+[2013-12-18 14:13:52.065,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:14:14.865,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:14:14.906,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:14:14.906,Pyro4.core,DEBUG] created daemon on 172.26.182.160:48474
+[2013-12-18 14:14:14.906,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:14:14.907,Pyro4.core,INFO] daemon 172.26.182.160:48474 entering requestloop
+[2013-12-18 14:14:14.907,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:15:40.551,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:15:40.590,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:15:40.590,Pyro4.core,DEBUG] created daemon on 172.26.182.160:54752
+[2013-12-18 14:15:40.590,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:15:40.590,Pyro4.core,INFO] daemon 172.26.182.160:54752 entering requestloop
+[2013-12-18 14:15:40.590,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:16:36.978,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:16:37.012,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:16:37.012,Pyro4.core,DEBUG] created daemon on 172.26.182.160:55675
+[2013-12-18 14:16:37.012,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:16:37.012,Pyro4.core,INFO] daemon 172.26.182.160:55675 entering requestloop
+[2013-12-18 14:16:37.012,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:16:58.310,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:16:58.345,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:16:58.346,Pyro4.core,DEBUG] created daemon on 172.26.182.160:36766
+[2013-12-18 14:16:58.346,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:16:58.346,Pyro4.core,INFO] daemon 172.26.182.160:36766 entering requestloop
+[2013-12-18 14:16:58.346,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 14:21:40.010,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
+[2013-12-18 14:21:40.048,Pyro4.socketserver.multiplexed,INFO] starting multiplexed socketserver
+[2013-12-18 14:21:40.048,Pyro4.core,DEBUG] created daemon on 172.26.182.160:54915
+[2013-12-18 14:21:40.048,Pyro4.core,DEBUG] accepted serializers: set(['json', 'pickle', 'marshal', 'serpent'])
+[2013-12-18 14:21:40.049,Pyro4.core,INFO] daemon 172.26.182.160:54915 entering requestloop
+[2013-12-18 14:21:40.049,Pyro4.socketserver.multiplexed,DEBUG] enter poll-based requestloop
+[2013-12-18 15:58:08.040,Pyro4,INFO] Pyro log configured using built-in defaults, level=DEBUG
