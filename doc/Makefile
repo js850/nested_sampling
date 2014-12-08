@@ -194,5 +194,7 @@ gh-pages:
 	rm -rf conf.py _static _templates &&\
 	cd ../ &&\
 	rm -rf $(GH_PAGES_SOURCES) &&\
+	cd `pwd` &&\
+	rm -rf nested_sampling doc nested_sampling.jpg setup.py &&\
 	git add -A && \
 	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" && git push origin gh-pages ; git checkout master
