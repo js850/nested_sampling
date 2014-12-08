@@ -188,7 +188,7 @@ gh-pages:
 	python setup.py build_ext -i
 	make html
 	mv -fv _build/html/* ../
-	mv -fv -t ../ *.png *.rst _build sphinxext
+	mv -fv -t ../ *jpg *.png *.rst _build sphinxext
 	rm -rf conf.py _static _templates
 	cd ../ &&\
 	rm -rf $(GH_PAGES_SOURCES) &&\
