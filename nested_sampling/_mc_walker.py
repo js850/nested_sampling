@@ -5,6 +5,7 @@ import numpy as np
 from nested_sampling import Result
 
 def random_displace(x, stepsize):
+    """random uniform displacement"""
     x += np.random.uniform(low=-stepsize, high=stepsize, size=x.shape)
     return x
 
