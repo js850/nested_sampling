@@ -127,10 +127,11 @@ class NestedSampling(object):
 
         
         if self.nproc > 1:
-            if dispatcher_URI != None:
+            if dispatcher_URI is not None:
                 self._set_up_serializer()
             else:
                 self._set_up_multiproc_parallelization()
+        assert not (dispatcher_URI is None and self.nproc>1), "using only 1 core with active dispatcher" 
     
     #===========================================================================
     # multiprocessing functions for cpu locked parallelisation (on single node)
@@ -245,7 +246,7 @@ class NestedSampling(object):
 
     def _do_monte_carlo_chain_parallel(self, configs, Emax):
         
-        if self.dispatcher_URI != None:
+        if self.dispatcher_URI is not None:
             rnewlist, result = self._do_monte_carlo_chain_parallel_distributed(configs, Emax)
         else:
             rnewlist, result = self._do_monte_carlo_chain_parallel_multiproc(configs, Emax)
