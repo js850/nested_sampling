@@ -185,16 +185,14 @@ gh-pages:
 	rm -rf build _build _sources _static _images _modules _templates sphinxext &&\
 	git checkout master $(GH_PAGES_SOURCES) doc &&\
 	git reset HEAD &&\
-	pwd &&\
 	python setup.py build_ext -i &&\
 	cd doc &&\
 	make html &&\
 	mv -fv _build/html/* ../ &&\
 	mv -fv -t ../ *jpg *.png *.rst _build sphinxext &&\
-	rm -rf conf.py _static _templates &&\
+	rm -rfv conf.py _static _templates &&\
 	cd ../ &&\
-	rm -rf $(GH_PAGES_SOURCES) &&\
-	cd `pwd` &&\
-	rm -rf nested_sampling doc nested_sampling.jpg setup.py &&\
+	rm -rvf $(GH_PAGES_SOURCES) &&\
+	pwd &&\
 	git add -A && \
 	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" && git push origin gh-pages ; git checkout master
