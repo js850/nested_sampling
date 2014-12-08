@@ -185,7 +185,9 @@ gh-pages:
 	rm -rf build _build _sources _static _images _modules _templates sphinxext &&\
 	git checkout master $(GH_PAGES_SOURCES) doc &&\
 	git reset HEAD &&\
+	pwd &&\
 	python setup.py build_ext -i
+	pwd
 	make html
 	mv -fv _build/html/* ../
 	mv -fv -t ../ *jpg *.png *.rst _build sphinxext
