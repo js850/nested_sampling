@@ -8,7 +8,7 @@ SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = _build
 GH_PAGES_SOURCES = nested_sampling setup.py
-
+PACKAGEDIR = /home/sm958/Work/releases/nested_sampling
 # User-friendly check for sphinx-build
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)
 $(error The '$(SPHINXBUILD)' command was not found. Make sure you have Sphinx installed, then set the SPHINXBUILD environment variable to point to the full path of the '$(SPHINXBUILD)' executable. Alternatively you can add the directory with the executable to your PATH. If you don't have Sphinx installed, grab it from http://sphinx-doc.org/)
@@ -181,7 +181,7 @@ pseudoxml:
 
 gh-pages:
 	git checkout gh-pages
-	cd ../ &&\
+	cd $(PACKAGEDIR) &&\
 	rm -rf build _build _sources _static _images _modules _templates sphinxext &&\
 	git checkout master $(GH_PAGES_SOURCES) doc &&\
 	git reset HEAD &&\
@@ -191,8 +191,7 @@ gh-pages:
 	mv -fv _build/html/* ../ &&\
 	mv -fv -t ../ *jpg *.png *.rst _build sphinxext &&\
 	rm -rfv conf.py _static _templates &&\
-	cd ../ &&\
+	cd $(PACKAGEDIR) &&\
 	rm -rvf $(GH_PAGES_SOURCES) &&\
-	pwd &&\
 	git add -A && \
-	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" && git push origin gh-pages ; git checkout master
+	git commit -m "Generated gh-pages for `git log master -1 --pretty=short --abbrev-commit`" && git push origin gh-pages && git checkout master
