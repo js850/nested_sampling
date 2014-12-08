@@ -187,11 +187,11 @@ gh-pages:
 	git reset HEAD &&\
 	pwd &&\
 	python setup.py build_ext -i &&\
-	cd `pwd`
-	make html
-	mv -fv _build/html/* ../
-	mv -fv -t ../ *jpg *.png *.rst _build sphinxext
-	rm -rf conf.py _static _templates 
+	cd doc &&\
+	make html &&\
+	mv -fv _build/html/* ../ &&\
+	mv -fv -t ../ *jpg *.png *.rst _build sphinxext &&\
+	rm -rf conf.py _static _templates &&\
 	cd ../ &&\
 	rm -rf $(GH_PAGES_SOURCES) &&\
 	git add -A && \
