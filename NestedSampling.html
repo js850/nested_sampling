@@ -167,13 +167,13 @@ in parallel</p>
 </table>
 <dl class="method">
 <dt id="nested_sampling.NestedSampling.add_new_replicas">
-<tt class="descname">add_new_replicas</tt><big>(</big><em>rlist</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L388"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.add_new_replicas" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">add_new_replicas</tt><big>(</big><em>rlist</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L389"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.add_new_replicas" title="Permalink to this definition">¶</a></dt>
 <dd><p>add new replicas the the list and keep the list sorted</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="nested_sampling.NestedSampling.adjust_step_size">
-<tt class="descname">adjust_step_size</tt><big>(</big><em>results</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L328"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.adjust_step_size" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">adjust_step_size</tt><big>(</big><em>results</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L329"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.adjust_step_size" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adjust the stepsize to keep the acceptance ratio at a good value</p>
 <p class="rubric">Notes</p>
 <p>when ratio naccept/nsteps &lt; target_ratio then decrease step size by a
@@ -185,12 +185,12 @@ increased with an upper bound: max_stepsize.</p>
 
 <dl class="method">
 <dt id="nested_sampling.NestedSampling.collectresults">
-<tt class="descname">collectresults</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L191"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.collectresults" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">collectresults</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L192"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.collectresults" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="nested_sampling.NestedSampling.do_monte_carlo_chain">
-<tt class="descname">do_monte_carlo_chain</tt><big>(</big><em>configs</em>, <em>Emax</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L278"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.do_monte_carlo_chain" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">do_monte_carlo_chain</tt><big>(</big><em>configs</em>, <em>Emax</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L279"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.do_monte_carlo_chain" title="Permalink to this definition">¶</a></dt>
 <dd><p>from an initial configuration do a monte carlo walk</p>
 <p>the steps will be accepted subject only to a maximum energy criterion.
 At the end of the walk, update stepize to meet the target_ratio.</p>
@@ -198,31 +198,31 @@ At the end of the walk, update stepize to meet the target_ratio.</p>
 
 <dl class="method">
 <dt id="nested_sampling.NestedSampling.get_starting_configurations">
-<tt class="descname">get_starting_configurations</tt><big>(</big><em>Emax</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L384"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.get_starting_configurations" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">get_starting_configurations</tt><big>(</big><em>Emax</em><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L385"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.get_starting_configurations" title="Permalink to this definition">¶</a></dt>
 <dd><p>return nproc replicas to be used as starting configurations</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="nested_sampling.NestedSampling.get_starting_configurations_from_replicas">
-<tt class="descname">get_starting_configurations_from_replicas</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L373"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.get_starting_configurations_from_replicas" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">get_starting_configurations_from_replicas</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L374"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.get_starting_configurations_from_replicas" title="Permalink to this definition">¶</a></dt>
 <dd><p>use existing replicas as starting configurations</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="nested_sampling.NestedSampling.one_iteration">
-<tt class="descname">one_iteration</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L397"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.one_iteration" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">one_iteration</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L398"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.one_iteration" title="Permalink to this definition">¶</a></dt>
 <dd><p>do one iteration of the nested sampling algorithm</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="nested_sampling.NestedSampling.pop_replicas">
-<tt class="descname">pop_replicas</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L363"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.pop_replicas" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">pop_replicas</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L364"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.pop_replicas" title="Permalink to this definition">¶</a></dt>
 <dd><p>remove the replicas with the largest energies and store them in the max_energies array</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="nested_sampling.NestedSampling.sort_replicas">
-<tt class="descname">sort_replicas</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L357"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.sort_replicas" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">sort_replicas</tt><big>(</big><big>)</big><a class="reference external" href="https://github.com/js850/nested_sampling/blob/master/nested_sampling/_nested_sampling.py#L358"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nested_sampling.NestedSampling.sort_replicas" title="Permalink to this definition">¶</a></dt>
 <dd><p>sorts the replicas in decreasing order of energy</p>
 </dd></dl>
 
