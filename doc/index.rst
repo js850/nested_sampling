@@ -83,6 +83,11 @@ Reference
    
    Utils
 
+.. toctree::
+   :maxdepth: 2
+   
+   Scripts
+
 Modules
 +++++++
 .. toctree::
