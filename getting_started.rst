@@ -18,32 +18,34 @@ The :class:`NestedSampling` class fundamentally requires only three input parame
 
 Other optional arguments can be useful but we shall ignore them for the time being. The :class:`MonteCarloWalker`
 takes care of walking the replicas under some energy (log-likelihood) constraint, to perform uniform sampling 
-(rejection sampling) in phase space. :class:`MonteCarloWalker` takes as parameters:
+(rejection sampling) in phase space. 
 
-1. a ``potential``, which is a class that through a ``get_energy()`` function,
-   returns an energy for a given a set of coordinates. 
+We then have the :class:`MonteCarloWalker` class that takes as parameters:
+
+1. a ``potential``, which is a class that through a ``get_energy()`` function returns an energy for a given a set of coordinates. 
 #. a ``takestep`` method which is some callable that takes a set of coordinates and a step-size,
    displaces them (takes a step) and returns the coordinates, see for instance :func:`random_displace`. 
-#. a list of accept_tests, which are additional configurational tests. For instance
+#. a list of ``accept_tests``, which are additional configurational tests. For instance
    one might want the walkers to stay within a certain spherical container, as well as obeying the energy constraint.
 #. one can optionally pass to the :class:`MonteCarloWalker` a list of *events* which is a set of operations
-   that one want to do on the new configuration.
+   to perform on the new configuration at each iteration (e.g. record a histogram of energies).
 
 Integration with the `MCpele <https://pele-python.github.io/mcpele/>`_ walkers is possible 
 (they provide c++ performance through a Python interface!), but this will be addressed in another tutorial.
+
 The :func:`run_nested_sampling` method primarily takes as parameters:
 
 1. an object of type :class:`NestedSampling`
 #. a string to label the output
-#. a tolerance for the termination of the Nested Sampling iteration. By deafault we terminate the
-   run when the difference in energy between the highest and lowest energy replicas is less than etol
+#. a tolerance ``etol`` for the termination of the Nested Sampling iteration. By default we terminate the
+   run when the difference in energy between the highest and lowest energy replicas is less than ``etol``
 #. the maximum number of iterations
 
 Writing a nested sampling runner
 --------------------------------
 
 Here we shall cover the basic steps necessary for the implementation of a nested sampling runner to
-perform our calculations. In the example/harmonic folder we provide two basic implementation of a 
+perform our calculations. In the ``example/harmonic`` folder we provide two basic implementations of a 
 nested sampling runner with thread based parallelisation (single node) and distributed parallelisation (multiple nodes).
 Let us start with the most simple case.
 
@@ -58,10 +60,10 @@ and choose a reasonable set of parameters (note that in the actual example we us
     nsteps = 1e3    #no. of Monte Carlo steps per walk 
     nreplicas = 1e3 #no. of initial samples (replicas)
     stepsize = 0.1  #stepsize
-    etol = 0.01     #stepsize
+    etol = 0.01     #Emax replica - Emin replica tolerance
     
-For the potential we choose the most simple function form, that is a ``ndof`` dimensional harmonic well,
-which we take from the models modules. As we mentioned before each potential needs to have a
+For the potential we choose the most simple functional form, that is a ``ndof`` dimensional harmonic well,
+which we take from the ``models`` module. As we mentioned before each potential needs to have a
 ``get_energy`` function that returns the energy for a given set of coordinates::
 
     from nested_sampling.utils.rotations import vector_random_uniform_hypersphere
@@ -75,7 +77,7 @@ which we take from the models modules. As we mentioned before each potential nee
             return 0.5 * x.dot(x)
         
         def get_random_configuration(self, radius=10.):
-            """ return a random vector sampled uniformly from within a hypersphere of dimensions self.ndim"""
+            """ return a random vector sampled uniformly from within a hypersphere of dimensions self.ndof"""
             x = vector_random_uniform_hypersphere(self.ndof) * radius
             return x
             
@@ -87,7 +89,7 @@ Now that we have a potential, we need to construct a potential object and the Mo
     #construct Monte Carlo walker
     mc_runner = MonteCarloWalker(potential, mciter=nsteps)
     
-We the need to initialise the ``nreplicas`` samples, we do so by uniformly sampling a set of configurations,
+We then need to initialise ``nreplicas`` samples, we do so by uniformly sampling a set of configurations,
 and construct the :class:`NestedSampling` class object::
 
     #initialise replicas (initial uniformly samples set of configurations)
@@ -99,7 +101,7 @@ and construct the :class:`NestedSampling` class object::
     #construct Nested Sampling object
     ns = NestedSampling(replicas, mc_runner, stepsize=stepsize, nproc=nproc, max_stepsize=10)
     
-Finally we can run nested sampling doing::
+Finally we can run nested sampling by doing::
     
     run_nested_sampling(ns, label="run_hparticle", etol=etol)
 
@@ -111,7 +113,7 @@ which will perform nested sampling on ``nproc`` cores, on a simple node and with
 Running nested sampling on a single node
 ++++++++++++++++++++++++++++++++++++++++
 
-In practice if one were to run the example provided, which makes use of ``argparse``, he would have
+In practice if one were to run the example provided, which makes use of ``argparse``, would have
 to use the following terminal command-line::
 
     $python examples/harmonic/run_hparticle.py --nreplicas 1e3 --ndof 3 --nprocs 4 --nsteps 1e3 --stepsize 0.1 --etol 0.01
@@ -126,8 +128,8 @@ add the environment variable::
     $export PYRO_SERIALIZERS_ACCEPTED=serpent,json,marshal,pickle
     
 or add it to the .bashrc file if we intend to use it frequently. This parallelisation makes use of a 
-**dispatcher** (the middle man) that takes care of dispatching the jobs to the **workers** 
-assigned to it by the :func:`run_nested_sampling` function. Workers are very similar to the
+**dispatcher** (the middle man) that takes care of dispatching the jobs assigned to it by the 
+:func:`run_nested_sampling` function to the **workers** . Workers are very similar to the
 nested sampling runners above.
 
 The nested sampling runner needs only to be aware of the location of the dispatcher, hence we
@@ -153,7 +155,8 @@ add an extra keyword argument to the constructor of the :class:`NestedSampling` 
     ns = NestedSampling(replicas, mc_runner, stepsize=stepsize, nproc=nproc, dispatcher_URI=dispatcherURI,
                         max_stepsize=10)
                         
-The actual example makes use of ``argparse`` and can be found in examples/run_hparticle_distributed.py.
+The actual example makes use of ``argparse`` and can be found in ``examples/run_hparticle_distributed.py``.
+Note that in this case the ``mc_walker`` passed to ``NestedSampling`` is a redundant unused argument.
 
 Writing a nested sampling worker
 ++++++++++++++++++++++++++++++++
@@ -163,7 +166,7 @@ First we import the modules that we need::
     from nested_sampling import pyro_worker
     from nested_sampling import MonteCarloWalker, Harmonic
 
-We then construct the potential and the MOnte Carlo objects as above::
+We then construct the potential and the Monte Carlo objects as above::
 
     nsteps = 1e3    #no. of Monte Carlo steps per walk 
     ndof = 3        #no. of degrees of freedom    
@@ -182,7 +185,7 @@ and inizialise the Pyro worker::
     worker._start_worker()
 
 In the actual example we use the ``argparse`` package to launch the worker from the command line. In practice the user 
-only needs to replace the potential and the Monte Carlo runner to fit his needs.
+only needs to replace the ``potential`` and the Monte Carlo runner to fit his needs.
 
 Running distributed nested sampling
 +++++++++++++++++++++++++++++++++++
@@ -200,8 +203,8 @@ up a single thread. If you have too many connected proxies at the same time, the
 of threads and stops responding. (The multiplex server doesn’t have this particular issue)."*
 
 The dispatcher will also print its URI to a default file name ``dispatcher_uri.dat`` from where we can
-read the address of URI (as well as printing it on the termianl). Let us assume that the randomly
-allocated dispatcher URI is::
+read the ``dispatcher_URI`` (as well as printing it on the terminal). Let us assume that the randomly
+allocated ``dispatcher_URI`` is::
 
     $PYRO:obj_fbe65d26b5ed49d7bf3a590bea419a63@888.88.888.888:77777
     
@@ -209,9 +212,11 @@ we can then start a worker by doing::
 
     $python scripts/start_worker.py 3 PYRO:obj_fbe65d26b5ed49d7bf3a590bea419a63@888.88.888.888:77777 -n 1000
 
-where the first positional argument is ``ndof``, the second positional argument is the dispatcher URI and the optional
+where the first positional argument is ``ndof``, the second positional argument is the ``dispatcher_URI`` and the optional
 argument ``-n 1000`` is the number of Monte Carlo steps to perform at each call. We can start as many workers as we like,
-although we expect that the dispatcher efficiency decreases as the number of workers increases.
+although we expect that the dispatcher efficiency decreases as the number of workers increases. It should be clear from the
+previus section that each worker has its own ``MonteCarloWalker`` object and whatever choice we make for the ``NestedSampling``
+class will not have any effect on the workers (in this case the ``mc_walker`` passed to ``NestedSampling`` is redundant).
 
 Finally we need to run the terminal command-line::
 

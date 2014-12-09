@@ -73,32 +73,32 @@
 </ol>
 <p>Other optional arguments can be useful but we shall ignore them for the time being. The <tt class="xref py py-class docutils literal"><span class="pre">MonteCarloWalker</span></tt>
 takes care of walking the replicas under some energy (log-likelihood) constraint, to perform uniform sampling
-(rejection sampling) in phase space. <tt class="xref py py-class docutils literal"><span class="pre">MonteCarloWalker</span></tt> takes as parameters:</p>
+(rejection sampling) in phase space.</p>
+<p>We then have the <tt class="xref py py-class docutils literal"><span class="pre">MonteCarloWalker</span></tt> class that takes as parameters:</p>
 <ol class="arabic simple">
-<li>a <tt class="docutils literal"><span class="pre">potential</span></tt>, which is a class that through a <tt class="docutils literal"><span class="pre">get_energy()</span></tt> function,
-returns an energy for a given a set of coordinates.</li>
+<li>a <tt class="docutils literal"><span class="pre">potential</span></tt>, which is a class that through a <tt class="docutils literal"><span class="pre">get_energy()</span></tt> function returns an energy for a given a set of coordinates.</li>
 <li>a <tt class="docutils literal"><span class="pre">takestep</span></tt> method which is some callable that takes a set of coordinates and a step-size,
 displaces them (takes a step) and returns the coordinates, see for instance <tt class="xref py py-func docutils literal"><span class="pre">random_displace()</span></tt>.</li>
-<li>a list of accept_tests, which are additional configurational tests. For instance
+<li>a list of <tt class="docutils literal"><span class="pre">accept_tests</span></tt>, which are additional configurational tests. For instance
 one might want the walkers to stay within a certain spherical container, as well as obeying the energy constraint.</li>
 <li>one can optionally pass to the <tt class="xref py py-class docutils literal"><span class="pre">MonteCarloWalker</span></tt> a list of <em>events</em> which is a set of operations
-that one want to do on the new configuration.</li>
+to perform on the new configuration at each iteration (e.g. record a histogram of energies).</li>
 </ol>
 <p>Integration with the <a class="reference external" href="https://pele-python.github.io/mcpele/">MCpele</a> walkers is possible
-(they provide c++ performance through a Python interface!), but this will be addressed in another tutorial.
-The <tt class="xref py py-func docutils literal"><span class="pre">run_nested_sampling()</span></tt> method primarily takes as parameters:</p>
+(they provide c++ performance through a Python interface!), but this will be addressed in another tutorial.</p>
+<p>The <tt class="xref py py-func docutils literal"><span class="pre">run_nested_sampling()</span></tt> method primarily takes as parameters:</p>
 <ol class="arabic simple">
 <li>an object of type <tt class="xref py py-class docutils literal"><span class="pre">NestedSampling</span></tt></li>
 <li>a string to label the output</li>
-<li>a tolerance for the termination of the Nested Sampling iteration. By deafault we terminate the
-run when the difference in energy between the highest and lowest energy replicas is less than etol</li>
+<li>a tolerance <tt class="docutils literal"><span class="pre">etol</span></tt> for the termination of the Nested Sampling iteration. By default we terminate the
+run when the difference in energy between the highest and lowest energy replicas is less than <tt class="docutils literal"><span class="pre">etol</span></tt></li>
 <li>the maximum number of iterations</li>
 </ol>
 </div>
 <div class="section" id="writing-a-nested-sampling-runner">
 <h2>Writing a nested sampling runner<a class="headerlink" href="#writing-a-nested-sampling-runner" title="Permalink to this headline">¶</a></h2>
 <p>Here we shall cover the basic steps necessary for the implementation of a nested sampling runner to
-perform our calculations. In the example/harmonic folder we provide two basic implementation of a
+perform our calculations. In the <tt class="docutils literal"><span class="pre">example/harmonic</span></tt> folder we provide two basic implementations of a
 nested sampling runner with thread based parallelisation (single node) and distributed parallelisation (multiple nodes).
 Let us start with the most simple case.</p>
 <p>First of all we need to import the modules that we need:</p>
@@ -111,11 +111,11 @@ Let us start with the most simple case.</p>
 <span class="n">nsteps</span> <span class="o">=</span> <span class="mf">1e3</span>    <span class="c">#no. of Monte Carlo steps per walk</span>
 <span class="n">nreplicas</span> <span class="o">=</span> <span class="mf">1e3</span> <span class="c">#no. of initial samples (replicas)</span>
 <span class="n">stepsize</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c">#stepsize</span>
-<span class="n">etol</span> <span class="o">=</span> <span class="mf">0.01</span>     <span class="c">#stepsize</span>
+<span class="n">etol</span> <span class="o">=</span> <span class="mf">0.01</span>     <span class="c">#Emax replica - Emin replica tolerance</span>
 </pre></div>
 </div>
-<p>For the potential we choose the most simple function form, that is a <tt class="docutils literal"><span class="pre">ndof</span></tt> dimensional harmonic well,
-which we take from the models modules. As we mentioned before each potential needs to have a
+<p>For the potential we choose the most simple functional form, that is a <tt class="docutils literal"><span class="pre">ndof</span></tt> dimensional harmonic well,
+which we take from the <tt class="docutils literal"><span class="pre">models</span></tt> module. As we mentioned before each potential needs to have a
 <tt class="docutils literal"><span class="pre">get_energy</span></tt> function that returns the energy for a given set of coordinates:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">nested_sampling.utils.rotations</span> <span class="kn">import</span> <span class="n">vector_random_uniform_hypersphere</span>
 
@@ -128,7 +128,7 @@ which we take from the models modules. As we mentioned before each potential nee
         <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">x</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_random_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">10.</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; return a random vector sampled uniformly from within a hypersphere of dimensions self.ndim&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; return a random vector sampled uniformly from within a hypersphere of dimensions self.ndof&quot;&quot;&quot;</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">vector_random_uniform_hypersphere</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ndof</span><span class="p">)</span> <span class="o">*</span> <span class="n">radius</span>
         <span class="k">return</span> <span class="n">x</span>
 </pre></div>
@@ -141,7 +141,7 @@ which we take from the models modules. As we mentioned before each potential nee
 <span class="n">mc_runner</span> <span class="o">=</span> <span class="n">MonteCarloWalker</span><span class="p">(</span><span class="n">potential</span><span class="p">,</span> <span class="n">mciter</span><span class="o">=</span><span class="n">nsteps</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>We the need to initialise the <tt class="docutils literal"><span class="pre">nreplicas</span></tt> samples, we do so by uniformly sampling a set of configurations,
+<p>We then need to initialise <tt class="docutils literal"><span class="pre">nreplicas</span></tt> samples, we do so by uniformly sampling a set of configurations,
 and construct the <tt class="xref py py-class docutils literal"><span class="pre">NestedSampling</span></tt> class object:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="c">#initialise replicas (initial uniformly samples set of configurations)</span>
 <span class="n">replicas</span> <span class="o">=</span> <span class="p">[]</span>
@@ -153,7 +153,7 @@ and construct the <tt class="xref py py-class docutils literal"><span class="pre
 <span class="n">ns</span> <span class="o">=</span> <span class="n">NestedSampling</span><span class="p">(</span><span class="n">replicas</span><span class="p">,</span> <span class="n">mc_runner</span><span class="p">,</span> <span class="n">stepsize</span><span class="o">=</span><span class="n">stepsize</span><span class="p">,</span> <span class="n">nproc</span><span class="o">=</span><span class="n">nproc</span><span class="p">,</span> <span class="n">max_stepsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Finally we can run nested sampling doing:</p>
+<p>Finally we can run nested sampling by doing:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">run_nested_sampling</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;run_hparticle&quot;</span><span class="p">,</span> <span class="n">etol</span><span class="o">=</span><span class="n">etol</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -164,7 +164,7 @@ and construct the <tt class="xref py py-class docutils literal"><span class="pre
 </ul>
 <div class="section" id="running-nested-sampling-on-a-single-node">
 <h3>Running nested sampling on a single node<a class="headerlink" href="#running-nested-sampling-on-a-single-node" title="Permalink to this headline">¶</a></h3>
-<p>In practice if one were to run the example provided, which makes use of <tt class="docutils literal"><span class="pre">argparse</span></tt>, he would have
+<p>In practice if one were to run the example provided, which makes use of <tt class="docutils literal"><span class="pre">argparse</span></tt>, would have
 to use the following terminal command-line:</p>
 <div class="highlight-python"><pre>$python examples/harmonic/run_hparticle.py --nreplicas 1e3 --ndof 3 --nprocs 4 --nsteps 1e3 --stepsize 0.1 --etol 0.01</pre>
 </div>
@@ -178,8 +178,8 @@ add the environment variable:</p>
 <div class="highlight-python"><pre>$export PYRO_SERIALIZERS_ACCEPTED=serpent,json,marshal,pickle</pre>
 </div>
 <p>or add it to the .bashrc file if we intend to use it frequently. This parallelisation makes use of a
-<strong>dispatcher</strong> (the middle man) that takes care of dispatching the jobs to the <strong>workers</strong>
-assigned to it by the <tt class="xref py py-func docutils literal"><span class="pre">run_nested_sampling()</span></tt> function. Workers are very similar to the
+<strong>dispatcher</strong> (the middle man) that takes care of dispatching the jobs assigned to it by the
+<tt class="xref py py-func docutils literal"><span class="pre">run_nested_sampling()</span></tt> function to the <strong>workers</strong> . Workers are very similar to the
 nested sampling runners above.</p>
 <p>The nested sampling runner needs only to be aware of the location of the dispatcher, hence we
 can easily modify the above method by adding:</p>
@@ -204,7 +204,8 @@ add an extra keyword argument to the constructor of the <tt class="xref py py-cl
                     <span class="n">max_stepsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The actual example makes use of <tt class="docutils literal"><span class="pre">argparse</span></tt> and can be found in examples/run_hparticle_distributed.py.</p>
+<p>The actual example makes use of <tt class="docutils literal"><span class="pre">argparse</span></tt> and can be found in <tt class="docutils literal"><span class="pre">examples/run_hparticle_distributed.py</span></tt>.
+Note that in this case the <tt class="docutils literal"><span class="pre">mc_walker</span></tt> passed to <tt class="docutils literal"><span class="pre">NestedSampling</span></tt> is a redundant unused argument.</p>
 <div class="section" id="writing-a-nested-sampling-worker">
 <h3>Writing a nested sampling worker<a class="headerlink" href="#writing-a-nested-sampling-worker" title="Permalink to this headline">¶</a></h3>
 <p>First we import the modules that we need:</p>
@@ -212,7 +213,7 @@ add an extra keyword argument to the constructor of the <tt class="xref py py-cl
 <span class="kn">from</span> <span class="nn">nested_sampling</span> <span class="kn">import</span> <span class="n">MonteCarloWalker</span><span class="p">,</span> <span class="n">Harmonic</span>
 </pre></div>
 </div>
-<p>We then construct the potential and the MOnte Carlo objects as above:</p>
+<p>We then construct the potential and the Monte Carlo objects as above:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="n">nsteps</span> <span class="o">=</span> <span class="mf">1e3</span>    <span class="c">#no. of Monte Carlo steps per walk</span>
 <span class="n">ndof</span> <span class="o">=</span> <span class="mi">3</span>        <span class="c">#no. of degrees of freedom</span>
 <span class="n">potential</span> <span class="o">=</span> <span class="n">Harmonic</span><span class="p">(</span><span class="n">ndof</span><span class="p">)</span>
@@ -231,7 +232,7 @@ add an extra keyword argument to the constructor of the <tt class="xref py py-cl
 </pre></div>
 </div>
 <p>In the actual example we use the <tt class="docutils literal"><span class="pre">argparse</span></tt> package to launch the worker from the command line. In practice the user
-only needs to replace the potential and the Monte Carlo runner to fit his needs.</p>
+only needs to replace the <tt class="docutils literal"><span class="pre">potential</span></tt> and the Monte Carlo runner to fit his needs.</p>
 </div>
 <div class="section" id="running-distributed-nested-sampling">
 <h3>Running distributed nested sampling<a class="headerlink" href="#running-distributed-nested-sampling" title="Permalink to this headline">¶</a></h3>
@@ -246,16 +247,18 @@ documentation we note that</p>
 up a single thread. If you have too many connected proxies at the same time, the server may run out
 of threads and stops responding. (The multiplex server doesn’t have this particular issue).&#8221;</em></p>
 <p>The dispatcher will also print its URI to a default file name <tt class="docutils literal"><span class="pre">dispatcher_uri.dat</span></tt> from where we can
-read the address of URI (as well as printing it on the termianl). Let us assume that the randomly
-allocated dispatcher URI is:</p>
+read the <tt class="docutils literal"><span class="pre">dispatcher_URI</span></tt> (as well as printing it on the terminal). Let us assume that the randomly
+allocated <tt class="docutils literal"><span class="pre">dispatcher_URI</span></tt> is:</p>
 <div class="highlight-python"><pre>$PYRO:obj_fbe65d26b5ed49d7bf3a590bea419a63@888.88.888.888:77777</pre>
 </div>
 <p>we can then start a worker by doing:</p>
 <div class="highlight-python"><pre>$python scripts/start_worker.py 3 PYRO:obj_fbe65d26b5ed49d7bf3a590bea419a63@888.88.888.888:77777 -n 1000</pre>
 </div>
-<p>where the first positional argument is <tt class="docutils literal"><span class="pre">ndof</span></tt>, the second positional argument is the dispatcher URI and the optional
+<p>where the first positional argument is <tt class="docutils literal"><span class="pre">ndof</span></tt>, the second positional argument is the <tt class="docutils literal"><span class="pre">dispatcher_URI</span></tt> and the optional
 argument <tt class="docutils literal"><span class="pre">-n</span> <span class="pre">1000</span></tt> is the number of Monte Carlo steps to perform at each call. We can start as many workers as we like,
-although we expect that the dispatcher efficiency decreases as the number of workers increases.</p>
+although we expect that the dispatcher efficiency decreases as the number of workers increases. It should be clear from the
+previus section that each worker has its own <tt class="docutils literal"><span class="pre">MonteCarloWalker</span></tt> object and whatever choice we make for the <tt class="docutils literal"><span class="pre">NestedSampling</span></tt>
+class will not have any effect on the workers (in this case the <tt class="docutils literal"><span class="pre">mc_walker</span></tt> passed to <tt class="docutils literal"><span class="pre">NestedSampling</span></tt> is redundant).</p>
 <p>Finally we need to run the terminal command-line:</p>
 <div class="highlight-python"><pre>$python examples/harmonic/run_hparticle_distributed.py --dispatcherURI --nreplicas 1e3 --ndof 3 --nprocs 4 --nsteps 1e3 --stepsize 0.1 --etol 0.01</pre>
 </div>

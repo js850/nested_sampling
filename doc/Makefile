@@ -182,7 +182,7 @@ pseudoxml:
 gh-pages:
 	git checkout gh-pages
 	cd $(PACKAGEDIR) &&\
-	rm -rf build _build _sources _static _images _modules _templates sphinxext &&\
+	rm -rf build _build _sources _static _images _modules _templates sphinxext generated &&\
 	git checkout master $(GH_PAGES_SOURCES) doc &&\
 	git reset HEAD &&\
 	python setup.py build_ext -i &&\
