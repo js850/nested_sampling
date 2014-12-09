@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description="dispatcher queue")
     parser.add_argument("--server-name", type=str, help="name of the dispatcher",default=None)
     parser.add_argument("--host", type=str, help="address of the host (node on which the worker is started)",default=None)
-    parser.add_argument("--port", type=int, help="address of the host (node on which the worker is started)",default=0)
+    parser.add_argument("--port", type=int, help="port number on which the worker is started)",default=0)
     parser.add_argument("--server-type", type=str, help="multiplex or threaded",default="multiplex")
     args = parser.parse_args()
     
